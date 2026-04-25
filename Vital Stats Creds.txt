@@ -4,3 +4,13 @@ Supabase:
 Organization: Vital Stats Org
 Porject Name: vital-stats
 DB password: Z5MFOQShxGi2LmzD
+
+Email: admin@vitalstats.com
+Password: vitalstats2026
+
+
+
+Useful commands:
+npx prisma studio //Prisma Studio is just a GUI tool for viewing/editing data
+
+Get-ChildItem -Recurse src | Select-Object FullName //to get all the files inside a path or folder
