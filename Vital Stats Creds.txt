@@ -1,0 +1,6 @@
+Vital Stats Creds:
+
+Supabase:
+Organization: Vital Stats Org
+Porject Name: vital-stats
+DB password: Z5MFOQShxGi2LmzD
