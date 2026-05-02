@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { label: "Products", href: "/products" },
@@ -12,15 +12,27 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <nav
-      className="sticky top-0 z-50 flex items-center justify-between px-8 md:px-12 h-[68px]"
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between"
       style={{
-        background: "rgba(248,250,249,0.95)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(46,139,114,0.1)",
+        padding: "0 48px",
+        height: 64,
+        background: scrolled ? "rgba(247,249,248,0.97)" : "transparent",
+        backdropFilter: scrolled ? "blur(14px)" : "none",
+        borderBottom: scrolled
+          ? "1px solid rgba(46,139,114,0.1)"
+          : "1px solid transparent",
+        transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)",
       }}
     >
       {/* Logo */}
@@ -29,8 +41,9 @@ export default function Navbar() {
           src="/logo.png"
           alt="VitalStats"
           width={140}
-          height={48}
-          className="h-10 w-auto object-contain"
+          height={52}
+          className="w-auto object-contain"
+          style={{ height: 52 }}
           priority
         />
       </Link>
@@ -41,7 +54,7 @@ export default function Navbar() {
           <li key={link.label}>
             <Link
               href={link.href}
-              className="text-[12px] font-normal tracking-[0.08em] uppercase transition-colors duration-200"
+              className="text-[11px] font-normal tracking-[0.1em] uppercase transition-colors duration-200"
               style={{ color: "var(--ink-muted)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "var(--teal)")
@@ -59,14 +72,8 @@ export default function Navbar() {
       {/* CTA */}
       <Link
         href="/contact"
-        className="hidden md:inline-block text-white text-[12px] font-medium tracking-[0.06em] uppercase px-6 py-[10px] rounded-[3px] transition-colors duration-200"
+        className="hidden md:inline-block text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-[10px] rounded-[2px] transition-opacity duration-200 hover:opacity-85"
         style={{ background: "var(--teal)" }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.background = "var(--teal-dark)")
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.background = "var(--teal)")
-        }
       >
         Inquire Now
       </Link>
@@ -79,7 +86,10 @@ export default function Navbar() {
       >
         <span
           className="block w-5 h-[1.5px] transition-all duration-200"
-          style={{ background: "var(--ink)", transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none" }}
+          style={{
+            background: "var(--ink)",
+            transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none",
+          }}
         />
         <span
           className="block w-5 h-[1.5px] transition-all duration-200"
@@ -87,22 +97,33 @@ export default function Navbar() {
         />
         <span
           className="block w-5 h-[1.5px] transition-all duration-200"
-          style={{ background: "var(--ink)", transform: menuOpen ? "rotate(-45deg) translate(4px, -4px)" : "none" }}
+          style={{
+            background: "var(--ink)",
+            transform: menuOpen
+              ? "rotate(-45deg) translate(4px, -4px)"
+              : "none",
+          }}
         />
       </button>
 
       {/* Mobile menu */}
       {menuOpen && (
         <div
-          className="absolute top-[68px] left-0 right-0 flex flex-col gap-0 md:hidden"
-          style={{ background: "rgba(248,250,249,0.98)", borderBottom: "1px solid rgba(46,139,114,0.1)" }}
+          className="absolute top-[64px] left-0 right-0 flex flex-col gap-0 md:hidden"
+          style={{
+            background: "rgba(247,249,248,0.98)",
+            borderBottom: "1px solid rgba(46,139,114,0.1)",
+          }}
         >
           {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="px-8 py-4 text-[13px] tracking-[0.06em] uppercase border-b"
-              style={{ color: "var(--ink-muted)", borderColor: "rgba(0,0,0,0.05)" }}
+              className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
+              style={{
+                color: "var(--ink-muted)",
+                borderColor: "rgba(0,0,0,0.05)",
+              }}
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
@@ -110,7 +131,7 @@ export default function Navbar() {
           ))}
           <Link
             href="/contact"
-            className="mx-8 my-4 text-center text-white text-[12px] font-medium tracking-[0.06em] uppercase px-6 py-3 rounded-[3px]"
+            className="mx-8 my-4 text-center text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[2px]"
             style={{ background: "var(--teal)" }}
             onClick={() => setMenuOpen(false)}
           >

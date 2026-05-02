@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -24,54 +24,89 @@ const legalLinks = [
 
 export default function Footer() {
   return (
-    <footer style={{ background: "var(--ink)" }} className="px-8 md:px-16 pt-14 pb-7">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10 pb-10" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+    <footer style={{ background: "var(--ink)" }} className="px-16 pt-16 pb-7">
+      <div
+        className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10 pb-10"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      >
         {/* Brand col */}
         <div>
-          <div className="mb-4">
+          <div style={{ marginBottom: 20 }}>
             <Image
               src="/logo.png"
               alt="VitalStats"
-              width={130}
-              height={44}
-              className="h-9 w-auto object-contain"
-              style={{ filter: "brightness(0) invert(1) opacity(0.75)" }}
+              width={160}
+              height={52}
+              className="w-auto object-contain"
+              style={{
+                height: 52,
+                filter: "brightness(0) invert(1) opacity(0.8)",
+              }}
             />
           </div>
-          <p className="text-[12px] leading-[1.75] font-light mb-5" style={{ color: "rgba(255,255,255,0.38)", maxWidth: 240 }}>
-            Precision Wellness for Body & Skin. Medically guided treatments and premium skincare in the Philippines.
+          <p
+            style={{
+              fontSize: 11,
+              lineHeight: 1.8,
+              fontWeight: 400,
+              color: "rgba(255,255,255,0.35)",
+              maxWidth: 240,
+              marginBottom: 20,
+            }}
+          >
+            Precision Wellness for Body &amp; Skin. Medically guided treatments
+            and premium skincare in the Philippines.
           </p>
           <div className="flex flex-col gap-2">
             <a
               href="https://facebook.com/vitalstatwellness"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] transition-colors duration-200"
-              style={{ color: "var(--teal-light)" }}
+              className="text-[11px] transition-colors duration-200"
+              style={{ color: "var(--teal-light)", textDecoration: "none" }}
             >
-              📘 facebook.com/vitalstatwellness
+              facebook.com/vitalstatwellness
             </a>
             <a
               href="tel:09278608705"
-              className="text-[12px] transition-colors duration-200"
-              style={{ color: "var(--teal-light)" }}
+              className="text-[11px] transition-colors duration-200"
+              style={{ color: "var(--teal-light)", textDecoration: "none" }}
             >
-              📞 09278608705
+              09278608705
             </a>
           </div>
         </div>
 
         {/* Products */}
         <div>
-          <div className="text-[10px] tracking-[0.16em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.28)" }}>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.22)",
+              marginBottom: 20,
+            }}
+          >
             Products
           </div>
           <ul className="flex flex-col gap-3 list-none">
             {productLinks.map((l) => (
               <li key={l.label}>
-                <Link href={l.href} className="text-[12px] font-light transition-colors duration-200" style={{ color: "rgba(255,255,255,0.5)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal-light)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+                <Link
+                  href={l.href}
+                  className="text-[12px] font-light transition-colors duration-200"
+                  style={{
+                    color: "rgba(255,255,255,0.45)",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--teal-light)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+                  }
                 >
                   {l.label}
                 </Link>
@@ -82,15 +117,34 @@ export default function Footer() {
 
         {/* Company */}
         <div>
-          <div className="text-[10px] tracking-[0.16em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.28)" }}>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.22)",
+              marginBottom: 20,
+            }}
+          >
             Company
           </div>
           <ul className="flex flex-col gap-3 list-none">
             {companyLinks.map((l) => (
               <li key={l.label}>
-                <Link href={l.href} className="text-[12px] font-light transition-colors duration-200" style={{ color: "rgba(255,255,255,0.5)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal-light)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+                <Link
+                  href={l.href}
+                  className="text-[12px] font-light transition-colors duration-200"
+                  style={{
+                    color: "rgba(255,255,255,0.45)",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--teal-light)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+                  }
                 >
                   {l.label}
                 </Link>
@@ -101,15 +155,34 @@ export default function Footer() {
 
         {/* Legal */}
         <div>
-          <div className="text-[10px] tracking-[0.16em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.28)" }}>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.22)",
+              marginBottom: 20,
+            }}
+          >
             Legal
           </div>
           <ul className="flex flex-col gap-3 list-none">
             {legalLinks.map((l) => (
               <li key={l.label}>
-                <Link href={l.href} className="text-[12px] font-light transition-colors duration-200" style={{ color: "rgba(255,255,255,0.5)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal-light)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+                <Link
+                  href={l.href}
+                  className="text-[12px] font-light transition-colors duration-200"
+                  style={{
+                    color: "rgba(255,255,255,0.45)",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--teal-light)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+                  }
                 >
                   {l.label}
                 </Link>
@@ -121,11 +194,27 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-        <p className="text-[11px] tracking-[0.04em]" style={{ color: "rgba(255,255,255,0.22)" }}>
+        <p
+          style={{
+            fontSize: 10,
+            letterSpacing: "0.04em",
+            color: "rgba(255,255,255,0.22)",
+          }}
+        >
           © {new Date().getFullYear()} VitalStats. All rights reserved.
         </p>
-        <div className="flex items-center gap-2 text-[10px] tracking-[0.1em] uppercase" style={{ color: "rgba(255,255,255,0.3)" }}>
-          <span className="w-[5px] h-[5px] rounded-full inline-block" style={{ background: "var(--teal-light)" }} />
+        <div
+          className="flex items-center gap-2 text-[9px] tracking-[0.12em] uppercase"
+          style={{ color: "rgba(255,255,255,0.25)" }}
+        >
+          <span
+            className="rounded-full inline-block"
+            style={{
+              width: 5,
+              height: 5,
+              background: "var(--teal-light)",
+            }}
+          />
           Philippine FDA–Approved · Clinically Guided
         </div>
       </div>

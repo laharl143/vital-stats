@@ -7,32 +7,61 @@
   --teal-light:  #5CAFA0;
   --teal-pale:   #EAF5F2;
   --sage:        #6B8F7E;
-  --cream:       #F8FAF9;
-  --ink:         #141A18;
+  --cream:       #F7F9F8;
+  --ink:         #0D1512;
+  --ink-mid:     #1E2B27;
   --ink-muted:   #4A5754;
   --ink-faint:   #8FA39D;
-  --dna-blue:    #B8D4E8;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: var(--cream);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Playfair Display', serif;
 }
 
+/* Eyebrow label */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.eyebrow::before {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--teal);
+  flex-shrink: 0;
+}
+.eyebrow.light { color: var(--teal-light); }
+.eyebrow.light::before { background: var(--teal-light); }
+
+/* Animations */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-up { animation: fadeUp 0.55s ease both; }
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
+.animate-fade-up  { animation: fadeUp 0.65s cubic-bezier(0.22,1,0.36,1) both; }
+.delay-100 { animation-delay: 0.05s; }
+.delay-200 { animation-delay: 0.15s; }
+.delay-300 { animation-delay: 0.25s; }
+.delay-400 { animation-delay: 0.35s; }
+.delay-500 { animation-delay: 0.45s; }
+
+@keyframes scrollPulse {
+  0%,100% { opacity: 0.4; transform: scaleY(1); }
+  50%      { opacity: 1;   transform: scaleY(0.5); }
+}

@@ -8,6 +8,9 @@ DB password: Z5MFOQShxGi2LmzD
 Email: admin@vitalstats.com
 Password: vitalstats2026
 
+Hostinger:
+user: josh.pineda819@gmail.com
+pw: _"-t4d:6sBL%@ZV
 
 
 Useful commands:
