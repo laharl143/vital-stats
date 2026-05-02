@@ -7,58 +7,69 @@ const categories = [
     num: "01",
     tag: "Injectable",
     name: "Weight Management",
-    desc: "Tirzepatide — once-weekly GLP-1/GIP dual receptor therapy for lasting weight loss and blood sugar control.",
+    desc: "Tirzepatide GLP-1/GIP dual receptor therapy for lasting weight loss and metabolic control.",
     href: "/products?category=WEIGHT_MANAGEMENT",
   },
   {
     num: "02",
     tag: "Injectable",
     name: "Recovery & Anti-Aging",
-    desc: "NAD+ and GHK-Cu peptide therapies for cellular repair, energy, and skin regeneration.",
+    desc: "NAD+ and GHK-Cu peptide therapies for cellular repair, energy, and tissue regeneration.",
     href: "/products?category=RECOVERY_ANTI_AGING",
   },
   {
     num: "03",
     tag: "Topical",
     name: "Skin Care Line",
-    desc: "The Luméla collection — FDA-approved brightening cleansers, serums, toners, and moisturizers.",
+    desc: "The Luméla collection — FDA-approved brightening cleansers, serums, toners, moisturizers.",
     href: "/products?category=SKIN_CARE",
   },
   {
     num: "04",
     tag: "Service",
     name: "Medical Consultation",
-    desc: "Personalized program design with ongoing monitoring from our licensed clinical team.",
+    desc: "Personalized program design with ongoing clinical monitoring from licensed professionals.",
     href: "/products?category=MEDICAL_CONSULTATION",
   },
 ];
 
 export default function Categories() {
   return (
-    <section className="py-24 px-8 md:px-16" style={{ background: "#ffffff" }}>
+    <section
+      id="products"
+      className="py-24"
+      style={{ background: "#ffffff", padding: "96px 64px" }}
+    >
       {/* Header */}
-      <div className="flex items-end justify-between mb-14">
+      <div
+        className="flex items-end justify-between"
+        style={{ marginBottom: 56 }}
+      >
         <div>
-          <div
-            className="flex items-center gap-3 text-[11px] font-medium tracking-[0.18em] uppercase mb-3"
-            style={{ color: "var(--teal)" }}
-          >
-            <span className="block w-6 h-px" style={{ background: "var(--teal)" }} />
+          <div className="eyebrow" style={{ marginBottom: 16 }}>
             What we offer
           </div>
           <h2
-            className="font-display font-light leading-[1.15]"
-            style={{ fontSize: "clamp(32px, 3vw, 40px)", color: "var(--ink)" }}
+            className="font-display"
+            style={{
+              fontSize: "clamp(32px, 3vw, 42px)",
+              fontWeight: 400,
+              lineHeight: 1.12,
+              color: "var(--ink)",
+            }}
           >
-            Four pathways to<br />your best self
+            Four pathways to
+            <br />
+            your best self
           </h2>
         </div>
         <Link
           href="/products"
-          className="hidden md:inline-flex text-[12px] font-medium tracking-[0.08em] uppercase pb-1 transition-all duration-200"
+          className="hidden md:inline-flex text-[11px] font-medium tracking-[0.1em] uppercase pb-1 transition-opacity duration-200 hover:opacity-70"
           style={{
             color: "var(--teal)",
             borderBottom: "1px solid var(--teal)",
+            textDecoration: "none",
           }}
         >
           View all programs →
@@ -71,8 +82,13 @@ export default function Categories() {
           <Link
             key={cat.num}
             href={cat.href}
-            className="group flex flex-col justify-between p-9 min-h-[270px] transition-colors duration-300 cursor-pointer no-underline"
-            style={{ background: "var(--cream)" }}
+            className="group flex flex-col justify-between no-underline transition-colors duration-300 cursor-pointer"
+            style={{
+              padding: "36px 32px",
+              minHeight: 280,
+              background: "var(--cream)",
+              textDecoration: "none",
+            }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.background = "var(--teal-pale)")
             }
@@ -83,18 +99,28 @@ export default function Categories() {
             <div>
               {/* Big number */}
               <div
-                className="font-display font-light leading-none mb-5"
-                style={{ fontSize: 56, color: "rgba(46,139,114,0.1)" }}
+                className="font-display"
+                style={{
+                  fontSize: 64,
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  color: "rgba(46,139,114,0.08)",
+                  marginBottom: 20,
+                  letterSpacing: "-0.02em",
+                }}
               >
                 {cat.num}
               </div>
 
               {/* Tag */}
               <span
-                className="inline-block text-[9px] tracking-[0.12em] uppercase px-[9px] py-[3px] rounded-[2px] mb-3"
+                className="inline-block text-[9px] tracking-[0.14em] uppercase mb-3"
                 style={{
+                  fontWeight: 500,
                   color: "var(--teal)",
-                  border: "1px solid rgba(46,139,114,0.3)",
+                  border: "1px solid rgba(46,139,114,0.25)",
+                  borderRadius: 2,
+                  padding: "3px 9px",
                 }}
               >
                 {cat.tag}
@@ -102,16 +128,26 @@ export default function Categories() {
 
               {/* Name */}
               <div
-                className="font-display font-normal text-[21px] leading-[1.2] mb-3"
-                style={{ color: "var(--ink)" }}
+                className="font-display"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 400,
+                  lineHeight: 1.2,
+                  color: "var(--ink)",
+                  marginBottom: 10,
+                }}
               >
                 {cat.name}
               </div>
 
               {/* Desc */}
               <p
-                className="text-[12px] leading-[1.65] font-light"
-                style={{ color: "var(--ink-muted)" }}
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.7,
+                  fontWeight: 400,
+                  color: "var(--ink-muted)",
+                }}
               >
                 {cat.desc}
               </p>
