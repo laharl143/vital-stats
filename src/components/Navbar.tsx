@@ -79,11 +79,11 @@ export default function Navbar() {
 
       {/* CTA */}
       <Link
-        href="/contact"
+        href="/book-consult"
         className="hidden md:inline-block text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-[10px] rounded-[2px] transition-opacity duration-200 hover:opacity-85"
         style={{ background: "var(--teal)" }}
       >
-        Inquire Now
+        Book a Consult
       </Link>
 
       {/* Mobile hamburger */}
@@ -138,12 +138,12 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            href="/contact"
+            href="/book-consult"
             className="mx-8 my-4 text-center text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[2px]"
             style={{ background: "var(--teal)" }}
             onClick={() => setMenuOpen(false)}
           >
-            Inquire Now
+            Book a Consult
           </Link>
         </div>
       )}
