@@ -73,6 +73,7 @@ export default function BookPage() {
       }
 
       setStatus("success");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setStatus("error");
     }
@@ -126,20 +127,74 @@ export default function BookPage() {
           {/* Form */}
           <div className="md:col-span-2">
             {status === "success" ? (
-              <div className="flex flex-col items-center justify-center gap-5 py-20 px-10 rounded-[6px] text-center"
+              <div className="flex flex-col rounded-[6px] overflow-hidden"
                 style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
-                <div className="text-[48px]">✅</div>
-                <h2 className="font-display font-light text-[32px]" style={{ color: "var(--ink)" }}>
-                  Form submitted!
-                </h2>
-                <p className="text-[14px] leading-[1.75] font-light max-w-[380px]" style={{ color: "var(--ink-muted)" }}>
-                  Thank you for completing your Patient Medical History Form. Our clinical team will review your information and reach out shortly.
-                </p>
-                <button onClick={() => setStatus("idle")}
-                  className="text-[12px] font-medium tracking-[0.06em] uppercase px-8 py-[13px] rounded-[3px] text-white mt-2"
-                  style={{ background: "var(--teal)" }}>
-                  Submit another response
-                </button>
+                {/* Top accent bar */}
+                <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--teal-deep), var(--teal-light))" }} />
+                
+                <div className="flex flex-col gap-6 p-10 md:p-14">
+                  {/* Icon + heading */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 flex items-center justify-center rounded-full"
+                      style={{ width: 52, height: 52, background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.2)" }}>
+                      <span style={{ fontSize: 22 }}>✓</span>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-medium tracking-[0.18em] uppercase mb-1" style={{ color: "var(--teal)" }}>
+                        Submission confirmed
+                      </div>
+                      <h2 className="font-display font-light text-[28px] leading-[1.1]" style={{ color: "var(--ink)" }}>
+                        Your form has been received.
+                      </h2>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }} />
+
+                  {/* Message */}
+                  <p className="text-[14px] leading-[1.8]" style={{ color: "var(--ink-muted)", maxWidth: 480 }}>
+                    Thank you for completing your Patient Medical History Form. Our licensed clinical team will review your information and reach out to you within <strong>24 hours</strong> via your provided contact details.
+                  </p>
+
+                  {/* What happens next */}
+                  <div className="p-5 rounded-[4px]" style={{ background: "var(--cream)" }}>
+                    <div className="text-[10px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "var(--teal)" }}>
+                      What happens next
+                    </div>
+                    <ul className="flex flex-col gap-2">
+                      {[
+                        "Our clinical team reviews your medical history",
+                        "We will contact you to discuss your personalized program",
+                        "A tailored wellness plan will be designed for you",
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-3 text-[12px]" style={{ color: "var(--ink-muted)" }}>
+                          <span style={{ color: "var(--teal)", marginTop: 1 }}>✓</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* PHI reminder */}
+                  <div className="flex items-start gap-3 p-4 rounded-[4px]"
+                    style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
+                    <span>🔒</span>
+                    <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
+                      Your submission is treated as <strong>Protected Health Information (PHI)</strong> — kept strictly confidential and accessible only to our licensed clinical team.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setStatus("idle");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[13px] rounded-[3px] text-white self-start mt-2"
+                    style={{ background: "var(--teal)" }}>
+                    Submit another response
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-8 rounded-[6px]"
@@ -154,6 +209,13 @@ export default function BookPage() {
                   <p className="text-[12px] mt-2" style={{ color: "var(--ink-faint)" }}>
                     * Indicates required field. Please ensure all details are accurate.
                   </p>
+                  <div className="flex items-start gap-3 p-4 rounded-[4px] mt-4"
+                    style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
+                    <span>🔒</span>
+                    <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
+                      Your information is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality — accessible only to our licensed clinical team, never shared with third parties.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Demographics */}
@@ -320,6 +382,14 @@ export default function BookPage() {
                   </div>
                 )}
 
+                <div className="flex items-start gap-3 p-4 rounded-[4px]"
+                  style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
+                  <span>🔒</span>
+                  <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
+                    Your information is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality — accessible only to our licensed clinical team, never shared with third parties.
+                  </p>
+                </div>
+
                 <button type="submit" disabled={status === "loading"}
                   className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[14px] rounded-[3px] text-white transition-all duration-200 self-start"
                   style={{ background: status === "loading" ? "var(--teal-light)" : "var(--teal)", cursor: status === "loading" ? "not-allowed" : "pointer" }}>
@@ -358,6 +428,19 @@ export default function BookPage() {
               style={{ background: "#FFF8E1", border: "1px solid rgba(245,127,23,0.2)" }}>
               <p className="text-[11px] leading-[1.7]" style={{ color: "#5D4037" }}>
                 ⚠️ For medical emergencies, please contact your local healthcare provider or emergency services. VitalStats provides wellness consultations and is not a substitute for emergency medical care.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-[6px]"
+              style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span>🔒</span>
+                <div className="text-[11px] font-semibold tracking-[0.1em] uppercase" style={{ color: "var(--teal-dark)" }}>
+                  Your Data is Protected
+                </div>
+              </div>
+              <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
+                All information submitted through this form is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality. Your data is securely stored and accessible only to our licensed clinical team — never shared with third parties.
               </p>
             </div>
           </div>

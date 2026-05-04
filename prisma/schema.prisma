@@ -244,3 +244,53 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+// ─────────────────────────────────────────
+// MEDICAL HISTORY (book-consult form)
+// ─────────────────────────────────────────
+
+model MedicalHistory {
+  id            String   @id @default(cuid())
+
+  // Demographics
+  fullName      String
+  dateOfBirth   String   // stored as MM/DD/YYYY string
+  gender        String
+  phone         String?
+  email         String?
+  height        String?  // in cm
+  weight        String?  // in kg
+
+  // Medical History
+  mtc           String   // Yes / No
+  pancreatitis  String
+  gallbladder   String
+  gi            String
+  diabetes      String
+  pregnant      String
+  surgeries     String?
+  medications   String?
+  allergies     String?
+
+  // Consent
+  consent1      Boolean  @default(false)
+  consent2      Boolean  @default(false)
+  consent3      Boolean  @default(false)
+
+  // Meta
+  status        MedicalHistoryStatus @default(NEW)
+  adminNotes    String?
+  ipAddress     String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum MedicalHistoryStatus {
+  NEW
+  REVIEWED
+  CONTACTED
+  CLOSED
+}

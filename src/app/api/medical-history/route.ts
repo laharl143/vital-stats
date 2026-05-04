@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxi56o7zn0-HIygaDaXNgJ7cMB_bmznow78a78mEYhco6s3Jb0N66HB9OF8fKSGYnLr/exec";
-
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
@@ -12,8 +10,7 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ??
       "unknown";
 
-    // Save to DB
-    await prisma.medicalHistory.create({
+    const record = await prisma.medicalHistory.create({
       data: {
         fullName: data.fullName ?? "",
         dateOfBirth: `${data.dobMonth}/${data.dobDay}/${data.dobYear}`,
@@ -38,26 +35,35 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Also send to Google Sheets
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSfG9v4F_HcDG-ilpXhsjR3myFdBgpvNGfk45DFeB2tMVxZnIg/viewform",
-        "Origin": "https://docs.google.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-      body: JSON.stringify(data),
-      redirect: "follow",
+    return NextResponse.json({ success: true, id: record.id }, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/medical-history]", error);
+    return NextResponse.json({ success: false, error: "Failed to save medical history" }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "20");
+    const skip = (page - 1) * limit;
+
+    const [records, total] = await prisma.$transaction([
+      prisma.medicalHistory.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.medicalHistory.count(),
+    ]);
+
+    return NextResponse.json({
+      data: records,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
-
-    const responseText = await response.text();
-    console.log("Apps Script response status:", response.status);
-    console.log("Apps Script response body:", responseText);
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Form submission error:", err);
-    return NextResponse.json({ success: false }, { status: 500 });
+  } catch (error) {
+    console.error("[GET /api/medical-history]", error);
+    return NextResponse.json({ success: false, error: "Failed to fetch records" }, { status: 500 });
   }
 }
