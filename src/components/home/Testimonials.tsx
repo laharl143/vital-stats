@@ -2,7 +2,7 @@
 
 const testimonials = [
   {
-    name: "Maria S.",
+    name: "John Snow",
     program: "Weight Management",
     result: "−14 lbs in 8 weeks",
     quote:
@@ -16,7 +16,7 @@ const testimonials = [
       "As a physician myself, I was skeptical. The clinical oversight and verified sourcing made me confident. The results on my cellular energy levels were remarkable.",
   },
   {
-    name: "Angela T.",
+    name: "Ma. Kyla Tapalla",
     program: "Luméla Skin Care",
     result: "6-week protocol",
     quote:

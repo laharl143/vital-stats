@@ -5,16 +5,28 @@ import Link from "next/link";
 
 const faqs = [
   {
-    q: "Are these products available without a prescription?",
-    a: "Injectable products (Tirzepatide, NAD+, GHK-Cu) require medical supervision and are not sold over-the-counter. Our clinical team manages all prescriptions and oversight.",
+    q: "Is the Tirzepatide program doctor-guided?",
+    a: "Yes. Our Tirzepatide program is fully doctor-guided and focused on long-term results. This isn't a one-time service — we monitor your progress, adjust your plan when needed, and make sure you stay on track safely. You'll be guided every step of the way by an aesthetic doctor and a medical technologist specialized in weight management.",
   },
   {
-    q: "How do I know the products are authentic?",
-    a: "All products are sourced exclusively from verified pharmaceutical suppliers. Our skincare line holds Philippine FDA approval. We do not resell unverified or gray-market products.",
+    q: "How is Tirzepatide administered?",
+    a: "Tirzepatide is a once-weekly injection administered in the stomach area. It helps control appetite and supports metabolic balance — a next-level approach to weight management that is guided, structured, and built for real results. Note: Prescription only. Our licensed doctor will assess, guide, and provide prescriptions every step of your journey.",
+  },
+  {
+    q: "How do I know the products are authentic and safe?",
+    a: "Quality you can trust. All our products come from verified and thoroughly screened suppliers, with proper cold-chain handling to maintain product integrity and safety. Our skincare line also holds Philippine FDA approval. We do not resell unverified or gray-market products.",
+  },
+  {
+    q: "Why choose VitalStats for weight management?",
+    a: "Our team has been trained through multiple seminars in Tirzepatide-based weight management, with real experience guiding clients safely and effectively. We are led by an aesthetic doctor and a medical technologist specialized in weight management, with a focus on proper screening, monitoring, and consistent results.",
+  },
+  {
+    q: "Are these products available without a prescription?",
+    a: "Injectable products like Tirzepatide, NAD+, and GHK-Cu require medical supervision and are not sold over-the-counter. Our clinical team manages all prescriptions and oversight to ensure your safety throughout the program.",
   },
   {
     q: "How long before I see results?",
-    a: "Weight management clients typically see measurable results within 4–8 weeks. Skincare results appear within 3–6 weeks of consistent use. Peptide therapy timelines vary by protocol.",
+    a: "Weight management clients typically see measurable results within 4–8 weeks. Skincare results appear within 3–6 weeks of consistent use. Peptide therapy timelines vary by protocol and individual health profile.",
   },
   {
     q: "Can I start a program remotely?",
@@ -22,7 +34,7 @@ const faqs = [
   },
   {
     q: "What is the cost?",
-    a: "Pricing varies by product and program duration. Skincare products have fixed pricing. Injectable programs are priced on inquiry due to individualized dosing requirements.",
+    a: "Pricing varies by product and program duration. Skincare products have fixed pricing. Injectable programs are priced on inquiry due to individualized dosing requirements. Reach out to us directly for a personalized quote.",
   },
 ];
 
@@ -30,8 +42,8 @@ export default function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section style={{ background: "#ffffff", padding: "96px 64px" }}>
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-20">
+    <section className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24" style={{ background: "#ffffff" }}>
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-12 md:gap-20">
         {/* Left */}
         <div>
           <div className="eyebrow" style={{ marginBottom: 16 }}>
@@ -72,6 +84,29 @@ export default function FAQ() {
           >
             Contact us →
           </Link>
+
+          {/* CTA card */}
+          <div
+            className="mt-10 p-5 rounded-[4px]"
+            style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}
+          >
+            <div
+              className="text-[10px] font-semibold tracking-[0.16em] uppercase mb-2"
+              style={{ color: "var(--teal-dark)" }}
+            >
+              Ready to start?
+            </div>
+            <p className="text-[12px] leading-[1.7] mb-4" style={{ color: "var(--ink-muted)" }}>
+              Complete your Patient Medical History Form and our clinical team will design the right program for you.
+            </p>
+            <Link
+              href="/book-consult"
+              className="inline-block text-white text-[11px] font-medium tracking-[0.08em] uppercase px-5 py-[10px] rounded-[2px] transition-opacity duration-200 hover:opacity-85"
+              style={{ background: "var(--teal)" }}
+            >
+              Book a Consult →
+            </Link>
+          </div>
         </div>
 
         {/* Accordion */}
@@ -91,10 +126,11 @@ export default function FAQ() {
                 <span
                   style={{
                     fontSize: 14,
-                    fontWeight: 400,
-                    color: "var(--ink)",
+                    fontWeight: open === i ? 500 : 400,
+                    color: open === i ? "var(--teal)" : "var(--ink)",
                     paddingRight: 24,
                     lineHeight: 1.4,
+                    transition: "color 0.2s",
                   }}
                 >
                   {faq.q}
@@ -115,7 +151,7 @@ export default function FAQ() {
               <div
                 style={{
                   overflow: "hidden",
-                  maxHeight: open === i ? 200 : 0,
+                  maxHeight: open === i ? 400 : 0,
                   transition: "max-height 0.3s cubic-bezier(0.22,1,0.36,1)",
                 }}
               >

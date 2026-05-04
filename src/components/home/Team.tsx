@@ -2,20 +2,20 @@
 
 const team = [
   {
-    name: "Medical Director",
-    role: "MD, Internal Medicine",
-    note: "Oversees all injectable programs",
+    name: "Mary Kristine L. Duenas",
+    role: "MD, Aesthetic Medicine",
+    note: "Licensed physician overseeing all medical programs and prescriptions",
   },
   {
-    name: "Clinical Advisor",
-    role: "RN, Licensed Nurse",
-    note: "Program monitoring & support",
+    name: "Joshua Pineda",
+    role: "RMT, Medical Technologist",
+    note: "Specialized in weight management monitoring and client progress tracking",
   },
-  {
-    name: "Skincare Specialist",
-    role: "Medical Technologist",
-    note: "Luméla protocol design",
-  },
+  // {
+  //   name: "Skincare Specialist",
+  //   role: "Medical Technologist",
+  //   note: "Luméla protocol design",
+  // },
 ];
 
 export default function Team() {
