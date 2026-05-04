@@ -27,11 +27,12 @@ export default function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      style={{ background: "var(--cream)", padding: "96px 64px" }}
+      className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24"
+      style={{ background: "var(--cream)" }}
     >
-      <div className="flex gap-20">
+      <div className="flex flex-col md:flex-row md:gap-20">
         {/* Left label */}
-        <div style={{ flexShrink: 0, width: 220 }}>
+        <div className="mb-10 md:mb-0 md:flex-shrink-0 md:w-[220px]">
           <div className="eyebrow" style={{ marginBottom: 20 }}>
             Process
           </div>
@@ -63,15 +64,13 @@ export default function HowItWorks() {
         </div>
 
         {/* Steps */}
-        <div
-          className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-[2px]"
-        >
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-[2px]">
           {steps.map((s, i) => (
             <div
               key={s.step}
               className="group transition-all duration-200"
               style={{
-                padding: "36px 32px",
+                padding: "clamp(24px, 2.5vw, 36px) clamp(20px, 2vw, 32px)",
                 background: "#ffffff",
                 borderLeft: `2px solid ${i % 2 === 0 ? "var(--teal)" : "transparent"}`,
               }}
@@ -98,7 +97,7 @@ export default function HowItWorks() {
               <div
                 className="font-display"
                 style={{
-                  fontSize: 20,
+                  fontSize: "clamp(16px, 1.5vw, 20px)",
                   fontWeight: 400,
                   lineHeight: 1.2,
                   color: "var(--ink)",
@@ -109,7 +108,7 @@ export default function HowItWorks() {
               </div>
               <p
                 style={{
-                  fontSize: 12,
+                  fontSize: "clamp(12px, 1.1vw, 14px)",
                   lineHeight: 1.7,
                   fontWeight: 400,
                   color: "var(--ink-muted)",
