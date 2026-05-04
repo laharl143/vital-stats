@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 const navLinks = [
+  { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
   { label: "Programs", href: "/products#programs" },
   { label: "About", href: "/about" },
@@ -14,6 +16,8 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -21,17 +25,21 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const isSolid = scrolled || !isHome;
+
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between"
       style={{
         padding: "0 48px",
-        height: 64,
-        background: scrolled ? "rgba(247,249,248,0.97)" : "transparent",
-        backdropFilter: scrolled ? "blur(14px)" : "none",
-        borderBottom: scrolled
-          ? "1px solid rgba(46,139,114,0.1)"
+        height:57,
+        background: isSolid ? "rgba(247,249,248,0.55)" : "transparent",
+        backdropFilter: isSolid ? "blur(20px) saturate(180%)" : "none",
+        WebkitBackdropFilter: isSolid ? "blur(20px) saturate(180%)" : "none",
+        borderBottom: isSolid
+          ? "1px solid rgba(255,255,255,0.25)"
           : "1px solid transparent",
+        boxShadow: isSolid ? "0 2px 24px rgba(0,0,0,0.06)" : "none",
         transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)",
       }}
     >
@@ -40,14 +48,14 @@ export default function Navbar() {
         <Image
           src="/logo.png"
           alt="VitalStats"
-          width={140}
-          height={52}
+          width={130}
+          height={130}
           className="w-auto object-contain"
-          style={{ height: 52 }}
+          style={{ height: 130 }}
           priority
         />
       </Link>
-
+      
       {/* Desktop links */}
       <ul className="hidden md:flex gap-9 list-none">
         {navLinks.map((link) => (
@@ -109,7 +117,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div
-          className="absolute top-[64px] left-0 right-0 flex flex-col gap-0 md:hidden"
+          className="absolute top-[80px] left-0 right-0 flex flex-col gap-0 md:hidden"
           style={{
             background: "rgba(247,249,248,0.98)",
             borderBottom: "1px solid rgba(46,139,114,0.1)",
