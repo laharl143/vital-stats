@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
       redirect: "follow",
     });
 
+    const responseText = await response.text();
     console.log("Apps Script response status:", response.status);
+    console.log("Apps Script response body:", responseText);
 
     return NextResponse.json({ success: true });
   } catch (err) {
