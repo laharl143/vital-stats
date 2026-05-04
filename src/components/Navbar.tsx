@@ -31,7 +31,7 @@ export default function Navbar() {
     <nav
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between"
       style={{
-        padding: "0 48px",
+        padding: "0 clamp(10px, 4vw, 60px)",
         height:57,
         background: isSolid ? "rgba(247,249,248,0.55)" : "transparent",
         backdropFilter: isSolid ? "blur(20px) saturate(180%)" : "none",
@@ -51,7 +51,7 @@ export default function Navbar() {
           width={130}
           height={130}
           className="w-auto object-contain"
-          style={{ height: 130 }}
+          style={{ height: "clamp(100px, 8vw, 130px)" }}
           priority
         />
       </Link>
