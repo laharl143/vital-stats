@@ -4,9 +4,6 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const GOOGLE_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSfG9v4F_HcDG-ilpXhsjR3myFdBgpvNGfk45DFeB2tMVxZnIg/formResponse";
-
 const inputStyle = {
   width: "100%",
   padding: "12px 16px",
@@ -63,38 +60,18 @@ export default function BookPage() {
     e.preventDefault();
     setStatus("loading");
 
-    const body = new URLSearchParams({
-      "entry.1151531400": form.fullName,
-      "entry.1106426692_year": form.dobYear,
-      "entry.1106426692_month": form.dobMonth,
-      "entry.1106426692_day": form.dobDay,
-      "entry.1567390701": form.gender,
-      "entry.2144155902": form.phone,
-      "entry.1444703762": form.email,
-      "entry.426170579": form.height,
-      "entry.29583508": form.weight,
-      "entry.1830349769": form.mtc,
-      "entry.1585373660": form.pancreatitis,
-      "entry.1407045507": form.gallbladder,
-      "entry.1126152943": form.gi,
-      "entry.893090830": form.diabetes,
-      "entry.1469985804": form.pregnant,
-      "entry.1633041313": form.surgeries,
-      "entry.1809182137": form.medications,
-      "entry.266846779": form.allergies,
-    });
-
-    if (form.consent1) body.append("entry.882926976", "I acknowledge the importance of medical supervision during GLP-1 treatment");
-    if (form.consent2) body.append("entry.882926976", "I understand this medication may have side effects such as nausea, constipation, or risk of thyroid tumors");
-    if (form.consent3) body.append("entry.882926976", "I certify that the information provided above is accurate to the best of my knowledge.");
-
     try {
-      await fetch(GOOGLE_FORM_URL, {
+      const res = await fetch("/api/submit-form", {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
+
+      if (!res.ok) {
+        setStatus("error");
+        return;
+      }
+
       setStatus("success");
     } catch {
       setStatus("error");
