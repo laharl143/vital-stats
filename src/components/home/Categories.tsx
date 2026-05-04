@@ -128,8 +128,8 @@ export default function Categories() {
 
               {/* Name */}
               <div
-                className="font-display"
                 style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
                   fontSize: 22,
                   fontWeight: 400,
                   lineHeight: 1.2,
