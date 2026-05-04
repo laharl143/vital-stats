@@ -10,6 +10,8 @@ export async function POST(req: NextRequest) {
     const body = new URLSearchParams();
     body.append("fvv", "1");
     body.append("pageHistory", "0");
+    body.append("entry.1151531400_sentinel", "");
+    body.append("emailAddress", data.email ?? "");
     body.append("entry.1151531400", data.fullName ?? "");
     body.append("entry.1106426692_year", data.dobYear ?? "");
     body.append("entry.1106426692_month", data.dobMonth ?? "");
