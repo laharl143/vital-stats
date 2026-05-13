@@ -1,10 +1,10 @@
 "use client";
 
 const badges = [
-  { label: "Philippine FDA–Approved", sub: "Skincare line reviewed & certified" },
   { label: "Verified Suppliers", sub: "Authentic pharmaceutical sources" },
   { label: "Medically Supervised", sub: "Licensed professional oversight" },
   { label: "Clinically Guided", sub: "Safe & responsible product use" },
+  { label: "Cold-Chain Handling", sub: "Product integrity maintained" },
 ];
 
 export default function TrustBar() {

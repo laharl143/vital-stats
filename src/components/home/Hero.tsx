@@ -6,14 +6,14 @@ import Link from "next/link";
 const stats = [
   { value: "11+", label: "Products" },
   { value: "4", label: "Programs" },
-  { value: "FDA", label: "Approved" },
   { value: "MD", label: "Supervised" },
+  { value: "PH", label: "Based" },
 ];
 
 const trustItems = [
-  "Philippine FDA–Approved",
   "Medically Supervised",
   "Licensed Professionals",
+  "Verified Suppliers",
 ];
 
 export default function Hero() {

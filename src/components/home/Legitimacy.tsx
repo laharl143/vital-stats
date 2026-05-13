@@ -3,10 +3,10 @@
 import Link from "next/link";
 
 const badges = [
-  {
-    title: "Philippine FDA–Approved",
-    desc: "Our skincare line is reviewed and approved by the Philippine Food and Drug Administration for safety and efficacy.",
-  },
+  // {
+  //   title: "Philippine FDA–Approved",
+  //   desc: "Our skincare line is reviewed and approved by the Philippine Food and Drug Administration for safety and efficacy.",
+  // },
   {
     title: "Clinically Guided",
     desc: "Every product is offered alongside proper professional guidance for safe, responsible, and effective use.",
