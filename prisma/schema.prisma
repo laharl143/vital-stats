@@ -259,6 +259,13 @@ model MedicalHistory {
   email         String?
   height        String?  // in cm
   weight        String?  // in kg
+  waistCircumference String?
+  smokingStatus      String?
+  drinkingFrequency  String?
+
+  // BMI
+  bmi           String?
+  bmiCategory   String?
 
   // Medical History
   mtc           String   // Yes / No

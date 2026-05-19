@@ -29,6 +29,11 @@ const labelStyle = {
 
 export default function BookPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("cm");
+  const [heightFeet, setHeightFeet] = useState("");
+  const [heightInches, setHeightInches] = useState("");
+
+  
   const [form, setForm] = useState({
     fullName: "",
     dobYear: "",
@@ -59,6 +64,32 @@ export default function BookPage() {
   const set = (field: string, value: string | boolean) =>
     setForm((p) => ({ ...p, [field]: value }));
 
+  const getBMICategory = (bmi: number): { label: string; color: string } => {
+    if (bmi < 18.5) return { label: "Underweight", color: "#3B82F6" };
+    if (bmi < 23) return { label: "Normal", color: "#22C55E" };
+    if (bmi < 25) return { label: "Overweight", color: "#F59E0B" };
+    if (bmi < 30) return { label: "Obese Class I", color: "#F97316" };
+    return { label: "Obese Class II", color: "#EF4444" };
+  };
+
+  const heightInCm = heightUnit === "ftIn"
+    ? (parseFloat(heightFeet || "0") * 30.48) + (parseFloat(heightInches || "0") * 2.54)
+    : parseFloat(form.height || "0");
+
+  const convertedHeightCm = heightUnit === "ftIn"
+    ? Math.round(heightInCm).toString()
+    : form.height;
+
+  const bmiValue = heightInCm > 0 && parseFloat(form.weight) > 0
+    ? parseFloat((parseFloat(form.weight) / Math.pow(heightInCm / 100, 2)).toFixed(1))
+    : null;
+
+  const bmiCategory = bmiValue ? getBMICategory(bmiValue) : null;
+
+  // const convertedHeightCm = heightUnit === "ftIn"
+  //   ? Math.round((parseFloat(heightFeet || "0") * 30.48) + (parseFloat(heightInches || "0") * 2.54)).toString()
+  //   : form.height;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
@@ -67,7 +98,12 @@ export default function BookPage() {
       const res = await fetch("/api/submit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ 
+          ...form, 
+          height: convertedHeightCm,
+          bmi: bmiValue?.toString() ?? "",
+          bmiCategory: bmiCategory?.label ?? "",
+        }),
       });
 
       if (!res.ok) {
@@ -299,17 +335,68 @@ export default function BookPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                       <div>
-                        <label style={labelStyle}>Height (in cm) *</label>
-                        <input type="number" required value={form.height}
-                          onChange={(e) => set("height", e.target.value)}
-                          placeholder="e.g. 160" style={inputStyle}
-                          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        {/* Height label + unit toggle */}
+                        <div className="flex items-center justify-between mb-2">
+                          <label style={{ ...labelStyle, marginBottom: 0 }}>Height *</label>
+                          <div className="flex rounded-[3px] overflow-hidden"
+                            style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
+                            {(["cm", "ft/in"] as const).map((unit) => (
+                              <button key={unit} type="button"
+                                onClick={() => setHeightUnit(unit === "ft/in" ? "ftIn" : "cm")}
+                                className="px-3 py-1 transition-all duration-150"
+                                style={{
+                                  background: (unit === "ft/in" ? heightUnit === "ftIn" : heightUnit === "cm") ? "var(--teal)" : "#fff",
+                                  color: (unit === "ft/in" ? heightUnit === "ftIn" : heightUnit === "cm") ? "#fff" : "var(--ink-muted)",
+                                  fontWeight: 500,
+                                  letterSpacing: "0.06em",
+                                  cursor: "pointer",
+                                  border: "none",
+                                }}>
+                                {unit}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {heightUnit === "cm" ? (
+                          <input type="number" required value={form.height}
+                            onChange={(e) => set("height", e.target.value)}
+                            placeholder="e.g. 160" style={inputStyle}
+                            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        ) : (
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <input type="number" required value={heightFeet}
+                                onChange={(e) => setHeightFeet(e.target.value)}
+                                placeholder="ft" style={inputStyle}
+                                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                              <div className="text-[10px] mt-1 text-center" style={{ color: "var(--ink-faint)" }}>feet</div>
+                            </div>
+                            <div className="flex-1">
+                              <input type="number" required value={heightInches}
+                                onChange={(e) => setHeightInches(e.target.value)}
+                                placeholder="in" min="0" max="11" style={inputStyle}
+                                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                              <div className="text-[10px] mt-1 text-center" style={{ color: "var(--ink-faint)" }}>inches</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Show converted cm when using ft/in */}
+                        {heightUnit === "ftIn" && heightFeet && (
+                          <p className="text-[11px] mt-2" style={{ color: "var(--teal)" }}>
+                            ≈ {convertedHeightCm} cm
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label style={labelStyle}>Current Weight (in kg) *</label>
+                        <div style={{ height: 8 }} /> {/* spacer to match height toggle */}
                         <input type="number" required value={form.weight}
                           onChange={(e) => set("weight", e.target.value)}
                           placeholder="e.g. 65" style={inputStyle}
@@ -317,6 +404,43 @@ export default function BookPage() {
                           onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
                       </div>
                     </div>
+
+                    {/* BMI Result */}
+                    {bmiValue && bmiCategory && (
+                      <div className="p-4 rounded-[4px]"
+                        style={{ background: "var(--cream)", border: "1px solid rgba(0,0,0,0.07)" }}>
+                        <div className="text-[10px] font-semibold tracking-[0.16em] uppercase mb-2"
+                          style={{ color: "var(--ink-faint)" }}>
+                          BMI Result (Auto-calculated)
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="font-display text-[36px]" style={{ color: "var(--ink)", lineHeight: 1 }}>
+                            {bmiValue}
+                          </div>
+                          <div>
+                            <div className="text-[13px] font-medium" style={{ color: bmiCategory.color }}>
+                              {bmiCategory.label}
+                            </div>
+                            <div className="text-[11px]" style={{ color: "var(--ink-faint)" }}>
+                              Based on Asian BMI standards
+                            </div>
+                          </div>
+                        </div>
+                        {/* BMI bar */}
+                        <div className="mt-3 rounded-full overflow-hidden" style={{ height: 6, background: "rgba(0,0,0,0.08)" }}>
+                          <div className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.min((bmiValue / 40) * 100, 100)}%`,
+                              background: bmiCategory.color,
+                            }} />
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          {["18.5", "23", "25", "30"].map((v) => (
+                            <div key={v} className="text-[9px]" style={{ color: "var(--ink-faint)" }}>{v}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label style={labelStyle}>Waist Circumference (in cm)</label>
