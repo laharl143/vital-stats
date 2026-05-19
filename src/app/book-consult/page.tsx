@@ -29,7 +29,7 @@ const labelStyle = {
 
 export default function BookPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("cm");
+  const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("ftIn");
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
@@ -349,7 +349,7 @@ export default function BookPage() {
                           <label style={{ ...labelStyle, marginBottom: 0 }}>Height *</label>
                           <div className="flex rounded-[3px] overflow-hidden"
                             style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
-                            {(["cm", "ft/in"] as const).map((unit) => (
+                            {(["ft/in", "cm"] as const).map((unit) => (
                               <button key={unit} type="button"
                                 onClick={() => setHeightUnit(unit === "ft/in" ? "ftIn" : "cm")}
                                 className="px-3 py-1 transition-all duration-150"
@@ -424,19 +424,27 @@ export default function BookPage() {
                           </div>
                         </div>
 
-                        {weightUnit === "kg" ? (
-                          <input type="number" required value={form.weight}
-                            onChange={(e) => set("weight", e.target.value)}
-                            placeholder="e.g. 65" style={inputStyle}
-                            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-                        ) : (
-                          <input type="number" required value={weightLbs}
-                            onChange={(e) => setWeightLbs(e.target.value)}
-                            placeholder="e.g. 143" style={inputStyle}
-                            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-                        )}
+                        <div className="relative">
+                          {weightUnit === "kg" ? (
+                            <input type="number" required value={form.weight}
+                              onChange={(e) => set("weight", e.target.value)}
+                              placeholder="e.g. 65"
+                              style={{ ...inputStyle, paddingRight: 48 }}
+                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          ) : (
+                            <input type="number" required value={weightLbs}
+                              onChange={(e) => setWeightLbs(e.target.value)}
+                              placeholder="e.g. 143"
+                              style={{ ...inputStyle, paddingRight: 48 }}
+                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          )}
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
+                            style={{ color: "var(--ink-faint)", pointerEvents: "none" }}>
+                            {weightUnit}
+                          </span>
+                        </div>
 
                         {weightUnit === "lbs" && weightLbs && (
                           <p className="text-[11px] mt-2" style={{ color: "var(--teal)" }}>
