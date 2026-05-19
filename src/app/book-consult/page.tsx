@@ -32,6 +32,8 @@ export default function BookPage() {
   const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("cm");
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
+  const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
+  const [weightLbs, setWeightLbs] = useState("");
 
   
   const [form, setForm] = useState({
@@ -80,8 +82,12 @@ export default function BookPage() {
     ? Math.round(heightInCm).toString()
     : form.height;
 
-  const bmiValue = heightInCm > 0 && parseFloat(form.weight) > 0
-    ? parseFloat((parseFloat(form.weight) / Math.pow(heightInCm / 100, 2)).toFixed(1))
+  const convertedWeightKg = weightUnit === "lbs"
+    ? (parseFloat(weightLbs || "0") * 0.453592).toFixed(1)
+    : form.weight;
+
+  const bmiValue = heightInCm > 0 && parseFloat(convertedWeightKg) > 0
+    ? parseFloat((parseFloat(convertedWeightKg) / Math.pow(heightInCm / 100, 2)).toFixed(1))
     : null;
 
   const bmiCategory = bmiValue ? getBMICategory(bmiValue) : null;
@@ -101,6 +107,7 @@ export default function BookPage() {
         body: JSON.stringify({ 
           ...form, 
           height: convertedHeightCm,
+          weight: convertedWeightKg,
           bmi: bmiValue?.toString() ?? "",
           bmiCategory: bmiCategory?.label ?? "",
         }),
@@ -320,7 +327,7 @@ export default function BookPage() {
                       <div>
                         <label style={labelStyle}>Phone Number</label>
                         <input type="tel" value={form.phone}
-                          onChange={(e) => set("phone", e.target.value)}
+                          onChange={(e) => set("phone", e.target.value.replace(/[^0-9+]/g, ""))}
                           placeholder="e.g. 09171234567" style={inputStyle}
                           onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                           onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
@@ -395,13 +402,47 @@ export default function BookPage() {
                         )}
                       </div>
                       <div>
-                        <label style={labelStyle}>Current Weight (in kg) *</label>
-                        <div style={{ height: 8 }} /> {/* spacer to match height toggle */}
-                        <input type="number" required value={form.weight}
-                          onChange={(e) => set("weight", e.target.value)}
-                          placeholder="e.g. 65" style={inputStyle}
-                          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        <div className="flex items-center justify-between mb-2">
+                          <label style={{ ...labelStyle, marginBottom: 0 }}>Current Weight *</label>
+                          <div className="flex rounded-[3px] overflow-hidden"
+                            style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
+                            {["kg", "lbs"].map((unit) => (
+                              <button key={unit} type="button"
+                                onClick={() => setWeightUnit(unit as "kg" | "lbs")}
+                                className="px-3 py-1 transition-all duration-150"
+                                style={{
+                                  background: weightUnit === unit ? "var(--teal)" : "#fff",
+                                  color: weightUnit === unit ? "#fff" : "var(--ink-muted)",
+                                  fontWeight: 500,
+                                  letterSpacing: "0.06em",
+                                  cursor: "pointer",
+                                  border: "none",
+                                }}>
+                                {unit}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {weightUnit === "kg" ? (
+                          <input type="number" required value={form.weight}
+                            onChange={(e) => set("weight", e.target.value)}
+                            placeholder="e.g. 65" style={inputStyle}
+                            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        ) : (
+                          <input type="number" required value={weightLbs}
+                            onChange={(e) => setWeightLbs(e.target.value)}
+                            placeholder="e.g. 143" style={inputStyle}
+                            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        )}
+
+                        {weightUnit === "lbs" && weightLbs && (
+                          <p className="text-[11px] mt-2" style={{ color: "var(--teal)" }}>
+                            ≈ {convertedWeightKg} kg
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -443,7 +484,12 @@ export default function BookPage() {
                     )}
 
                     <div>
-                      <label style={labelStyle}>Waist Circumference (in cm)</label>
+                      <label style={labelStyle}>
+                        Waist Circumference (in cm){" "}
+                        <span style={{ fontSize: 10, fontWeight: 400, color: "var(--ink-faint)", letterSpacing: "0.04em", textTransform: "none" }}>
+                          — Optional
+                        </span>
+                      </label>
                       <input type="number" value={form.waistCircumference}
                         onChange={(e) => set("waistCircumference", e.target.value)}
                         placeholder="e.g. 85 (optional)" style={inputStyle}
