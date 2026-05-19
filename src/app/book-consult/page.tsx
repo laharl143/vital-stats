@@ -39,6 +39,9 @@ export default function BookPage() {
     email: "",
     height: "",
     weight: "",
+    waistCircumference: "",
+    smokingStatus: "",
+    drinkingFrequency: "",
     mtc: "",
     pancreatitis: "",
     gallbladder: "",
@@ -116,7 +119,7 @@ export default function BookPage() {
           </h1>
           <p className="text-[14px] leading-[1.75] font-light max-w-[440px]"
             style={{ color: "rgba(255,255,255,0.65)" }}>
-            Complete your Patient Medical History Form so our clinical team can design the right program for you.
+            This form is exclusively for patients interested in our <strong style={{ color: "rgba(255,255,255,0.9)" }}>Tirzepatide Weight Management Program</strong>. Complete your medical history so our clinical team can design the right program for you.
           </p>
         </div>
 
@@ -209,6 +212,13 @@ export default function BookPage() {
                   <p className="text-[12px] mt-2" style={{ color: "var(--ink-faint)" }}>
                     * Indicates required field. Please ensure all details are accurate.
                   </p>
+                  <div className="flex items-start gap-2 mt-3 p-3 rounded-[3px]"
+                    style={{ background: "rgba(46,139,114,0.08)", border: "1px solid rgba(46,139,114,0.15)" }}>
+                    <span style={{ fontSize: 14 }}>💉</span>
+                    <p className="text-[11px] leading-[1.6]" style={{ color: "var(--teal-dark)" }}>
+                      This form is for patients seeking our <strong>Tirzepatide Weight Management Program</strong> only. For other inquiries, please visit our <a href="/contact" style={{ textDecoration: "underline" }}>Contact page</a>.
+                    </p>
+                  </div>
                   <div className="flex items-start gap-3 p-4 rounded-[4px] mt-4"
                     style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
                     <span>🔒</span>
@@ -257,7 +267,7 @@ export default function BookPage() {
                     <div>
                       <label style={labelStyle}>Gender *</label>
                       <div className="flex flex-wrap gap-5 mt-2">
-                        {["Female", "Male", "Prefer not to say"].map((opt) => (
+                        {["Female", "Male"].map((opt) => (
                           <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
                             style={{ color: "var(--ink-muted)" }}>
                             <input type="radio" name="gender" value={opt} required
@@ -307,6 +317,51 @@ export default function BookPage() {
                           onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
                       </div>
                     </div>
+
+                    <div>
+                      <label style={labelStyle}>Waist Circumference (in cm)</label>
+                      <input type="number" value={form.waistCircumference}
+                        onChange={(e) => set("waistCircumference", e.target.value)}
+                        placeholder="e.g. 85 (optional)" style={inputStyle}
+                        onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                        onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                      <p className="text-[11px] mt-2" style={{ color: "var(--ink-faint)" }}>
+                        Optional — measure around your belly button level.
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label style={labelStyle}>Smoking / Vaping Status *</label>
+                      <div className="flex flex-wrap gap-5 mt-2">
+                        {["Smoker", "Vaper", "Non-Smoker"].map((opt) => (
+                          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
+                            style={{ color: "var(--ink-muted)" }}>
+                            <input type="radio" name="smokingStatus" value={opt} required
+                              checked={form.smokingStatus === opt}
+                              onChange={() => set("smokingStatus", opt)}
+                              style={{ accentColor: "var(--teal)" }} />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Drinking Frequency *</label>
+                      <div className="flex flex-wrap gap-5 mt-2">
+                        {["Never", "Occasional", "More than once a week"].map((opt) => (
+                          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
+                            style={{ color: "var(--ink-muted)" }}>
+                            <input type="radio" name="drinkingFrequency" value={opt} required
+                              checked={form.drinkingFrequency === opt}
+                              onChange={() => set("drinkingFrequency", opt)}
+                              style={{ accentColor: "var(--teal)" }} />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
                   </div>
                 </div>
 
