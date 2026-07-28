@@ -13,6 +13,7 @@ export async function GET(
       where: { slug },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
+        videos: { orderBy: { sortOrder: "asc" } },
         ingredients: true,
         benefits: { orderBy: { sortOrder: "asc" } },
       },
@@ -82,6 +83,7 @@ export async function PUT(
       },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
+        videos: { orderBy: { sortOrder: "asc" } },
         ingredients: true,
         benefits: { orderBy: { sortOrder: "asc" } },
       },

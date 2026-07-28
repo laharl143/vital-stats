@@ -44,14 +44,23 @@ export default function Navbar() {
       }}
     >
       {/* Logo */}
-      <Link href="/" className="flex items-center">
+      <Link
+        href="/"
+        className="relative flex items-center"
+        style={{ height: 57, width: "clamp(100px, 8vw, 130px)" }}
+      >
         <Image
           src="/logo.png"
           alt="VitalStats"
           width={130}
           height={130}
-          className="w-auto object-contain"
-          style={{ height: "clamp(100px, 8vw, 130px)" }}
+          className="absolute w-auto object-contain"
+          style={{
+            height: "clamp(100px, 8vw, 130px)",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
           priority
         />
       </Link>
