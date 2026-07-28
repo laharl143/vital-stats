@@ -62,6 +62,13 @@ const categoryLabel: Record<string, string> = {
   MEDICAL_CONSULTATION: "Medical Consultation",
 };
 
+const deliveryMethodLabel: Record<string, string> = {
+  INJECTION: "Injection",
+  TOPICAL: "Topical",
+  ORAL: "Oral",
+  CONSULTATION: "Consultation",
+};
+
 const emoji: Record<string, string> = {
   WEIGHT_MANAGEMENT: "💉",
   RECOVERY_ANTI_AGING: "✨",
@@ -168,6 +175,9 @@ export default function ProductDetailPage() {
   }
 
   const primaryImage = product.images.find((img) => img.isPrimary) ?? product.images[0];
+  const administrationVideo =
+    product.videos.find((v) => v.title?.toLowerCase().includes("self administration")) ??
+    product.videos[0];
 
   return (
     <>
@@ -269,7 +279,74 @@ export default function ProductDetailPage() {
                 <h2 className="font-display font-light text-[26px] mb-5" style={{ color: "var(--ink)" }}>
                   Tutorial Videos
                 </h2>
-                <div className="relative" style={{ maxWidth: 600, paddingLeft: 34 }}>
+
+                {/* Desktop: stacked timeline cards (full-size thumbnail, title below) */}
+                <div className="hidden sm:block relative" style={{ maxWidth: 460, paddingLeft: 40 }}>
+                  <div
+                    className="absolute"
+                    style={{ left: 15, top: 16, bottom: 16, width: 1.5, background: "rgba(0,0,0,0.08)" }}
+                  />
+                  <div className="flex flex-col gap-8">
+                    {product.videos.map((video, i) => (
+                      <button
+                        key={video.id}
+                        type="button"
+                        onClick={() => openVideo(video)}
+                        className="relative text-left cursor-pointer w-full"
+                        style={{ background: "none", border: "none", padding: 0 }}
+                      >
+                        <span
+                          className="absolute flex items-center justify-center text-white text-[12px] font-semibold z-10"
+                          style={{
+                            left: -40, top: 12, width: 30, height: 30, borderRadius: "50%",
+                            background: "var(--teal)",
+                          }}
+                        >
+                          {i + 1}
+                        </span>
+                        <div
+                          className="relative rounded-[4px] overflow-hidden w-full"
+                          style={{ aspectRatio: "16/9", background: "var(--teal-deep)" }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={videoThumbUrl(video.publicId)}
+                            alt={video.title ?? product.name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div
+                            className="absolute flex items-center justify-center"
+                            style={{
+                              top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                              width: 48, height: 48, borderRadius: "50%",
+                              background: "rgba(255,255,255,0.92)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 0, height: 0, marginLeft: 4,
+                                borderTop: "9px solid transparent",
+                                borderBottom: "9px solid transparent",
+                                borderLeft: "14px solid var(--teal-deep)",
+                              }}
+                            />
+                          </div>
+                        </div>
+                        {video.title && (
+                          <div className="text-[16px] font-semibold mt-3" style={{ color: "var(--ink)" }}>
+                            {video.title}
+                          </div>
+                        )}
+                        <div className="text-[12px] font-semibold mt-1" style={{ color: "var(--teal)" }}>
+                          ▸ Watch tutorial
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile: thumbnail beside text */}
+                <div className="sm:hidden relative" style={{ maxWidth: 600, paddingLeft: 34 }}>
                   <div
                     className="absolute"
                     style={{ left: 10, top: 8, bottom: 8, width: 1.5, background: "rgba(0,0,0,0.08)" }}
@@ -293,7 +370,7 @@ export default function ProductDetailPage() {
                           {i + 1}
                         </span>
                         <div
-                          className="rounded-[4px] overflow-hidden flex-shrink-0"
+                          className="relative rounded-[4px] overflow-hidden flex-shrink-0"
                           style={{ width: 150, aspectRatio: "16/9", background: "var(--teal-deep)" }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -302,6 +379,23 @@ export default function ProductDetailPage() {
                             alt={video.title ?? product.name}
                             className="w-full h-full object-cover"
                           />
+                          <div
+                            className="absolute flex items-center justify-center"
+                            style={{
+                              top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                              width: 34, height: 34, borderRadius: "50%",
+                              background: "rgba(255,255,255,0.92)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 0, height: 0, marginLeft: 3,
+                                borderTop: "6px solid transparent",
+                                borderBottom: "6px solid transparent",
+                                borderLeft: "10px solid var(--teal-deep)",
+                              }}
+                            />
+                          </div>
                         </div>
                         <div>
                           {video.title && (
@@ -354,20 +448,65 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* How administered — bordered content card */}
+            {/* How administered — key-fact table */}
             {activeTab === "administration" && product.howAdministered && (
               <div>
-                <h2 className="font-display font-light text-[24px] mb-3" style={{ color: "var(--ink)" }}>
+                <h2 className="font-display font-light text-[24px] mb-4" style={{ color: "var(--ink)" }}>
                   Administration
                 </h2>
-                <div
-                  className="p-8 rounded-[8px]"
-                  style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}
-                >
-                  <p className="text-[14px] leading-[1.8]" style={{ color: "var(--ink-muted)" }}>
-                    {product.howAdministered}
-                  </p>
-                </div>
+                <table className="w-full" style={{ maxWidth: 520, borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                      <td className="py-3 pr-4 text-[11px] tracking-[0.06em] uppercase" style={{ color: "var(--ink-faint)", width: 130 }}>
+                        Method
+                      </td>
+                      <td className="py-3 text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
+                        {deliveryMethodLabel[product.deliveryMethod] ?? product.deliveryMethod}
+                      </td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                      <td className="py-3 pr-4 text-[11px] tracking-[0.06em] uppercase" style={{ color: "var(--ink-faint)" }}>
+                        Prescription
+                      </td>
+                      <td className="py-3 text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
+                        {product.requiresPrescription ? "Required" : "Not required"}
+                      </td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                      <td className="py-3 pr-4 text-[11px] tracking-[0.06em] uppercase" style={{ color: "var(--ink-faint)" }}>
+                        Program
+                      </td>
+                      <td className="py-3 text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
+                        {product.isClinicallyGuided ? "Medically supervised" : "Self-directed"}
+                      </td>
+                    </tr>
+                    <tr style={{ borderBottom: administrationVideo ? "1px solid rgba(0,0,0,0.06)" : "none" }}>
+                      <td className="py-3 pr-4 text-[11px] tracking-[0.06em] uppercase" style={{ color: "var(--ink-faint)" }}>
+                        Instructions
+                      </td>
+                      <td className="py-3 text-[13px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
+                        {product.howAdministered}
+                      </td>
+                    </tr>
+                    {administrationVideo && (
+                      <tr>
+                        <td className="py-3 pr-4 text-[11px] tracking-[0.06em] uppercase" style={{ color: "var(--ink-faint)" }}>
+                          Tutorial
+                        </td>
+                        <td className="py-3 text-[13px]">
+                          <button
+                            type="button"
+                            onClick={() => openVideo(administrationVideo)}
+                            className="font-semibold cursor-pointer"
+                            style={{ background: "none", border: "none", padding: 0, color: "var(--teal)" }}
+                          >
+                            ▸ Watch {administrationVideo.title ?? "tutorial"}
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             )}
 

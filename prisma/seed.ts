@@ -23,7 +23,7 @@ async function main() {
       howItWorks:
         "Tirzepatide mimics both GLP-1 and GIP receptors. GLP-1 controls hunger. GIP improves how your body handles nutrients. Tirzepatide enhances both systems at the same time, which is why it's considered a next-generation metabolic therapy.",
       howAdministered:
-        "Once-weekly subcutaneous injection. Administered by a licensed healthcare professional under our medically supervised program.",
+        "Once-weekly subcutaneous injection, self-administered at home after training from our clinical team, as part of a medically supervised program.",
       warnings:
         "Our program is medically supervised and built for your long-term success. Our clinical team actively monitors your progress, adjusts your personalized plan, and prioritizes your safety at every stage.",
       category: Category.WEIGHT_MANAGEMENT,
