@@ -86,8 +86,14 @@ Example: `Update: show pregnancy status options only for female patients`
 Project: **VS** (Vital Stats Dev Team) on `vital-stats.atlassian.net`. Board columns: To Do →
 In Progress → In Review → Done, plus Blocked.
 
-- Whenever work starts on an existing Jira issue (investigating, fixing, implementing), transition
-  it to **In Progress** first.
-- Newly created issues start in **To Do** as usual — this rule is about picking up work on an
-  issue, not creating one.
+- **Every change the user asks for — minor or major — gets a Jira issue.** Create it even if the
+  request came as a quick one-off ask in conversation, not just for planned/ticketed work.
+- Set the issue's column to match where the work actually stands right when it's created or
+  updated, not always To Do:
+  - **To Do** — issue filed but work hasn't started yet
+  - **In Progress** — actively investigating/implementing
+  - **Done** — already fixed, committed, and pushed (e.g. the change was made first, ticket
+    filed after the fact)
+  - **Blocked** — can't proceed (missing input, external dependency, waiting on a decision)
+- Keep the issue's status in sync as work moves forward — don't leave it stale in the wrong column.
 - Ed (developer) and Josh (owner) are the two people on this project.
