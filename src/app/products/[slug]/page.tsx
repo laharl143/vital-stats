@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CldVideoPlayer } from "next-cloudinary";
@@ -83,10 +83,36 @@ export default function ProductDetailPage() {
   const [activeVideo, setActiveVideo] = useState<ProductVideo | null>(null);
   const [activeTab, setActiveTab] = useState<string>("overview");
 
+  // Plain memoized lookup map, not a React ref — one stable { current } holder per
+  // video, built once per video list so next-cloudinary's videoRef prop has somewhere
+  // to attach the underlying <video> element for imperative play()/pause() calls.
+  const videoRefs = useMemo(() => {
+    const map: Record<string, { current: HTMLVideoElement | null }> = {};
+    (product?.videos ?? []).forEach((v) => {
+      map[v.id] = { current: null };
+    });
+    return map;
+  }, [product?.videos]);
+
+  const openVideo = useCallback(
+    (video: ProductVideo) => {
+      setActiveVideo(video);
+      videoRefs[video.id]?.current?.play();
+    },
+    [videoRefs]
+  );
+
+  const closeVideo = useCallback(() => {
+    if (activeVideo) {
+      videoRefs[activeVideo.id]?.current?.pause();
+    }
+    setActiveVideo(null);
+  }, [activeVideo, videoRefs]);
+
   useEffect(() => {
     if (!activeVideo) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveVideo(null);
+      if (e.key === "Escape") closeVideo();
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -94,7 +120,7 @@ export default function ProductDetailPage() {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [activeVideo]);
+  }, [activeVideo, closeVideo]);
 
   useEffect(() => {
     fetch(`/api/products/${slug}`)
@@ -253,7 +279,7 @@ export default function ProductDetailPage() {
                       <button
                         key={video.id}
                         type="button"
-                        onClick={() => setActiveVideo(video)}
+                        onClick={() => openVideo(video)}
                         className="relative flex items-center gap-5 text-left cursor-pointer"
                         style={{ background: "none", border: "none", padding: 0 }}
                       >
@@ -433,13 +459,21 @@ export default function ProductDetailPage() {
       <Footer />
       </div>
 
-      {/* Video lightbox */}
-      {activeVideo && (
+      {/* Video lightbox — all players stay permanently mounted (hidden) so each
+          initializes exactly once; reopening just toggles visibility instead of
+          tearing down and recreating the player (which was slow and, before that,
+          unreliable on next-cloudinary's video.js singleton). */}
+      {product.videos.length > 0 && (
         <div
           className="fixed inset-0 flex items-center justify-center"
-          style={{ background: "rgba(6,12,10,0.86)", zIndex: 1000, padding: "5vh 5vw" }}
+          style={{
+            display: activeVideo ? "flex" : "none",
+            background: "rgba(6,12,10,0.86)",
+            zIndex: 1000,
+            padding: "5vh 5vw",
+          }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setActiveVideo(null);
+            if (e.target === e.currentTarget) closeVideo();
           }}
         >
           <div
@@ -449,7 +483,7 @@ export default function ProductDetailPage() {
             <div className="relative w-full">
               <button
                 type="button"
-                onClick={() => setActiveVideo(null)}
+                onClick={closeVideo}
                 aria-label="Close video"
                 className="absolute flex items-center justify-center text-white"
                 style={{
@@ -460,16 +494,23 @@ export default function ProductDetailPage() {
               >
                 ✕
               </button>
-              <div className="rounded-[6px] overflow-hidden">
-                <CldVideoPlayer
-                  id={`product-video-modal-${activeVideo.id}`}
-                  src={activeVideo.publicId}
-                  width="1080"
-                  height="1920"
-                />
-              </div>
+              {product.videos.map((video) => (
+                <div
+                  key={video.id}
+                  className="rounded-[6px] overflow-hidden"
+                  style={{ display: activeVideo?.id === video.id ? "block" : "none" }}
+                >
+                  <CldVideoPlayer
+                    id={`product-video-modal-${video.id}`}
+                    src={video.publicId}
+                    width="1080"
+                    height="1920"
+                    videoRef={videoRefs[video.id]}
+                  />
+                </div>
+              ))}
             </div>
-            {activeVideo.title && (
+            {activeVideo?.title && (
               <p className="text-[14px] font-medium text-white mt-4 text-center">{activeVideo.title}</p>
             )}
           </div>
