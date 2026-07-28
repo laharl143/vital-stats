@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Claude Code local settings (personal permission allowlist)
 .claude/settings.local.json
+
+# Credentials — never commit
+Vital Stats Creds.txt
