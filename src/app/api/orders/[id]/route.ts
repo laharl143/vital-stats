@@ -1,137 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Category } from "@prisma/client";
 
-// GET /api/products
-// Query params: ?category=SKIN_CARE&active=true
-export async function GET(req: NextRequest) {
+// GET /api/orders/[id]  (admin only)
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category") as Category | null;
-    const activeOnly = searchParams.get("active") !== "false";
+    const { id } = await params;
 
-    const products = await prisma.product.findMany({
-      where: {
-        ...(category && { category }),
-        ...(activeOnly && { isActive: true }),
-      },
-      include: {
-        images: {
-          where: { isPrimary: true },
-          take: 1,
-        },
-        benefits: {
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-      orderBy: { sortOrder: "asc" },
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true },
     });
 
-    return NextResponse.json({ data: products });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: order });
   } catch (error) {
-    console.error("[GET /api/products]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    console.error("[GET /api/orders/[id]]", error);
+    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 });
   }
 }
 
-// POST /api/products  (admin only)
-export async function POST(req: NextRequest) {
+// PATCH /api/orders/[id]  (admin — update status/notes)
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     const body = await req.json();
+    const { status, customerAddress, notes, adminNotes } = body;
 
-    const {
-      slug,
-      name,
-      tagline,
-      description,
-      howItWorks,
-      howAdministered,
-      warnings,
-      category,
-      deliveryMethod,
-      price,
-      currency,
-      isBestSeller,
-      isFdaApproved,
-      isClinicallyGuided,
-      requiresPrescription,
-      sortOrder,
-      benefits,
-      ingredients,
-    } = body;
-
-    // Basic validation
-    if (!slug || !name || !category || !deliveryMethod) {
-      return NextResponse.json(
-        { error: "slug, name, category, and deliveryMethod are required" },
-        { status: 400 }
-      );
-    }
-
-    const product = await prisma.product.create({
+    const order = await prisma.order.update({
+      where: { id },
       data: {
-        slug,
-        name,
-        tagline,
-        description,
-        howItWorks,
-        howAdministered,
-        warnings,
-        category,
-        deliveryMethod,
-        price: price ? parseFloat(price) : null,
-        currency: currency ?? "PHP",
-        isBestSeller: isBestSeller ?? false,
-        isFdaApproved: isFdaApproved ?? false,
-        isClinicallyGuided: isClinicallyGuided ?? false,
-        requiresPrescription: requiresPrescription ?? false,
-        sortOrder: sortOrder ?? 0,
-        benefits: benefits
-          ? {
-              create: benefits.map(
-                (b: { benefit: string; sortOrder?: number }, i: number) => ({
-                  benefit: b.benefit,
-                  sortOrder: b.sortOrder ?? i,
-                })
-              ),
-            }
-          : undefined,
-        ingredients: ingredients
-          ? {
-              create: ingredients.map(
-                (ing: { name: string; role?: string }) => ({
-                  name: ing.name,
-                  role: ing.role,
-                })
-              ),
-            }
-          : undefined,
+        ...(status !== undefined && { status }),
+        ...(customerAddress !== undefined && { customerAddress }),
+        ...(notes !== undefined && { notes }),
+        ...(adminNotes !== undefined && { adminNotes }),
       },
-      include: {
-        benefits: true,
-        ingredients: true,
-        images: true,
-      },
+      include: { items: true },
     });
 
-    return NextResponse.json({ data: product }, { status: 201 });
+    return NextResponse.json({ data: order });
   } catch (error: unknown) {
-    console.error("[POST /api/products]", error);
-    if (
-      error instanceof Error &&
-      error.message.includes("Unique constraint")
-    ) {
-      return NextResponse.json(
-        { error: "A product with this slug already exists" },
-        { status: 409 }
-      );
+    console.error("[PATCH /api/orders/[id]]", error);
+    if (error instanceof Error && error.message.includes("Record to update not found")) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }
 }

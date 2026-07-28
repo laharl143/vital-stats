@@ -72,6 +72,7 @@ model Product {
   deliveryMethod  DeliveryMethod
   price           Decimal?       @db.Decimal(10, 2)  // null for consultation / injectable (price on inquiry)
   currency        String         @default("PHP")
+  videoPublicId   String?        // Cloudinary public_id for a tutorial/how-to video
   isBestSeller    Boolean        @default(false)
   isFdaApproved   Boolean        @default(false)
   isClinicallyGuided Boolean     @default(false)

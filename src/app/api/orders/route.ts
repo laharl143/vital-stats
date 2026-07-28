@@ -1,137 +1,91 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Category } from "@prisma/client";
+import { OrderStatus } from "@prisma/client";
 
-// GET /api/products
-// Query params: ?category=SKIN_CARE&active=true
+// GET /api/orders  (admin only)
+// Query params: ?status=PENDING&page=1&limit=20
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category") as Category | null;
-    const activeOnly = searchParams.get("active") !== "false";
+    const status = searchParams.get("status") as OrderStatus | null;
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "20");
+    const skip = (page - 1) * limit;
 
-    const products = await prisma.product.findMany({
-      where: {
-        ...(category && { category }),
-        ...(activeOnly && { isActive: true }),
-      },
-      include: {
-        images: {
-          where: { isPrimary: true },
-          take: 1,
-        },
-        benefits: {
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-      orderBy: { sortOrder: "asc" },
+    const [orders, total] = await prisma.$transaction([
+      prisma.order.findMany({
+        where: { ...(status && { status }) },
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({
+        where: { ...(status && { status }) },
+      }),
+    ]);
+
+    return NextResponse.json({
+      data: orders,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
-
-    return NextResponse.json({ data: products });
   } catch (error) {
-    console.error("[GET /api/products]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    console.error("[GET /api/orders]", error);
+    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }
 }
 
-// POST /api/products  (admin only)
+// POST /api/orders  (admin — create an order)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const { customerName, customerContact, customerAddress, notes, items } = body;
 
-    const {
-      slug,
-      name,
-      tagline,
-      description,
-      howItWorks,
-      howAdministered,
-      warnings,
-      category,
-      deliveryMethod,
-      price,
-      currency,
-      isBestSeller,
-      isFdaApproved,
-      isClinicallyGuided,
-      requiresPrescription,
-      sortOrder,
-      benefits,
-      ingredients,
-    } = body;
-
-    // Basic validation
-    if (!slug || !name || !category || !deliveryMethod) {
+    if (!customerName || !customerContact || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: "slug, name, category, and deliveryMethod are required" },
+        { error: "customerName, customerContact, and at least one item are required" },
         { status: 400 }
       );
     }
 
-    const product = await prisma.product.create({
-      data: {
-        slug,
-        name,
-        tagline,
-        description,
-        howItWorks,
-        howAdministered,
-        warnings,
-        category,
-        deliveryMethod,
-        price: price ? parseFloat(price) : null,
-        currency: currency ?? "PHP",
-        isBestSeller: isBestSeller ?? false,
-        isFdaApproved: isFdaApproved ?? false,
-        isClinicallyGuided: isClinicallyGuided ?? false,
-        requiresPrescription: requiresPrescription ?? false,
-        sortOrder: sortOrder ?? 0,
-        benefits: benefits
-          ? {
-              create: benefits.map(
-                (b: { benefit: string; sortOrder?: number }, i: number) => ({
-                  benefit: b.benefit,
-                  sortOrder: b.sortOrder ?? i,
-                })
-              ),
-            }
-          : undefined,
-        ingredients: ingredients
-          ? {
-              create: ingredients.map(
-                (ing: { name: string; role?: string }) => ({
-                  name: ing.name,
-                  role: ing.role,
-                })
-              ),
-            }
-          : undefined,
-      },
-      include: {
-        benefits: true,
-        ingredients: true,
-        images: true,
-      },
+    const products = await prisma.product.findMany({
+      where: { id: { in: items.map((i: { productId: string }) => i.productId) } },
+    });
+    const productById = new Map(products.map((p) => [p.id, p]));
+
+    let totalAmount = 0;
+    const orderItems = items.map((item: { productId: string; quantity?: number; unitPrice?: number }) => {
+      const product = productById.get(item.productId);
+      if (!product) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+      const quantity = item.quantity ?? 1;
+      const unitPrice = item.unitPrice ?? (product.price ? parseFloat(product.price.toString()) : null);
+      if (unitPrice !== null) totalAmount += unitPrice * quantity;
+
+      return {
+        productId: item.productId,
+        productName: product.name,
+        quantity,
+        unitPrice,
+      };
     });
 
-    return NextResponse.json({ data: product }, { status: 201 });
+    const order = await prisma.order.create({
+      data: {
+        customerName,
+        customerContact,
+        customerAddress: customerAddress ?? null,
+        notes: notes ?? null,
+        totalAmount: totalAmount || null,
+        items: { create: orderItems },
+      },
+      include: { items: true },
+    });
+
+    return NextResponse.json({ data: order }, { status: 201 });
   } catch (error: unknown) {
-    console.error("[POST /api/products]", error);
-    if (
-      error instanceof Error &&
-      error.message.includes("Unique constraint")
-    ) {
-      return NextResponse.json(
-        { error: "A product with this slug already exists" },
-        { status: 409 }
-      );
-    }
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
+    console.error("[POST /api/orders]", error);
+    return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
   }
 }

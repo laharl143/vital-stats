@@ -68,6 +68,8 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL` — NextAuth session signing/callback base URL
 - `RESEND_API_KEY` — transactional email (Resend)
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — product image uploads/delivery
+- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` — same cloud name, exposed to the browser for `next-cloudinary`'s
+  client components (`CldImage`/`CldVideoPlayer`); not a secret
 
 ## Commit message format
 
