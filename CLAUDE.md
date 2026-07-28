@@ -80,3 +80,14 @@ Every commit message must start with one of these prefixes:
 - `Delete: ` — removing code, files, or features
 
 Example: `Update: show pregnancy status options only for female patients`
+
+## Jira workflow
+
+Project: **VS** (Vital Stats Dev Team) on `vital-stats.atlassian.net`. Board columns: To Do →
+In Progress → In Review → Done, plus Blocked.
+
+- Whenever work starts on an existing Jira issue (investigating, fixing, implementing), transition
+  it to **In Progress** first.
+- Newly created issues start in **To Do** as usual — this rule is about picking up work on an
+  issue, not creating one.
+- Ed (developer) and Josh (owner) are the two people on this project.
