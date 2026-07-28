@@ -104,12 +104,13 @@ export default function BookPage() {
       const res = await fetch("/api/submit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          ...form, 
+        body: JSON.stringify({
+          ...form,
           height: convertedHeightCm,
           weight: convertedWeightKg,
           bmi: bmiValue?.toString() ?? "",
           bmiCategory: bmiCategory?.label ?? "",
+          pregnant: form.gender === "Female" ? form.pregnant : "N/A",
         }),
       });
 
@@ -554,7 +555,23 @@ export default function BookPage() {
                     <RadioGroup field="gallbladder" label="Do you have a history of gallbladder disease? (Gallstone, Cholecystectomy)" required />
                     <RadioGroup field="gi" label="Do you have a history of severe gastrointestinal disease?" required />
                     <RadioGroup field="diabetes" label="Do you have type 2 diabetes?" required />
-                    <RadioGroup field="pregnant" label="Are you currently pregnant, breastfeeding, or planning to become pregnant?" required />
+                    {form.gender === "Female" && (
+                      <div>
+                        <label style={labelStyle}>Are you currently pregnant, breastfeeding, or planning to become pregnant? *</label>
+                        <div className="flex flex-wrap gap-6 mt-2">
+                          {["Pregnant", "Currently trying to get pregnant", "No"].map((opt) => (
+                            <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink-muted)" }}>
+                              <input type="radio" name="pregnant" value={opt} required
+                                checked={form.pregnant === opt}
+                                onChange={() => set("pregnant", opt)}
+                                style={{ accentColor: "var(--teal)" }}
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label style={labelStyle}>Please list any major surgeries you&apos;ve had and their dates</label>
