@@ -38,7 +38,7 @@ export default function CtaBand() {
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
         <a
-          href="https://facebook.com/vitalstatwellness"
+          href="https://www.facebook.com/vitalstatswellness"
           target="_blank"
           rel="noopener noreferrer"
           className="text-[11px] font-medium tracking-[0.08em] uppercase px-8 py-[14px] rounded-[2px] text-center transition-opacity duration-200 hover:opacity-90"

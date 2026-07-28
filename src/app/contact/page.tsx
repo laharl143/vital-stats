@@ -18,8 +18,8 @@ const CONTACT_CHANNELS = [
   {
     icon: "📘",
     label: "Facebook",
-    value: "facebook.com/vitalstatwellness",
-    href: "https://facebook.com/vitalstatwellness",
+    value: "facebook.com/vitalstatswellness",
+    href: "https://www.facebook.com/vitalstatswellness",
     desc: "Message us directly — fastest response",
   },
   {

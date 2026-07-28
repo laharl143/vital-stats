@@ -59,13 +59,13 @@ export default function Footer() {
           </p>
           <div className="flex flex-col gap-2">
             <a
-              href="https://facebook.com/vitalstatwellness"
+              href="https://www.facebook.com/vitalstatswellness"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[11px] transition-colors duration-200"
               style={{ color: "var(--teal-light)", textDecoration: "none" }}
             >
-              facebook.com/vitalstatwellness
+              facebook.com/vitalstatswellness
             </a>
             <a
               href="tel:09278608705"
