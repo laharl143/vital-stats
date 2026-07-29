@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
         email: data.email ?? "",
         height: data.height ?? "",
         weight: data.weight ?? "",
+        bmi: data.bmi || null,
+        bmiCategory: data.bmiCategory || null,
         waistCircumference: data.waistCircumference ?? "",
         smokingStatus: data.smokingStatus ?? "",
         drinkingFrequency: data.drinkingFrequency ?? "",
