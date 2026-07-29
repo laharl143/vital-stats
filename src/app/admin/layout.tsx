@@ -8,6 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: "⬡" },
   { label: "Inquiries", href: "/admin/inquiries", icon: "✉" },
+  { label: "Consult Requests", href: "/admin/medical-history", icon: "🩺" },
   { label: "Orders", href: "/admin/orders", icon: "📦" },
   { label: "Products", href: "/admin/products", icon: "◈" },
 ];

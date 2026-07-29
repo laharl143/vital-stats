@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 interface Stats {
   totalProducts: number;
   newInquiries: number;
+  newConsultRequests: number;
   pendingOrders: number;
   totalOrders: number;
 }
@@ -15,6 +16,15 @@ interface Inquiry {
   contactInfo: string;
   message: string;
   type: string;
+  status: string;
+  createdAt: string;
+}
+
+interface MedicalHistory {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
   status: string;
   createdAt: string;
 }
@@ -40,11 +50,14 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   OUT_FOR_DELIVERY:{ bg: "#F3E5F5", color: "#6A1B9A" },
   DELIVERED:       { bg: "#E8F5E9", color: "#1B5E20" },
   CANCELLED:       { bg: "#FFEBEE", color: "#C62828" },
+  REVIEWED:        { bg: "#F3E5F5", color: "#6A1B9A" },
+  CONTACTED:       { bg: "#E8F5E9", color: "#2E7D32" },
 };
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentInquiries, setRecentInquiries] = useState<Inquiry[]>([]);
+  const [recentConsults, setRecentConsults] = useState<MedicalHistory[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,17 +65,21 @@ export default function AdminDashboard() {
     Promise.all([
       fetch("/api/products?active=true").then((r) => r.json()),
       fetch("/api/inquiries?limit=5").then((r) => r.json()),
+      fetch("/api/medical-history?limit=5").then((r) => r.json()),
       fetch("/api/orders?limit=5").then((r) => r.json()),
       fetch("/api/inquiries?status=NEW&limit=1").then((r) => r.json()),
+      fetch("/api/medical-history?status=NEW&limit=1").then((r) => r.json()),
       fetch("/api/orders?status=PENDING&limit=1").then((r) => r.json()),
-    ]).then(([products, inquiries, orders, newInq, pendingOrd]) => {
+    ]).then(([products, inquiries, consults, orders, newInq, newConsults, pendingOrd]) => {
       setStats({
         totalProducts: products.data?.length ?? 0,
         newInquiries: newInq.meta?.total ?? 0,
+        newConsultRequests: newConsults.meta?.total ?? 0,
         pendingOrders: pendingOrd.meta?.total ?? 0,
         totalOrders: orders.meta?.total ?? 0,
       });
       setRecentInquiries(inquiries.data ?? []);
+      setRecentConsults(consults.data ?? []);
       setRecentOrders(orders.data ?? []);
       setLoading(false);
     });
@@ -72,6 +89,7 @@ export default function AdminDashboard() {
     ? [
         { label: "Total Products", value: stats.totalProducts, icon: "◈", color: "var(--teal)" },
         { label: "New Inquiries", value: stats.newInquiries, icon: "✉", color: "#1565C0", alert: stats.newInquiries > 0 },
+        { label: "New Consult Requests", value: stats.newConsultRequests, icon: "🩺", color: "#6A1B9A", alert: stats.newConsultRequests > 0 },
         { label: "Pending Orders", value: stats.pendingOrders, icon: "📦", color: "#F57F17", alert: stats.pendingOrders > 0 },
         { label: "Total Orders", value: stats.totalOrders, icon: "✓", color: "#2E7D32" },
       ]
@@ -91,13 +109,13 @@ export default function AdminDashboard() {
 
       {/* Stat cards */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+          {[...Array(5)].map((_, i) => (
             <div key={i} className="h-[100px] rounded-[8px] animate-pulse" style={{ background: "rgba(0,0,0,0.06)" }} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
           {statCards.map((card) => (
             <div
               key={card.label}
@@ -126,7 +144,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Inquiries */}
         <div className="rounded-[8px] overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
           <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
@@ -156,6 +174,42 @@ export default function AdminDashboard() {
                     style={STATUS_COLORS[inq.status] ?? STATUS_COLORS.CLOSED}
                   >
                     {inq.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Consult Requests */}
+        <div className="rounded-[8px] overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
+          <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+            <h2 className="text-[14px] font-medium" style={{ color: "var(--ink)" }}>Recent Consult Requests</h2>
+            <a href="/admin/medical-history" className="text-[11px] tracking-[0.06em] uppercase" style={{ color: "var(--teal)" }}>
+              View all →
+            </a>
+          </div>
+          {loading ? (
+            <div className="p-6 flex flex-col gap-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-12 rounded animate-pulse" style={{ background: "rgba(0,0,0,0.04)" }} />
+              ))}
+            </div>
+          ) : recentConsults.length === 0 ? (
+            <div className="p-6 text-center text-[13px]" style={{ color: "var(--ink-faint)" }}>No consult requests yet</div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: "rgba(0,0,0,0.05)" }}>
+              {recentConsults.map((rec) => (
+                <div key={rec.id} className="px-6 py-4 flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium truncate" style={{ color: "var(--ink)" }}>{rec.fullName}</div>
+                    <div className="text-[12px] truncate" style={{ color: "var(--ink-faint)" }}>{rec.email || rec.phone || "—"}</div>
+                  </div>
+                  <span
+                    className="text-[9px] tracking-[0.08em] uppercase px-2 py-1 rounded-[2px] flex-shrink-0"
+                    style={STATUS_COLORS[rec.status] ?? STATUS_COLORS.CLOSED}
+                  >
+                    {rec.status}
                   </span>
                 </div>
               ))}
