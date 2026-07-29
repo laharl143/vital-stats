@@ -109,8 +109,11 @@ export default function AdminMedicalHistoryPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* List */}
-        <div className="rounded-[8px] overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
+        {/* List — hidden on mobile once a record is selected, so the detail view gets the full screen */}
+        <div
+          className={`${selected ? "hidden lg:block" : "block"} rounded-[8px] overflow-hidden`}
+          style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}
+        >
           {loading ? (
             <div className="p-6 flex flex-col gap-3">
               {[...Array(5)].map((_, i) => (
@@ -151,6 +154,14 @@ export default function AdminMedicalHistoryPage() {
         {/* Detail panel */}
         {selected ? (
           <div className="rounded-[8px] p-6 flex flex-col gap-5" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="lg:hidden text-[12px] font-medium self-start"
+              style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
+            >
+              ← Back to list
+            </button>
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.fullName}</h2>
@@ -269,7 +280,7 @@ export default function AdminMedicalHistoryPage() {
           </div>
         ) : (
           <div
-            className="rounded-[8px] flex items-center justify-center"
+            className="hidden lg:flex rounded-[8px] items-center justify-center"
             style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)", minHeight: 300 }}
           >
             <p className="text-[13px]" style={{ color: "var(--ink-faint)" }}>Select a consult request to view details</p>
