@@ -127,7 +127,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div
-          className="absolute top-[80px] left-0 right-0 flex flex-col gap-0 md:hidden"
+          className="absolute top-14.25 left-0 right-0 flex flex-col gap-0 md:hidden"
           style={{
             background: "rgba(247,249,248,0.98)",
             borderBottom: "1px solid rgba(46,139,114,0.1)",
@@ -147,6 +147,17 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <Link
+            href="/admin/login"
+            className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
+            style={{
+              color: "var(--ink-muted)",
+              borderColor: "rgba(0,0,0,0.05)",
+            }}
+            onClick={() => setMenuOpen(false)}
+          >
+            Admin Portal
+          </Link>
           <Link
             href="/book-consult"
             className="mx-8 my-4 text-center text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[2px]"

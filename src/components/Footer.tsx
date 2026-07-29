@@ -203,19 +203,30 @@ export default function Footer() {
         >
           © {new Date().getFullYear()} VitalStats. All rights reserved.
         </p>
-        <div
-          className="flex items-center gap-2 text-[9px] tracking-[0.12em] uppercase"
-          style={{ color: "rgba(255,255,255,0.25)" }}
-        >
-          <span
-            className="rounded-full inline-block"
-            style={{
-              width: 5,
-              height: 5,
-              background: "var(--teal-light)",
-            }}
-          />
-          Philippine FDA–Approved · Clinically Guided
+        <div className="flex items-center gap-5">
+          <Link
+            href="/admin/login"
+            className="text-[10px] tracking-[0.04em] transition-colors duration-200"
+            style={{ color: "rgba(255,255,255,0.22)", textDecoration: "none" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal-light)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.22)")}
+          >
+            Admin Portal
+          </Link>
+          <div
+            className="flex items-center gap-2 text-[9px] tracking-[0.12em] uppercase"
+            style={{ color: "rgba(255,255,255,0.25)" }}
+          >
+            <span
+              className="rounded-full inline-block"
+              style={{
+                width: 5,
+                height: 5,
+                background: "var(--teal-light)",
+              }}
+            />
+            Philippine FDA–Approved · Clinically Guided
+          </div>
         </div>
       </div>
     </footer>
