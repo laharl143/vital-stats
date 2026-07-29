@@ -105,16 +105,31 @@ export default function ProductDetailPage() {
     (video: ProductVideo) => {
       setActiveVideo(video);
       videoRefs[video.id]?.current?.play();
+      window.history.pushState({ videoModal: true }, "");
     },
     [videoRefs]
   );
 
+  // Closing the modal (X, Escape, outside click) goes through history.back()
+  // rather than clearing state directly, so it unwinds the entry openVideo
+  // pushed instead of leaving a stale "video open" state for the next real
+  // back-button press to land on.
   const closeVideo = useCallback(() => {
     if (activeVideo) {
-      videoRefs[activeVideo.id]?.current?.pause();
+      window.history.back();
     }
-    setActiveVideo(null);
-  }, [activeVideo, videoRefs]);
+  }, [activeVideo]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setActiveVideo((current) => {
+        if (current) videoRefs[current.id]?.current?.pause();
+        return null;
+      });
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [videoRefs]);
 
   useEffect(() => {
     if (!activeVideo) return;
