@@ -73,13 +73,23 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 
 ## Commit message format
 
-Every commit message must start with one of these prefixes:
+**Never commit automatically.** Make the code change and, if you tested it, report what you did
+and what you found — then stop and wait for Ed or Josh to explicitly confirm the fix is good
+before running `git commit`. Finishing a fix and verifying it (including automated checks like
+Playwright) is not the same as being told to commit it. This applies even when a Jira ticket
+exists for the work — don't commit just because a ticket is being closed out.
 
-- `Update: ` — changes to existing behavior/code
-- `Add: ` — new files, features, or capabilities
-- `Delete: ` — removing code, files, or features
+Every commit message must start with the Jira issue key in brackets, followed by one of these
+prefixes:
 
-Example: `Update: show pregnancy status options only for female patients`
+- `[VS-##] Update: ` — changes to existing behavior/code
+- `[VS-##] Add: ` — new files, features, or capabilities
+- `[VS-##] Delete: ` — removing code, files, or features
+- `[VS-##] Fix: ` — bug fixes
+
+Example: `[VS-15] Fix: show pregnancy status options only for female patients`
+
+Once committed, push right away — don't leave confirmed, committed work sitting local-only.
 
 ## Jira workflow
 
@@ -91,9 +101,12 @@ In Progress → In Review → Done, plus Blocked.
 - Set the issue's column to match where the work actually stands right when it's created or
   updated, not always To Do:
   - **To Do** — issue filed but work hasn't started yet
-  - **In Progress** — actively investigating/implementing
-  - **Done** — already fixed, committed, and pushed (e.g. the change was made first, ticket
-    filed after the fact)
+  - **In Progress** — actively investigating, implementing, or awaiting confirmation that a fix
+    is correct. **Stay here even after the fix is implemented and self-tested** (manual QA,
+    Playwright, etc.) — being confident in a fix is not the same as it being confirmed.
+  - **Done** — only after ALL of the following happened, in order: (1) Ed or Josh explicitly
+    confirms the fix/feature is correct, (2) the code is committed, (3) the commit is pushed to
+    `origin/main`. Never jump straight to Done off of your own testing.
   - **Blocked** — can't proceed (missing input, external dependency, waiting on a decision)
 - Keep the issue's status in sync as work moves forward — don't leave it stale in the wrong column.
 - Ed (developer) and Josh (owner) are the two people on this project.
