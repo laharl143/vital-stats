@@ -71,6 +71,19 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` — same cloud name, exposed to the browser for `next-cloudinary`'s
   client components (`CldImage`/`CldVideoPlayer`); not a secret
 
+## Verification workflow
+
+After implementing a fix or feature, **don't just run Playwright/automated checks on your own
+initiative.** Ask Ed or Josh how they want it verified, presented as clickable options (use the
+question/options UI, not a plain-text question), e.g.:
+
+- "Run a Playwright check myself" — you drive it end-to-end and report results
+- "I'll test it manually" — you stop and let them click through it themselves
+- "Skip verification for now"
+
+Wait for their choice before proceeding. This comes before the commit step below — verification
+method is a separate decision from whether the fix is confirmed good.
+
 ## Commit message format
 
 **Never commit automatically.** Make the code change and, if you tested it, report what you did
