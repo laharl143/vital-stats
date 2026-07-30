@@ -41,8 +41,7 @@ export const authOptions: NextAuthOptions = {
         const bcrypt = await import("bcryptjs");
         const isValid = await bcrypt.compare(
           credentials.password,
-          user.image ?? "" // We store hashed password in `image` field temporarily
-          // TODO: Add a proper `hashedPassword` field to the User model
+          user.hashedPassword ?? ""
         );
 
         if (!isValid) {
