@@ -49,7 +49,7 @@ export default function Navbar() {
       {/* Ticker — homepage only, mirrors the hero's own promo strip */}
       {isHome && (
         <div
-          className="hidden sm:block overflow-hidden"
+          className="block overflow-hidden"
           style={{
             width: "26%",
             minWidth: 260,
