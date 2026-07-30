@@ -73,7 +73,7 @@ export default function Navbar() {
 
       {/* Nav pill */}
       <nav
-        className="relative flex items-center justify-between mx-4 md:mx-8"
+        className="relative grid grid-cols-3 items-center md:flex md:justify-between mx-4 md:mx-8"
         style={{
           width: "calc(100% - 32px)",
           maxWidth: 1360,
@@ -85,15 +85,19 @@ export default function Navbar() {
           zIndex: 10,
         }}
       >
-        {/* Logo */}
-        <Link href="/" className="relative flex items-center flex-shrink-0" style={{ height: 48, width: "clamp(160px, 13vw, 210px)" }}>
+        {/* Logo — centered in mobile's middle grid column, left-aligned in desktop's flex row */}
+        <Link
+          href="/"
+          className="row-start-1 col-start-2 justify-self-center flex items-center shrink-0 md:row-auto md:col-auto md:justify-self-auto"
+          style={{ height: 56 }}
+        >
           <Image
-            src="/vitalstats_logo_v2_compact.png"
+            src="/vitalstats_logo_horizontal.png"
             alt="VitalStats"
-            width={2340}
-            height={600}
-            className="absolute w-auto object-contain"
-            style={{ height: "clamp(30px, 3vw, 38px)", top: "50%", left: 0, transform: "translateY(-50%)", pointerEvents: "none" }}
+            width={2066}
+            height={570}
+            className="w-auto object-contain"
+            style={{ height: "clamp(38px, 3.8vw, 48px)", pointerEvents: "none" }}
             priority
           />
         </Link>
@@ -127,31 +131,55 @@ export default function Navbar() {
           Book a Consult
         </Link>
 
-        {/* Mobile hamburger */}
-        <button
-          className="md:hidden flex flex-col gap-[5px] p-2"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span
-            className="block w-5 h-[1.5px] transition-all duration-200"
-            style={{
-              background: "var(--ink)",
-              transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none",
-            }}
-          />
-          <span
-            className="block w-5 h-[1.5px] transition-all duration-200"
-            style={{ background: "var(--ink)", opacity: menuOpen ? 0 : 1 }}
-          />
-          <span
-            className="block w-5 h-[1.5px] transition-all duration-200"
-            style={{
-              background: "var(--ink)",
-              transform: menuOpen ? "rotate(-45deg) translate(4px, -4px)" : "none",
-            }}
-          />
-        </button>
+        {/* Mobile left group — hamburger + search, WTA-style */}
+        <div className="row-start-1 col-start-1 justify-self-start md:hidden flex items-center gap-3">
+          <button
+            className="flex flex-col gap-1.25 p-2"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span
+              className="block w-5 h-[1.5px] transition-all duration-200"
+              style={{
+                background: "var(--ink)",
+                transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none",
+              }}
+            />
+            <span
+              className="block w-5 h-[1.5px] transition-all duration-200"
+              style={{ background: "var(--ink)", opacity: menuOpen ? 0 : 1 }}
+            />
+            <span
+              className="block w-5 h-[1.5px] transition-all duration-200"
+              style={{
+                background: "var(--ink)",
+                transform: menuOpen ? "rotate(-45deg) translate(4px, -4px)" : "none",
+              }}
+            />
+          </button>
+          <button className="flex items-center justify-center p-1" aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 20, height: 20 }}>
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Mobile right group — notifications + account, placeholders for a future feature */}
+        <div className="row-start-1 col-start-3 justify-self-end md:hidden flex items-center gap-3">
+          <button className="relative flex items-center justify-center p-1" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 20, height: 20 }}>
+              <path d="M6 8a6 6 0 0112 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" strokeLinejoin="round" />
+              <path d="M10 19a2 2 0 004 0" strokeLinecap="round" />
+            </svg>
+          </button>
+          <button className="flex items-center justify-center p-1" aria-label="Account">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 20, height: 20 }}>
+              <circle cx="12" cy="8" r="3.5" />
+              <path d="M4.5 20c1.5-3.5 5-5 7.5-5s6 1.5 7.5 5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
 
         {/* Mobile menu */}
         {menuOpen && (
