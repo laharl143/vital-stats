@@ -107,6 +107,38 @@ async function main() {
     },
   });
 
+  // ── Recovery & Anti-Aging — IV-Drip ───────────────────────
+  await prisma.product.upsert({
+    where: { slug: "iv-drip" },
+    update: {},
+    create: {
+      slug: "iv-drip",
+      name: "IV-Drip",
+      tagline: "Vitamin and hydration therapy delivered straight to your bloodstream",
+      description:
+        "IV-Drip therapy delivers a custom blend of vitamins, minerals, and fluids directly into your bloodstream for fast, full absorption — bypassing the digestive system entirely.",
+      howItWorks:
+        "By infusing nutrients directly into the blood, IV-Drip therapy achieves near 100% bioavailability, replenishing hydration and micronutrients faster than oral supplements can.",
+      howAdministered:
+        "Administered as an intravenous infusion in-clinic, typically over 30–45 minutes, always supervised by a licensed healthcare professional.",
+      warnings:
+        "IV-Drip sessions should always be supervised by a licensed healthcare professional to make sure it's safe and the formulation is right for you.",
+      category: Category.RECOVERY_ANTI_AGING,
+      deliveryMethod: DeliveryMethod.INJECTION,
+      requiresPrescription: false,
+      isClinicallyGuided: true,
+      sortOrder: 4,
+      benefits: {
+        create: [
+          { benefit: "Rapid hydration and nutrient absorption", sortOrder: 1 },
+          { benefit: "Boosts energy and immune function", sortOrder: 2 },
+          { benefit: "Supports recovery after illness or exertion", sortOrder: 3 },
+          { benefit: "Custom-blended to your needs", sortOrder: 4 },
+        ],
+      },
+    },
+  });
+
   // ── Skin Care — Luméla Soap ────────────────────────────────
   await prisma.product.upsert({
     where: { slug: "lumela-soap" },

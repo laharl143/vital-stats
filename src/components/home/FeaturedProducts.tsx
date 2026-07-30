@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 
 interface Product {
@@ -23,220 +23,376 @@ const categoryLabel: Record<string, string> = {
   MEDICAL_CONSULTATION: "Medical Consultation",
 };
 
-const gradients: Record<number, string> = {
-  0: "linear-gradient(135deg, #EAF5F2, #9FE1CB)",
-  1: "linear-gradient(135deg, #EAF0F5, #B8D4E8)",
-  2: "linear-gradient(135deg, #F0F5EA, #C0DD97)",
+const gradients = [
+  "linear-gradient(150deg, var(--mint), var(--teal))",
+  "var(--teal-deep)",
+  "linear-gradient(150deg, #e8c9a0, #c9986b)",
+];
+
+function formatPrice(price: string | null) {
+  return price ? `₱${parseFloat(price).toLocaleString()}` : null;
+}
+
+// Fades + slides each card in as it scrolls into view, staggered by index;
+// resets when the card scrolls back out so the reveal replays.
+function useScrollReveal(ready: boolean) {
+  const refs = useRef<(HTMLElement | null)[]>([]);
+
+  useEffect(() => {
+    // `ready` flips true only once the cards this hook targets have actually
+    // mounted (they're gated behind an async fetch) — observing before that
+    // leaves refs.current empty and nothing ever reveals.
+    if (!ready) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const el = entry.target as HTMLElement;
+          const index = refs.current.indexOf(el);
+          if (entry.isIntersecting) {
+            const delay = Math.max(index, 0) * 130;
+            setTimeout(() => {
+              el.style.opacity = "1";
+              el.style.transform = "translateY(0)";
+            }, delay);
+          } else {
+            el.style.opacity = "0";
+            el.style.transform = "translateY(24px)";
+          }
+        });
+      },
+      { threshold: 0.35 }
+    );
+    refs.current.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, [ready]);
+
+  return (i: number) => (el: HTMLElement | null) => {
+    refs.current[i] = el;
+  };
+}
+
+const revealStyle: CSSProperties = {
+  opacity: 0,
+  transform: "translateY(24px)",
+  transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)",
 };
+
+// Featured slugs, in display order: hero pick, then the two side cards.
+const FEATURED_SLUGS = ["tirzepatide", "lumela-soap", "iv-drip"];
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetch("/api/products?active=true")
       .then((r) => r.json())
       .then((json) => {
-        setProducts((json.data as Product[]).slice(0, 3));
+        const all = json.data as Product[];
+        const ordered = FEATURED_SLUGS.map((slug) =>
+          all.find((p) => p.slug === slug)
+        ).filter((p): p is Product => Boolean(p));
+        setProducts(ordered);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  return (
-    <section style={{ background: "var(--cream)", padding: "96px 64px" }}>
-      {/* Header */}
-      <div
-        className="flex items-end justify-between"
-        style={{ marginBottom: 56 }}
-      >
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>
-            Featured products
-          </div>
-          <h2
-            className="font-display"
-            style={{
-              fontSize: "clamp(32px, 3vw, 42px)",
-              fontWeight: 400,
-              lineHeight: 1.12,
-              color: "var(--ink)",
-            }}
-          >
-            Best sellers &amp;
-            <br />
-            staff picks
-          </h2>
-        </div>
-        <Link
-          href="/products"
-          className="hidden md:inline-flex text-[11px] font-medium tracking-[0.1em] uppercase pb-1 transition-opacity duration-200 hover:opacity-70"
-          style={{
-            color: "var(--teal)",
-            borderBottom: "1px solid var(--teal)",
-            textDecoration: "none",
-          }}
-        >
-          View all products →
-        </Link>
-      </div>
+  const [featured, second, third] = products;
+  const ready = !loading && !!featured;
+  const setRevealRef = useScrollReveal(ready);
 
-      {/* Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-[4px] animate-pulse"
-              style={{ height: 380, background: "rgba(0,0,0,0.06)" }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.map((product, i) => (
-            <Link
-              key={product.id}
-              href={`/products/${product.slug}`}
-              className="group block no-underline rounded-[4px] overflow-hidden transition-all duration-250"
+  function pauseAuto() {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+  function resumeAuto() {
+    if (!timerRef.current && ready && products.length > 1) {
+      timerRef.current = setInterval(() => {
+        setHeroIndex((i) => (i + 1) % products.length);
+      }, 4000);
+    }
+  }
+
+  useEffect(() => {
+    resumeAuto();
+    return pauseAuto;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, products.length]);
+
+  const activeIndex = products.length ? heroIndex % products.length : 0;
+
+  return (
+    <section className="px-4 md:px-9 py-16" style={{ background: "var(--cream)" }}>
+      <div className="mx-auto" style={{ maxWidth: 1360 }}>
+        {/* Header */}
+        <div
+          className="flex items-end justify-between"
+          style={{ marginBottom: 40 }}
+        >
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>
+              Featured products
+            </div>
+            <h2
+              className="font-display"
               style={{
-                background: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.06)",
-                textDecoration: "none",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow =
-                  "0 16px 40px rgba(0,0,0,0.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
+                fontSize: "clamp(32px, 3vw, 42px)",
+                fontWeight: 400,
+                lineHeight: 1.12,
+                color: "var(--ink)",
               }}
             >
-              {/* Image area */}
+              Best sellers &amp;
+              <br />
+              staff picks
+            </h2>
+          </div>
+          <Link
+            href="/products"
+            className="hidden md:inline-flex text-[11px] font-medium tracking-[0.1em] uppercase pb-1 transition-opacity duration-200 hover:opacity-70"
+            style={{
+              color: "var(--teal)",
+              borderBottom: "1px solid var(--teal)",
+              textDecoration: "none",
+            }}
+          >
+            View all products →
+          </Link>
+        </div>
+
+        {/* Editorial split — one hero pick + two stacked side cards, scroll-triggered stagger reveal */}
+        {loading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+            <div
+              className="rounded-[16px] animate-pulse"
+              style={{ height: 400, background: "rgba(0,0,0,0.06)" }}
+            />
+            <div className="flex flex-col gap-4">
+              {[...Array(2)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 rounded-[14px] animate-pulse"
+                  style={{ minHeight: 176, background: "rgba(0,0,0,0.06)" }}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          featured && (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+              {/* Hero — auto-rotating crossfade through all 3 featured picks */}
               <div
-                className="relative flex items-center justify-center"
+                ref={setRevealRef(0)}
+                onMouseEnter={pauseAuto}
+                onMouseLeave={resumeAuto}
+                className="overflow-hidden"
                 style={{
-                  height: 200,
-                  background: gradients[i % 3],
+                  ...revealStyle,
+                  display: "grid",
+                  borderRadius: 16,
+                  background: "#ffffff",
+                  border: "1px solid rgba(0,0,0,0.06)",
                 }}
               >
-                {product.isBestSeller && (
-                  <span
-                    className="absolute top-3 left-3 text-[9px] tracking-[0.1em] uppercase text-white px-[10px] py-1 rounded-[2px]"
-                    style={{ background: "var(--teal)", fontWeight: 500 }}
-                  >
-                    Best Seller
-                  </span>
-                )}
-                {/* Placeholder */}
-                <div
-                  style={{
-                    width: 60,
-                    height: 80,
-                    background: "rgba(255,255,255,0.5)",
-                    borderRadius: 4,
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "monospace",
-                    fontSize: 8,
-                    color: "var(--ink-muted)",
-                    textAlign: "center",
-                    padding: 6,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  product
-                  <br />
-                  shot
-                </div>
-              </div>
-
-              {/* Body */}
-              <div style={{ padding: 24 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    color: "var(--teal)",
-                    marginBottom: 6,
-                  }}
-                >
-                  {categoryLabel[product.category]}
-                </div>
-                <div
-                  className="font-display"
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 400,
-                    lineHeight: 1.2,
-                    color: "var(--ink)",
-                    marginBottom: 8,
-                  }}
-                >
-                  {product.name}
-                </div>
-                <p
-                  style={{
-                    fontSize: 12,
-                    lineHeight: 1.7,
-                    fontWeight: 400,
-                    color: "var(--ink-muted)",
-                    marginBottom: 20,
-                  }}
-                >
-                  {product.tagline}
-                </p>
-
-                <div
-                  className="flex items-center justify-between"
-                  style={{
-                    paddingTop: 16,
-                    borderTop: "1px solid rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <div
-                    className="font-display"
-                    style={{ fontSize: 20, color: "var(--ink)" }}
-                  >
-                    {product.price ? (
-                      `₱${parseFloat(product.price).toLocaleString()}`
-                    ) : (
-                      <>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontFamily: "'Plus Jakarta Sans', sans-serif",
-                            color: "var(--ink-faint)",
-                          }}
-                        >
-                          Price on
-                        </span>{" "}
-                        inquiry
-                      </>
-                    )}
-                  </div>
-                  <span
-                    className="text-[10px] tracking-[0.1em] uppercase px-4 py-2 rounded-[2px] border transition-all duration-200 group-hover:bg-[var(--teal)] group-hover:text-white group-hover:border-[var(--teal)]"
+                {products.map((p, i) => (
+                  <Link
+                    key={p.id}
+                    href={`/products/${p.slug}`}
+                    className="block no-underline"
                     style={{
-                      color: "var(--teal)",
-                      borderColor: "var(--teal)",
-                      fontWeight: 500,
+                      gridColumn: 1,
+                      gridRow: 1,
+                      opacity: i === activeIndex ? 1 : 0,
+                      pointerEvents: i === activeIndex ? "auto" : "none",
+                      transition: "opacity 0.6s ease",
+                      textDecoration: "none",
                     }}
                   >
-                    {product.price ? "Order Now" : "Learn More"}
-                  </span>
-                </div>
+                    <div
+                      className="relative flex items-center justify-center"
+                      style={{ height: 320, background: gradients[i % gradients.length] }}
+                    >
+                      {p.isBestSeller && (
+                        <span
+                          className="absolute top-4 left-4"
+                          style={{
+                            fontSize: 9,
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                            color: "#fff",
+                            background: "rgba(255,255,255,0.22)",
+                            padding: "4px 10px",
+                            borderRadius: 999,
+                            fontWeight: 500,
+                          }}
+                        >
+                          Best Seller
+                        </span>
+                      )}
+                      <div
+                        style={{
+                          width: 60,
+                          height: 80,
+                          background: "rgba(255,255,255,0.5)",
+                          borderRadius: 4,
+                          border: "1px solid rgba(0,0,0,0.08)",
+                        }}
+                      />
+                      {products.length > 1 && (
+                        <div
+                          className="absolute flex gap-1.5"
+                          style={{ bottom: 16, right: 20, zIndex: 2 }}
+                        >
+                          {products.map((_, dotI) => (
+                            <span
+                              key={dotI}
+                              style={{
+                                width: dotI === activeIndex ? 16 : 6,
+                                height: 6,
+                                borderRadius: 3,
+                                background:
+                                  dotI === activeIndex
+                                    ? "#fff"
+                                    : "rgba(255,255,255,0.45)",
+                                transition: "width 0.3s, background 0.3s",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: 24 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 500,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          color: "var(--teal)",
+                          marginBottom: 6,
+                        }}
+                      >
+                        {categoryLabel[p.category]}
+                      </div>
+                      <div
+                        className="font-display"
+                        style={{ fontSize: 26, color: "var(--ink)", marginBottom: 8 }}
+                      >
+                        {p.name}
+                      </div>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          lineHeight: 1.65,
+                          color: "var(--ink-muted)",
+                          marginBottom: 16,
+                        }}
+                      >
+                        {p.tagline}
+                      </p>
+                      <div
+                        className="flex items-center justify-between"
+                        style={{ paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}
+                      >
+                        <div className="font-display" style={{ fontSize: 20, color: "var(--ink)" }}>
+                          {formatPrice(p.price) ?? "Price on inquiry"}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 500,
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                            border: "1px solid var(--teal)",
+                            color: "var(--teal)",
+                            borderRadius: 2,
+                            padding: "8px 16px",
+                          }}
+                        >
+                          {p.price ? "Order Now" : "Learn More"}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            </Link>
-          ))}
-        </div>
-      )}
+
+              {/* Side stack — the other two picks; each pulses in sync when the
+                  hero rotates around to show that same product */}
+              <div className="flex flex-col gap-4">
+                {[second, third].map((p, i) => {
+                  if (!p) return null;
+                  const isActive = activeIndex === i + 1;
+                  return (
+                    <Link
+                      key={p.id}
+                      ref={setRevealRef(i + 1)}
+                      href={`/products/${p.slug}`}
+                      className="flex flex-1 no-underline"
+                      style={{ ...revealStyle, textDecoration: "none" }}
+                    >
+                      <div
+                        className="flex w-full overflow-hidden"
+                        style={{
+                          borderRadius: 14,
+                          background: "#ffffff",
+                          border: `1px solid ${isActive ? "var(--teal)" : "rgba(0,0,0,0.06)"}`,
+                          boxShadow: isActive
+                            ? "0 10px 28px rgba(15,74,60,0.16)"
+                            : "none",
+                          transform: isActive ? "scale(1.02)" : "scale(1)",
+                          transition:
+                            "transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s ease, border-color 0.4s ease",
+                        }}
+                      >
+                        <div
+                          className="shrink-0"
+                          style={{ width: 120, background: gradients[i + 1] }}
+                        />
+                        <div style={{ padding: 16 }}>
+                          <div
+                            style={{
+                              fontSize: 9.5,
+                              fontWeight: 500,
+                              letterSpacing: "0.1em",
+                              textTransform: "uppercase",
+                              color: "var(--teal)",
+                              marginBottom: 4,
+                            }}
+                          >
+                            {categoryLabel[p.category]}
+                          </div>
+                          <div
+                            className="font-display"
+                            style={{ fontSize: 16, color: "var(--ink)" }}
+                          >
+                            {p.name}
+                          </div>
+                          <p
+                            style={{
+                              fontSize: 11,
+                              lineHeight: 1.55,
+                              color: "var(--ink-muted)",
+                              marginTop: 4,
+                            }}
+                          >
+                            {p.tagline}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )
+        )}
+      </div>
     </section>
   );
 }
