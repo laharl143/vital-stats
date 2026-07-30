@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const navLinks = [
@@ -13,130 +13,165 @@ const navLinks = [
   { label: "Contact", href: "/contact" },
 ];
 
+const tickerItems = [
+  "Precision Wellness for Body & Skin",
+  "Medically Supervised",
+  "Licensed Professionals",
+  "Verified Suppliers",
+];
+
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
   const pathname = usePathname();
   const isHome = pathname === "/";
 
+  // Hide on scroll down, reveal on scroll up — mirrors wtatennis.com's navbar behavior
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll);
+    lastScrollY.current = window.scrollY;
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      const scrollingDown = currentY > lastScrollY.current && currentY > 80;
+      setHidden(scrollingDown);
+      if (scrollingDown) setMenuOpen(false);
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isSolid = scrolled || !isHome;
-
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between"
-      style={{
-        padding: "0 clamp(10px, 4vw, 60px)",
-        height:57,
-        background: isSolid ? "rgba(247,249,248,0.55)" : "transparent",
-        backdropFilter: isSolid ? "blur(20px) saturate(180%)" : "none",
-        WebkitBackdropFilter: isSolid ? "blur(20px) saturate(180%)" : "none",
-        borderBottom: isSolid
-          ? "1px solid rgba(255,255,255,0.25)"
-          : "1px solid transparent",
-        boxShadow: isSolid ? "0 2px 24px rgba(0,0,0,0.06)" : "none",
-        transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)",
-      }}
+    <div
+      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center pt-4 md:pt-8 gap-3 md:gap-4 transition-transform duration-300 ease-out"
+      style={{ transform: hidden ? "translateY(-130%)" : "translateY(0)" }}
     >
-      {/* Logo */}
-      <Link
-        href="/"
-        className="relative flex items-center"
-        style={{ height: 57, width: "clamp(100px, 8vw, 130px)" }}
-      >
-        <Image
-          src="/logo.png"
-          alt="VitalStats"
-          width={130}
-          height={130}
-          className="absolute w-auto object-contain"
-          style={{
-            height: "clamp(100px, 8vw, 130px)",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            pointerEvents: "none",
-          }}
-          priority
-        />
-      </Link>
-      
-      {/* Desktop links */}
-      <ul className="hidden md:flex gap-9 list-none">
-        {navLinks.map((link) => (
-          <li key={link.label}>
-            <Link
-              href={link.href}
-              className="text-[11px] font-normal tracking-[0.1em] uppercase transition-colors duration-200"
-              style={{ color: "var(--ink-muted)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "var(--teal)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "var(--ink-muted)")
-              }
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-
-      {/* CTA */}
-      <Link
-        href="/book-consult"
-        className="hidden md:inline-block text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-[10px] rounded-[2px] transition-opacity duration-200 hover:opacity-85"
-        style={{ background: "var(--teal)" }}
-      >
-        Book a Consult
-      </Link>
-
-      {/* Mobile hamburger */}
-      <button
-        className="md:hidden flex flex-col gap-[5px] p-2"
-        onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle menu"
-      >
-        <span
-          className="block w-5 h-[1.5px] transition-all duration-200"
-          style={{
-            background: "var(--ink)",
-            transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none",
-          }}
-        />
-        <span
-          className="block w-5 h-[1.5px] transition-all duration-200"
-          style={{ background: "var(--ink)", opacity: menuOpen ? 0 : 1 }}
-        />
-        <span
-          className="block w-5 h-[1.5px] transition-all duration-200"
-          style={{
-            background: "var(--ink)",
-            transform: menuOpen
-              ? "rotate(-45deg) translate(4px, -4px)"
-              : "none",
-          }}
-        />
-      </button>
-
-      {/* Mobile menu */}
-      {menuOpen && (
+      {/* Ticker — homepage only, mirrors the hero's own promo strip */}
+      {isHome && (
         <div
-          className="absolute top-14.25 left-0 right-0 flex flex-col gap-0 md:hidden"
+          className="hidden sm:block overflow-hidden"
           style={{
-            background: "rgba(247,249,248,0.98)",
-            borderBottom: "1px solid rgba(46,139,114,0.1)",
+            width: "26%",
+            minWidth: 260,
+            WebkitMaskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
+            maskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
           }}
         >
+          <div className="flex whitespace-nowrap animate-marquee" style={{ width: "max-content" }}>
+            {[0, 1].map((copy) => (
+              <span
+                key={copy}
+                className="text-[11px] font-semibold tracking-[0.04em] uppercase pr-6"
+                style={{ color: "rgba(15,74,60,0.65)" }}
+              >
+                {tickerItems.join("  •  ")} &nbsp;•&nbsp;
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nav pill */}
+      <nav
+        className="relative flex items-center justify-between rounded-full mx-4 md:mx-8"
+        style={{
+          width: "calc(100% - 32px)",
+          maxWidth: 1360,
+          background: "#ffffff",
+          padding: "clamp(14px, 1.6vw, 20px) clamp(18px, 2.2vw, 32px)",
+          boxShadow: "0 6px 24px rgba(13,21,18,0.12)",
+        }}
+      >
+        {/* Logo */}
+        <Link href="/" className="relative flex items-center flex-shrink-0" style={{ height: 48, width: "clamp(100px, 8.5vw, 130px)" }}>
+          <Image
+            src="/logo.png"
+            alt="VitalStats"
+            width={130}
+            height={48}
+            className="absolute w-auto object-contain"
+            style={{ height: "clamp(38px, 3.8vw, 48px)", top: "50%", left: 0, transform: "translateY(-50%)", pointerEvents: "none" }}
+            priority
+          />
+        </Link>
+
+        {/* Desktop links */}
+        <ul className="hidden md:flex gap-10 list-none items-center">
           {navLinks.map((link) => (
+            <li key={link.label}>
+              <Link
+                href={link.href}
+                className="text-[15px] font-semibold transition-colors duration-200"
+                style={{ color: "var(--ink)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink)")}
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        {/* CTA */}
+        <Link
+          href="/book-consult"
+          className="hidden md:inline-block text-white text-[13px] font-semibold px-7 py-[13px] rounded-full transition-opacity duration-200 hover:opacity-90 flex-shrink-0"
+          style={{ background: "var(--teal)" }}
+        >
+          Book a Consult
+        </Link>
+
+        {/* Mobile hamburger */}
+        <button
+          className="md:hidden flex flex-col gap-[5px] p-2"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span
+            className="block w-5 h-[1.5px] transition-all duration-200"
+            style={{
+              background: "var(--ink)",
+              transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none",
+            }}
+          />
+          <span
+            className="block w-5 h-[1.5px] transition-all duration-200"
+            style={{ background: "var(--ink)", opacity: menuOpen ? 0 : 1 }}
+          />
+          <span
+            className="block w-5 h-[1.5px] transition-all duration-200"
+            style={{
+              background: "var(--ink)",
+              transform: menuOpen ? "rotate(-45deg) translate(4px, -4px)" : "none",
+            }}
+          />
+        </button>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div
+            className="absolute top-full mt-3 left-0 right-0 flex flex-col gap-0 md:hidden rounded-[20px] overflow-hidden"
+            style={{
+              background: "rgba(247,249,248,0.98)",
+              boxShadow: "0 12px 32px rgba(13,21,18,0.15)",
+            }}
+          >
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
+                style={{
+                  color: "var(--ink-muted)",
+                  borderColor: "rgba(0,0,0,0.05)",
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
             <Link
-              key={link.label}
-              href={link.href}
+              href="/admin/login"
               className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
               style={{
                 color: "var(--ink-muted)",
@@ -144,30 +179,19 @@ export default function Navbar() {
               }}
               onClick={() => setMenuOpen(false)}
             >
-              {link.label}
+              Admin Portal
             </Link>
-          ))}
-          <Link
-            href="/admin/login"
-            className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
-            style={{
-              color: "var(--ink-muted)",
-              borderColor: "rgba(0,0,0,0.05)",
-            }}
-            onClick={() => setMenuOpen(false)}
-          >
-            Admin Portal
-          </Link>
-          <Link
-            href="/book-consult"
-            className="mx-8 my-4 text-center text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[2px]"
-            style={{ background: "var(--teal)" }}
-            onClick={() => setMenuOpen(false)}
-          >
-            Book a Consult
-          </Link>
-        </div>
-      )}
-    </nav>
+            <Link
+              href="/book-consult"
+              className="mx-8 my-4 text-center text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-full"
+              style={{ background: "var(--teal)" }}
+              onClick={() => setMenuOpen(false)}
+            >
+              Book a Consult
+            </Link>
+          </div>
+        )}
+      </nav>
+    </div>
   );
 }
