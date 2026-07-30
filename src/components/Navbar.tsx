@@ -73,24 +73,27 @@ export default function Navbar() {
 
       {/* Nav pill */}
       <nav
-        className="relative flex items-center justify-between rounded-full mx-4 md:mx-8"
+        className="relative flex items-center justify-between mx-4 md:mx-8"
         style={{
           width: "calc(100% - 32px)",
           maxWidth: 1360,
-          background: "#ffffff",
+          background: "rgba(255,255,255,0.898)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          borderRadius: 32,
           padding: "clamp(14px, 1.6vw, 20px) clamp(18px, 2.2vw, 32px)",
-          boxShadow: "0 6px 24px rgba(13,21,18,0.12)",
+          zIndex: 10,
         }}
       >
         {/* Logo */}
-        <Link href="/" className="relative flex items-center flex-shrink-0" style={{ height: 48, width: "clamp(100px, 8.5vw, 130px)" }}>
+        <Link href="/" className="relative flex items-center flex-shrink-0" style={{ height: 48, width: "clamp(160px, 13vw, 210px)" }}>
           <Image
-            src="/logo.png"
+            src="/vitalstats_logo_v2_compact.png"
             alt="VitalStats"
-            width={130}
-            height={48}
+            width={2340}
+            height={600}
             className="absolute w-auto object-contain"
-            style={{ height: "clamp(38px, 3.8vw, 48px)", top: "50%", left: 0, transform: "translateY(-50%)", pointerEvents: "none" }}
+            style={{ height: "clamp(30px, 3vw, 38px)", top: "50%", left: 0, transform: "translateY(-50%)", pointerEvents: "none" }}
             priority
           />
         </Link>
