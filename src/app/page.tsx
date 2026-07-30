@@ -4,7 +4,6 @@ import Hero from "@/components/home/Hero";
 import TrustBar from "@/components/home/TrustBar";
 import Categories from "@/components/home/Categories";
 import HowItWorks from "@/components/home/HowItWorks";
-import Legitimacy from "@/components/home/Legitimacy";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import BeforeAfter from "@/components/home/BeforeAfter";
 import Testimonials from "@/components/home/Testimonials";
@@ -21,7 +20,6 @@ export default function HomePage() {
         <TrustBar />
         <Categories />
         <HowItWorks />
-        <Legitimacy />
         <FeaturedProducts />
         <BeforeAfter />
         <Testimonials />
