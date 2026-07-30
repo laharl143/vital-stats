@@ -117,6 +117,9 @@ In Progress → In Review → Done, plus Blocked.
 
 - **Every change the user asks for — minor or major — gets a Jira issue.** Create it even if the
   request came as a quick one-off ask in conversation, not just for planned/ticketed work.
+- **Before starting any work on an existing issue (planning, implementation, anything beyond
+  filing it), transition it to In Progress first — not after, not as a batch cleanup later.**
+  This applies even mid-session to an issue that was filed earlier in the same conversation.
 - Set the issue's column to match where the work actually stands right when it's created or
   updated, not always To Do:
   - **To Do** — issue filed but work hasn't started yet
