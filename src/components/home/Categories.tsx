@@ -45,7 +45,7 @@ export default function Categories() {
   return (
     <section
       id="products"
-      className="py-24 px-4 md:px-9"
+      className="py-16 px-4 md:px-9"
       style={{ background: "var(--cream)" }}
     >
       <div className="mx-auto" style={{ maxWidth: 1360 }}>
