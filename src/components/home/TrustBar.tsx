@@ -48,6 +48,8 @@ export default function TrustBar() {
             borderRadius: 18,
             padding: "16px 22px",
             boxShadow: "0 10px 24px rgba(13,21,18,0.18)",
+            width: 225,
+            boxSizing: "border-box",
           }}
         >
           <div
