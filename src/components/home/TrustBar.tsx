@@ -39,7 +39,7 @@ export default function TrustBar() {
     <div
       className="px-4 md:px-9"
       style={{
-        background: "linear-gradient(180deg, var(--cream) 0%, #eef7f2 100%)",
+        background: "var(--cream)",
         paddingTop: 28,
         paddingBottom: 40,
       }}
@@ -60,7 +60,7 @@ export default function TrustBar() {
                   key={b.label}
                   className="flex items-center"
                   style={{
-                    gap: 10,
+                    gap: 5,
                     padding: "15px 30px",
                     borderRadius: 999,
                     background: i % 2 === 0 ? "var(--teal-pale)" : "#d6f2e6",
