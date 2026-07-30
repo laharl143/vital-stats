@@ -85,10 +85,10 @@ export default function Navbar() {
           zIndex: 10,
         }}
       >
-        {/* Logo — centered in mobile's middle grid column, left-aligned in desktop's flex row */}
+        {/* Logo — centered in mobile's middle grid column, hidden on desktop (a dedicated desktop logo sits in the left group below) */}
         <Link
           href="/"
-          className="row-start-1 col-start-2 justify-self-center flex items-center shrink-0 md:row-auto md:col-auto md:justify-self-auto"
+          className="row-start-1 col-start-2 justify-self-center flex items-center shrink-0 md:hidden"
           style={{ height: 56 }}
         >
           <Image
@@ -102,34 +102,84 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Desktop links */}
-        <ul
-          className="hidden md:flex gap-10 list-none items-center absolute left-1/2"
-          style={{ transform: "translateX(-50%)" }}
-        >
-          {navLinks.map((link) => (
-            <li key={link.label}>
-              <Link
-                href={link.href}
-                className="text-[15px] font-semibold transition-colors duration-200"
-                style={{ color: "var(--ink)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink)")}
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {/* Desktop left group — logo + links, WTA-style */}
+        <div className="hidden md:flex items-center gap-8 lg:gap-10 shrink-0">
+          <Link href="/" className="flex items-center shrink-0" style={{ height: 48 }}>
+            <Image
+              src="/vitalstats_logo_horizontal.png"
+              alt="VitalStats"
+              width={2066}
+              height={570}
+              className="w-auto object-contain"
+              style={{ height: "clamp(32px, 2.6vw, 40px)", pointerEvents: "none" }}
+              priority
+            />
+          </Link>
+          <ul className="flex gap-5 lg:gap-8 list-none items-center">
+            {navLinks.map((link) => (
+              <li key={link.label}>
+                <Link
+                  href={link.href}
+                  className="text-[14px] lg:text-[15px] font-semibold transition-colors duration-200 whitespace-nowrap"
+                  style={{ color: "var(--ink)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink)")}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-        {/* CTA */}
-        <Link
-          href="/book-consult"
-          className="hidden md:inline-block text-white text-[13px] font-semibold px-7 py-[13px] rounded-full transition-opacity duration-200 hover:opacity-90 flex-shrink-0"
-          style={{ background: "var(--teal)" }}
-        >
-          Book a Consult
-        </Link>
+        {/* Desktop right group — notifications, search, account, CTA */}
+        <div className="hidden md:flex items-center gap-4 shrink-0">
+          <div className="hidden lg:flex items-center gap-3">
+          <button className="relative flex items-center justify-center p-1" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 18, height: 18 }}>
+              <path d="M6 8a6 6 0 0112 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" strokeLinejoin="round" />
+              <path d="M10 19a2 2 0 004 0" strokeLinecap="round" />
+            </svg>
+            <span
+              className="absolute flex items-center justify-center"
+              style={{
+                top: -2,
+                right: -2,
+                width: 15,
+                height: 15,
+                borderRadius: "50%",
+                background: "var(--teal)",
+                color: "#fff",
+                fontSize: 9,
+                fontWeight: 700,
+                border: "1.5px solid #fff",
+              }}
+            >
+              0
+            </span>
+          </button>
+          <button className="flex items-center justify-center p-1" aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 18, height: 18 }}>
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+            </svg>
+          </button>
+          <span style={{ width: 1, height: 20, background: "rgba(13,21,18,0.12)" }} />
+          <button className="flex items-center justify-center p-1" aria-label="Account">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 18, height: 18 }}>
+              <circle cx="12" cy="8" r="3.5" />
+              <path d="M4.5 20c1.5-3.5 5-5 7.5-5s6 1.5 7.5 5" strokeLinecap="round" />
+            </svg>
+          </button>
+          </div>
+          <Link
+            href="/book-consult"
+            className="inline-block text-white text-[13px] font-semibold px-5 lg:px-7 py-[13px] rounded-full transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
+            style={{ background: "var(--teal)" }}
+          >
+            Book a Consult
+          </Link>
+        </div>
 
         {/* Mobile left group — hamburger + search, WTA-style */}
         <div className="row-start-1 col-start-1 justify-self-start md:hidden flex items-center gap-3">
@@ -172,6 +222,23 @@ export default function Navbar() {
               <path d="M6 8a6 6 0 0112 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" strokeLinejoin="round" />
               <path d="M10 19a2 2 0 004 0" strokeLinecap="round" />
             </svg>
+            <span
+              className="absolute flex items-center justify-center"
+              style={{
+                top: 0,
+                right: 0,
+                width: 15,
+                height: 15,
+                borderRadius: "50%",
+                background: "var(--teal)",
+                color: "#fff",
+                fontSize: 9,
+                fontWeight: 700,
+                border: "1.5px solid #fff",
+              }}
+            >
+              0
+            </span>
           </button>
           <button className="flex items-center justify-center p-1" aria-label="Account">
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 20, height: 20 }}>
