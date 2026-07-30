@@ -21,39 +21,34 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        code: { label: "Passcode", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password are required");
+        if (!credentials?.code) {
+          throw new Error("Passcode is required");
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        // No email is collected — match the passcode against each admin's
+        // own hash so distinct per-admin passcodes still resolve to the
+        // correct signed-in identity (session.user.email etc still work).
+        const users = await prisma.user.findMany({
+          where: { hashedPassword: { not: null } },
         });
 
-        if (!user) {
-          throw new Error("Invalid email or password");
-        }
-
-        // Compare password — using bcrypt
         const bcrypt = await import("bcryptjs");
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.hashedPassword ?? ""
-        );
-
-        if (!isValid) {
-          throw new Error("Invalid email or password");
+        for (const user of users) {
+          const isValid = await bcrypt.compare(credentials.code, user.hashedPassword ?? "");
+          if (isValid) {
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            };
+          }
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
+        throw new Error("Invalid passcode");
       },
     }),
   ],
