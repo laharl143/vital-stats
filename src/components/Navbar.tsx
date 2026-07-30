@@ -99,7 +99,10 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <ul className="hidden md:flex gap-10 list-none items-center">
+        <ul
+          className="hidden md:flex gap-10 list-none items-center absolute left-1/2"
+          style={{ transform: "translateX(-50%)" }}
+        >
           {navLinks.map((link) => (
             <li key={link.label}>
               <Link
