@@ -91,62 +91,56 @@ export default function TrustBar() {
         </div>
       </div>
 
-      {/* Desktop — floating pill cards */}
-      <div className="hidden md:flex flex-wrap items-center justify-center gap-5">
+      {/* Desktop — outlined ghost cards */}
+      <div className="hidden md:flex mx-auto" style={{ maxWidth: 1360, gap: 16 }}>
         {badges.map((b) => (
           <div
             key={b.label}
-            className="flex items-center gap-3"
+            className="flex flex-1 flex-col items-center text-center"
             style={{
-              background: "rgba(13,21,18,0.88)",
-              borderRadius: 18,
-              padding: "16px 22px",
-              boxShadow: "0 10px 24px rgba(13,21,18,0.18)",
-              width: 225,
-              boxSizing: "border-box",
+              gap: 10,
+              padding: "22px 18px",
+              borderRadius: 16,
+              border: "1.4px solid rgba(13,21,18,0.14)",
+              background: "rgba(255,255,255,0.4)",
             }}
           >
             <div
-              className="flex items-center justify-center shrink-0"
+              className="flex items-center justify-center"
               style={{
-                width: 34,
-                height: 34,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
-                background: "rgba(111,230,184,0.18)",
+                background: "var(--teal-pale)",
               }}
             >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--mint)"
+                stroke="var(--teal-deep)"
                 strokeWidth={1.8}
-                style={{ width: 17, height: 17 }}
+                style={{ width: 16, height: 16 }}
               >
                 {b.icon}
               </svg>
             </div>
-            <div>
-              <div
-                style={{
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  letterSpacing: "0.01em",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {b.label}
-              </div>
-              <div
-                style={{
-                  fontSize: 10.5,
-                  color: "rgba(255,255,255,0.55)",
-                  marginTop: 2,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {b.sub}
-              </div>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                color: "var(--ink)",
+              }}
+            >
+              {b.label}
+            </div>
+            <div
+              style={{
+                fontSize: 10.5,
+                color: "var(--ink-muted)",
+              }}
+            >
+              {b.sub}
             </div>
           </div>
         ))}
