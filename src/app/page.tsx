@@ -21,7 +21,7 @@ export default function HomePage() {
         <Categories />
         <HowItWorks />
         <FeaturedProducts />
-        <BeforeAfter />
+        {/* <BeforeAfter /> */}
         <Testimonials />
         <Team />
         <FAQ />
