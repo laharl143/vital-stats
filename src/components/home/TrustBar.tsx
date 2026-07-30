@@ -91,27 +91,39 @@ export default function TrustBar() {
         </div>
       </div>
 
-      {/* Desktop — outlined ghost cards */}
-      <div className="hidden md:flex mx-auto" style={{ maxWidth: 1360, gap: 16 }}>
-        {badges.map((b) => (
+      {/* Desktop — mint gradient band */}
+      <div
+        className="hidden md:flex mx-auto"
+        style={{
+          maxWidth: 1360,
+          borderRadius: 20,
+          background: "linear-gradient(120deg, var(--mint) 0%, #a3ecc9 100%)",
+        }}
+      >
+        {badges.map((b, i) => (
           <div
             key={b.label}
-            className="flex flex-1 flex-col items-center text-center"
-            style={{
-              gap: 10,
-              padding: "22px 18px",
-              borderRadius: 16,
-              border: "1.4px solid rgba(13,21,18,0.14)",
-              background: "rgba(255,255,255,0.4)",
-            }}
+            className="relative flex flex-1 items-center gap-3"
+            style={{ padding: "22px 24px", minWidth: 0 }}
           >
+            {i > 0 && (
+              <span
+                className="absolute left-0"
+                style={{
+                  top: "22%",
+                  bottom: "22%",
+                  width: 1,
+                  background: "rgba(13,21,18,0.12)",
+                }}
+              />
+            )}
             <div
-              className="flex items-center justify-center"
+              className="flex items-center justify-center shrink-0"
               style={{
                 width: 36,
                 height: 36,
                 borderRadius: "50%",
-                background: "var(--teal-pale)",
+                background: "rgba(255,255,255,0.55)",
               }}
             >
               <svg
@@ -124,23 +136,25 @@ export default function TrustBar() {
                 {b.icon}
               </svg>
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.03em",
-                color: "var(--ink)",
-              }}
-            >
-              {b.label}
-            </div>
-            <div
-              style={{
-                fontSize: 10.5,
-                color: "var(--ink-muted)",
-              }}
-            >
-              {b.sub}
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "var(--teal-deep)",
+                }}
+              >
+                {b.label}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "rgba(15,74,60,0.65)",
+                  marginTop: 2,
+                }}
+              >
+                {b.sub}
+              </div>
             </div>
           </div>
         ))}
