@@ -84,6 +84,12 @@ question/options UI, not a plain-text question), e.g.:
 Wait for their choice before proceeding. This comes before the commit step below — verification
 method is a separate decision from whether the fix is confirmed good.
 
+**Never kill the dev server after finishing a fix.** Ed and Josh keep it running to continuously
+click through the site themselves as work lands — stopping it out from under them is disruptive.
+Leave `npm run dev` running once it's up; only stop it if explicitly asked to, or if you need to
+restart it to pick up a config change (e.g. `.env`, `next.config`) that hot-reload won't catch —
+and in that case, start it back up again immediately after.
+
 ## Commit message format
 
 **Never commit automatically.** Make the code change and, if you tested it, report what you did
