@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/products/ProductCard";
@@ -27,21 +28,35 @@ const CATEGORIES = [
   { value: "WEIGHT_MANAGEMENT", label: "Weight Management" },
   { value: "RECOVERY_ANTI_AGING", label: "Recovery & Anti-Aging" },
   { value: "SKIN_CARE", label: "Skin Care" },
-  { value: "MEDICAL_CONSULTATION", label: "Consultation" },
 ];
 
 export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsPageContent />
+    </Suspense>
+  );
+}
+
+function ProductsPageContent() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [filtered, setFiltered] = useState<Product[]>([]);
-  const [activeCategory, setActiveCategory] = useState("ALL");
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const requested = searchParams.get("category");
+    return CATEGORIES.some((c) => c.value === requested) ? requested! : "ALL";
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/products?active=true")
       .then((r) => r.json())
       .then((json) => {
-        setProducts(json.data);
-        setFiltered(json.data);
+        const purchasable = (json.data as Product[]).filter(
+          (p) => p.category !== "MEDICAL_CONSULTATION"
+        );
+        setProducts(purchasable);
+        setFiltered(purchasable);
         setLoading(false);
       })
       .catch(() => setLoading(false));
