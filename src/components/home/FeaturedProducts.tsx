@@ -33,8 +33,9 @@ function formatPrice(price: string | null) {
   return price ? `₱${parseFloat(price).toLocaleString()}` : null;
 }
 
-// Fades + slides each card in as it scrolls into view, staggered by index;
-// resets when the card scrolls back out so the reveal replays.
+// Fades + slides each card in as it scrolls into view the first time,
+// staggered by index. Each card is unobserved right after it reveals, so it
+// stays visible and never replays on subsequent scroll-out/scroll-back-in.
 function useScrollReveal(ready: boolean) {
   const refs = useRef<(HTMLElement | null)[]>([]);
 
@@ -44,20 +45,17 @@ function useScrollReveal(ready: boolean) {
     // leaves refs.current empty and nothing ever reveals.
     if (!ready) return;
     const io = new IntersectionObserver(
-      (entries) => {
+      (entries, observer) => {
         entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
           const el = entry.target as HTMLElement;
           const index = refs.current.indexOf(el);
-          if (entry.isIntersecting) {
-            const delay = Math.max(index, 0) * 130;
-            setTimeout(() => {
-              el.style.opacity = "1";
-              el.style.transform = "translateY(0)";
-            }, delay);
-          } else {
-            el.style.opacity = "0";
-            el.style.transform = "translateY(24px)";
-          }
+          const delay = Math.max(index, 0) * 130;
+          setTimeout(() => {
+            el.style.opacity = "1";
+            el.style.transform = "translateY(0)";
+          }, delay);
+          observer.unobserve(el);
         });
       },
       { threshold: 0.35 }
