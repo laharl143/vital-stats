@@ -73,16 +73,19 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 
 ## Verification workflow
 
-After implementing a fix or feature, **don't just run Playwright/automated checks on your own
-initiative.** Ask Ed or Josh how they want it verified, presented as clickable options (use the
-question/options UI, not a plain-text question), e.g.:
+**Never run Playwright (or any other automated browser check) without asking first — every
+single time, no exceptions.** This means literally stopping after the code change and asking a
+real question (via the question/options UI, not just proposing it in a text message and
+proceeding), before invoking Playwright at all — not just before reporting results. Do not treat
+an earlier "run a Playwright check myself" answer as blanket permission for later changes in the
+same session; each change gets its own ask. Options to present:
 
 - "Run a Playwright check myself" — you drive it end-to-end and report results
 - "I'll test it manually" — you stop and let them click through it themselves
 - "Skip verification for now"
 
-Wait for their choice before proceeding. This comes before the commit step below — verification
-method is a separate decision from whether the fix is confirmed good.
+Wait for their choice before running anything. This comes before the commit step below —
+verification method is a separate decision from whether the fix is confirmed good.
 
 **Never kill the dev server after finishing a fix.** Ed and Josh keep it running to continuously
 click through the site themselves as work lands — stopping it out from under them is disruptive.
