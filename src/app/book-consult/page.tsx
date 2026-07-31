@@ -32,6 +32,7 @@ export default function BookPage() {
   const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("ftIn");
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
+  const [isEditingHeight, setIsEditingHeight] = useState(false);
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
   const [weightLbs, setWeightLbs] = useState("");
 
@@ -73,6 +74,8 @@ export default function BookPage() {
     if (bmi < 30) return { label: "Obese Class I", color: "#F97316" };
     return { label: "Obese Class II", color: "#EF4444" };
   };
+
+  const heightMerged = heightUnit === "ftIn" && heightFeet !== "" && heightInches !== "" && !isEditingHeight;
 
   const heightInCm = heightUnit === "ftIn"
     ? (parseFloat(heightFeet || "0") * 30.48) + (parseFloat(heightInches || "0") * 2.54)
@@ -374,8 +377,32 @@ export default function BookPage() {
                             placeholder="e.g. 160" style={inputStyle}
                             onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                             onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        ) : heightMerged ? (
+                          <div className="flex items-center justify-between"
+                            style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
+                            <span style={{ fontWeight: 700, color: "var(--ink)" }}>
+                              {heightFeet}&apos;{heightInches}&quot;
+                            </span>
+                            <button type="button" onClick={() => setIsEditingHeight(true)}
+                              style={{
+                                background: "none", border: "none", padding: 0,
+                                color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
+                                letterSpacing: "0.02em", cursor: "pointer",
+                              }}>
+                              ✎ Edit
+                            </button>
+                          </div>
                         ) : (
-                          <div className="flex gap-2">
+                          <div className="flex gap-2"
+                            onBlur={(e) => {
+                              // Only merge once focus actually leaves both
+                              // inputs — tabbing from ft to in is a focus
+                              // change within this pair and must not merge
+                              // mid-transition (the other field may still be
+                              // empty at that exact instant).
+                              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                              setIsEditingHeight(false);
+                            }}>
                             <div className="flex-1">
                               <input type="number" required value={heightFeet}
                                 onChange={(e) => setHeightFeet(e.target.value)}
