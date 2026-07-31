@@ -267,7 +267,7 @@ export default function Testimonials() {
                 Result
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="hidden md:grid grid-cols-2 gap-3">
               {others.map((t) => {
                 const index = testimonials.indexOf(t);
                 return (
