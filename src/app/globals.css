@@ -66,6 +66,14 @@ body {
 .delay-400 { animation-delay: 0.35s; }
 .delay-500 { animation-delay: 0.45s; }
 
+/* GSAP entrance baseline — hidden until a timeline reveals it, so there's no
+   flash of the final layout before JS runs. Kept visible outright when the
+   visitor prefers reduced motion, since no timeline will ever reveal it. */
+.gsap-init { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .gsap-init { opacity: 1; }
+}
+
 /* Word-level stagger reveal — e.g. rotating quote text */
 @keyframes wordIn {
   from { opacity: 0; transform: translateY(8px); }

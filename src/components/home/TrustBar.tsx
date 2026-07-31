@@ -1,5 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
+
 const badges = [
   {
     label: "Verified Suppliers",
@@ -35,6 +41,31 @@ const badges = [
 ];
 
 export default function TrustBar() {
+  const railRef = useRef<HTMLDivElement>(null);
+
+  // Same "Quiet Drift" language as the Hero: one calm settle, no idle motion
+  // — this is the next thing the visitor sees after the hero, so it should
+  // land the same way rather than call attention to itself. See VS-81.
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const rail = railRef.current;
+    if (!rail || reduceMotion) return;
+
+    const items = Array.from(rail.children) as HTMLElement[];
+    gsap.set(items, { autoAlpha: 0, y: 14 });
+
+    const st = ScrollTrigger.create({
+      trigger: rail,
+      start: "top 88%",
+      once: true,
+      onEnter: () => {
+        gsap.to(items, { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", stagger: 0.08 });
+      },
+    });
+
+    return () => st.kill();
+  }, []);
+
   return (
     <div
       className="px-4 md:px-9"
@@ -93,6 +124,7 @@ export default function TrustBar() {
 
       {/* Desktop — mint gradient band */}
       <div
+        ref={railRef}
         className="hidden md:flex mx-auto"
         style={{
           maxWidth: 1360,
@@ -103,7 +135,7 @@ export default function TrustBar() {
         {badges.map((b, i) => (
           <div
             key={b.label}
-            className="relative flex flex-1 items-center gap-3"
+            className="gsap-init relative flex flex-1 items-center gap-3"
             style={{ padding: "22px 24px", minWidth: 0 }}
           >
             {i > 0 && (
