@@ -11,6 +11,11 @@ model's training data. Per `AGENTS.md`, consult `node_modules/next/dist/docs/` f
 unsure about (routing, middleware, config, data fetching) rather than assuming conventions from
 older Next.js. Pay attention to deprecation notices.
 
+## GSAP
+
+When writing or reviewing GSAP code, always consult the context7 MCP server for up-to-date docs
+before answering.
+
 ## Commands
 
 - `npm run dev` — start the dev server (localhost:3000)
