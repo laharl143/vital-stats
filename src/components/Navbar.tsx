@@ -23,6 +23,7 @@ const tickerItems = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const pathname = usePathname();
   const isHome = pathname === "/";
@@ -34,6 +35,7 @@ export default function Navbar() {
       const currentY = window.scrollY;
       const scrollingDown = currentY > lastScrollY.current && currentY > 80;
       setHidden(scrollingDown);
+      setScrolled(currentY > 80);
       if (scrollingDown) setMenuOpen(false);
       lastScrollY.current = currentY;
     };
@@ -43,11 +45,13 @@ export default function Navbar() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center pt-4 md:pt-8 gap-3 md:gap-4 transition-transform duration-300 ease-out"
+      className={`fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-3 md:gap-4 transition-[transform,padding] duration-300 ease-out ${
+        scrolled ? "pt-0" : "pt-4 md:pt-8"
+      }`}
       style={{ transform: hidden ? "translateY(-130%)" : "translateY(0)" }}
     >
-      {/* Ticker — homepage only, mirrors the hero's own promo strip */}
-      {isHome && (
+      {/* Ticker — homepage only, mirrors the hero's own promo strip; hidden once scrolled past the top */}
+      {isHome && !scrolled && (
         <div
           className="block overflow-hidden"
           style={{
