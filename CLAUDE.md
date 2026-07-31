@@ -82,27 +82,28 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 single time, no exceptions.** This means literally stopping after the code change and asking a
 real question (via the question/options UI, not just proposing it in a text message and
 proceeding), before invoking Playwright at all — not just before reporting results. Do not treat
-an earlier "run a Playwright check myself" answer as blanket permission for later changes in the
-same session; each change gets its own ask. Options to present:
+an earlier "let the current agent run Playwright end-to-end" answer as blanket permission for
+later changes in the same session; each change gets its own ask. Options to present:
 
-- "Run a Playwright check myself" — you drive it end-to-end and report results
+- "Let the current agent run Playwright end-to-end to double-check functionality" — you drive it
+  end-to-end and report results
 - "I'll test it manually" — you stop and let them click through it themselves
 - "Skip verification for now"
 
 Wait for their choice before running anything. This comes before the commit step below —
 verification method is a separate decision from whether the fix is confirmed good.
 
-**Never kill the dev server after finishing a fix.** Ed and Josh keep it running to continuously
-click through the site themselves as work lands — stopping it out from under them is disruptive.
-Leave `npm run dev` running once it's up; only stop it if explicitly asked to, or if you need to
-restart it to pick up a config change (e.g. `.env`, `next.config`) that hot-reload won't catch —
-and in that case, start it back up again immediately after.
+**Never kill the dev server after finishing a fix.** Ed keeps it running to continuously click
+through the site as work lands — stopping it out from under him is disruptive. Leave `npm run dev`
+running once it's up; only stop it if explicitly asked to, or if you need to restart it to pick up
+a config change (e.g. `.env`, `next.config`) that hot-reload won't catch — and in that case, start
+it back up again immediately after.
 
 ## Commit message format
 
 **Never commit automatically.** Make the code change and, if you tested it, report what you did
-and what you found — then stop and wait for Ed or Josh to explicitly confirm the fix is good
-before running `git commit`. Finishing a fix and verifying it (including automated checks like
+and what you found — then stop and wait for Ed to explicitly confirm the fix is good before
+running `git commit`. Finishing a fix and verifying it (including automated checks like
 Playwright) is not the same as being told to commit it. This applies even when a Jira ticket
 exists for the work — don't commit just because a ticket is being closed out.
 
@@ -134,9 +135,9 @@ In Progress → In Review → Done, plus Blocked.
   - **In Progress** — actively investigating, implementing, or awaiting confirmation that a fix
     is correct. **Stay here even after the fix is implemented and self-tested** (manual QA,
     Playwright, etc.) — being confident in a fix is not the same as it being confirmed.
-  - **Done** — only after ALL of the following happened, in order: (1) Ed or Josh explicitly
-    confirms the fix/feature is correct, (2) the code is committed, (3) the commit is pushed to
-    `origin/main`. Never jump straight to Done off of your own testing.
+  - **Done** — only after ALL of the following happened, in order: (1) Ed explicitly confirms the
+    fix/feature is correct, (2) the code is committed, (3) the commit is pushed to `origin/main`.
+    Never jump straight to Done off of your own testing.
   - **Blocked** — can't proceed (missing input, external dependency, waiting on a decision)
 - Keep the issue's status in sync as work moves forward — don't leave it stale in the wrong column.
-- Ed (developer) and Josh (owner) are the two people on this project.
+- Ed (developer) is the point of contact for this project.
