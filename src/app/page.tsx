@@ -9,7 +9,6 @@ import BeforeAfter from "@/components/home/BeforeAfter";
 import Testimonials from "@/components/home/Testimonials";
 import Team from "@/components/home/Team";
 import FAQ from "@/components/home/FAQ";
-import CtaBand from "@/components/home/CtaBand";
 
 export default function HomePage() {
   return (
@@ -25,7 +24,6 @@ export default function HomePage() {
         <Testimonials />
         <Team />
         <FAQ />
-        <CtaBand />
       </main>
       <Footer />
     </>
