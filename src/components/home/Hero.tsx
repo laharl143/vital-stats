@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 
 const dotPositions = [
@@ -21,6 +21,7 @@ export default function Hero() {
   const cardRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLDivElement>(null);
   const statRef = useRef<HTMLDivElement>(null);
+  const cornerPatchRef = useRef<HTMLDivElement>(null);
   const thumbrailRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<Array<HTMLSpanElement | null>>([]);
 
@@ -28,21 +29,33 @@ export default function Hero() {
   // rise — the headline never animates again after landing. Afterward only
   // a few background dots drift, the photo holds a barely-there zoom, and
   // the stat pill bobs slightly. See VS-81.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const dots = dotsRef.current.filter(Boolean) as HTMLElement[];
+
+    // The stat pill sits flush with the card's top edge (no dip) — the
+    // corner seam is closed entirely by the static corner-patch element
+    // instead, so there's nothing here for GSAP's own transforms to clobber.
+    //
+    // The patch's position is fixed by layout (anchored to the wrapper),
+    // but the card animates its own `y` transform in — transforms don't
+    // affect layout, so if the patch didn't move too, the card's *visual*
+    // corner would spend the whole entrance sliding past a patch sitting at
+    // its final resting spot, breaking the seam mid-animation. So the patch
+    // tracks the card's motion exactly (same y, same timing), not the
+    // pill's — it's structurally part of the card, not the pill.
     if (reduceMotion) return;
 
     gsap.set(ruleRef.current, { scaleX: 0, transformOrigin: "left center" });
     gsap.set([eyebrowRef.current, headlineRef.current, ctaRef.current], { autoAlpha: 0, y: 16 });
-    gsap.set(cardRef.current, { autoAlpha: 0, y: 20 });
+    gsap.set([cardRef.current, cornerPatchRef.current], { autoAlpha: 0, y: 20 });
     gsap.set(statRef.current, { autoAlpha: 0, y: 16 });
     gsap.set(thumbrailRef.current, { autoAlpha: 0, y: 16 });
     gsap.set(dots, { autoAlpha: 0 });
 
     const idleTweens: gsap.core.Tween[] = [];
     const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
-    tl.to(cardRef.current, { autoAlpha: 1, y: 0, duration: 1 })
+    tl.to([cardRef.current, cornerPatchRef.current], { autoAlpha: 1, y: 0, duration: 1 })
       .to(ruleRef.current, { scaleX: 1, duration: 0.5 }, "-=0.6")
       .to(eyebrowRef.current, { autoAlpha: 1, y: 0, duration: 0.5 }, "<")
       .to(headlineRef.current, { autoAlpha: 1, y: 0, duration: 0.7 }, "-=0.3")
@@ -51,17 +64,13 @@ export default function Hero() {
       .to(thumbrailRef.current, { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.45")
       .to(dots, { autoAlpha: 1, duration: 0.8, stagger: 0.05 }, "-=0.5")
       .add(() => {
+        // Deliberately not bobbing the stat pill (or the corner patch under
+        // it) here — they're the one thing in the whole scene that must
+        // never move again after landing.
         idleTweens.push(
           gsap.to(photoRef.current, {
             scale: 1.035,
             duration: 9,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: -1,
-          }),
-          gsap.to(statRef.current, {
-            y: "+=3",
-            duration: 4,
             ease: "sine.inOut",
             yoyo: true,
             repeat: -1,
@@ -108,7 +117,6 @@ export default function Hero() {
             style={{
               zIndex: 1,
               bottom: "100%",
-              transform: "translateY(20%)",
               right: 0,
               background: "rgba(13,21,18,0.1)",
               borderRadius: "32px 32px 0 0",
@@ -136,6 +144,32 @@ export default function Hero() {
               11+ Across 4 Programs
             </div>
           </div>
+
+          {/* Corner patch — sits behind the card, at its exact top-right corner.
+              The card's own border-radius is the only curve involved; it
+              naturally reveals this patch only in the sliver its real curve
+              recedes from, so the seam can't desync from the stat pill above
+              no matter what GSAP is doing. Must stay pixel-identical to the
+              card's borderRadius (24) and the stat pill's background color,
+              and must never overlap the stat pill itself (it sits flush,
+              with zero dip) or their matching translucent fills would stack
+              and double-darken right at the boundary. Animates in lockstep
+              with the card (same y, same timing) — not the pill — since its
+              job is to move with the card's real corner, not the pill. */}
+          <div
+            ref={cornerPatchRef}
+            aria-hidden
+            className="gsap-init"
+            style={{
+              position: "absolute",
+              zIndex: 0,
+              top: 0,
+              right: 0,
+              width: 24,
+              height: 24,
+              background: "rgba(13,21,18,0.1)",
+            }}
+          />
 
           <div
             ref={cardRef}
