@@ -610,7 +610,7 @@ export default function BookPage() {
                   <div className="flex flex-col gap-3">
                     {[
                       { field: "consent1", text: "I acknowledge the importance of medical supervision during GLP-1 treatment" },
-                      { field: "consent2", text: "I understand this medication may have side effects such as nausea, constipation, or risk of thyroid tumors" },
+                      { field: "consent2", text: "I understand this medication may have side effects such as nausea, constipation" },
                       { field: "consent3", text: "I certify that the information provided above is accurate to the best of my knowledge" },
                     ].map(({ field, text }) => (
                       <label key={field} className="flex items-start gap-3 cursor-pointer">
