@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const faqs = [
@@ -38,139 +38,186 @@ const faqs = [
   },
 ];
 
+// Rough upper bound on the popover's rendered height (tag + question +
+// longest answer + padding), used to decide whether it fits below the
+// tapped row or needs to open upward instead.
+const POPOVER_HEIGHT_ESTIMATE = 280;
+
 export default function FAQ() {
-  const [open, setOpen] = useState<number | null>(null);
+  const [selected, setSelected] = useState(0);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverAnchor, setPopoverAnchor] = useState<{ top?: number; bottom?: number }>({});
+  const [popoverFromBottom, setPopoverFromBottom] = useState(false);
+
+  // Lock background scroll while the mobile answer popover is open, since its
+  // position is computed once (relative to the viewport) when it opens.
+  useEffect(() => {
+    if (!popoverOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [popoverOpen]);
+
+  function openPopover(i: number, row: HTMLElement) {
+    const rect = row.getBoundingClientRect();
+    const fitsBelow = window.innerHeight - rect.bottom >= POPOVER_HEIGHT_ESTIMATE + 16;
+    setPopoverFromBottom(!fitsBelow);
+    setPopoverAnchor(
+      fitsBelow ? { top: rect.bottom + 8 } : { bottom: window.innerHeight - rect.top + 8 }
+    );
+    setSelected(i);
+    setPopoverOpen(true);
+  }
 
   return (
-    <section className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24" style={{ background: "#ffffff" }}>
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-12 md:gap-20">
-        {/* Left */}
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>
-            FAQ
-          </div>
-          <h2
-            className="font-display"
-            style={{
-              fontSize: "clamp(28px, 2.8vw, 38px)",
-              fontWeight: 400,
-              lineHeight: 1.15,
-              color: "var(--ink)",
-            }}
-          >
-            Common
-            <br />
-            questions
-          </h2>
-          <p
-            style={{
-              fontSize: 13,
-              lineHeight: 1.75,
-              fontWeight: 400,
-              color: "var(--ink-muted)",
-              marginTop: 20,
-            }}
-          >
-            Can&apos;t find an answer? Send us a message.
-          </p>
-          <Link
-            href="/contact"
-            className="inline-block text-[11px] font-medium tracking-[0.1em] uppercase pb-[2px] mt-5"
-            style={{
-              color: "var(--teal)",
-              borderBottom: "1px solid var(--teal)",
-              textDecoration: "none",
-            }}
-          >
-            Contact us →
-          </Link>
-
-          {/* CTA card */}
-          <div
-            className="mt-10 p-5 rounded-[4px]"
-            style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}
-          >
-            <div
-              className="text-[10px] font-semibold tracking-[0.16em] uppercase mb-2"
-              style={{ color: "var(--teal-dark)" }}
-            >
-              Ready to start?
+    <section className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24" style={{ background: "var(--cream)" }}>
+      <div className="mx-auto" style={{ maxWidth: 1360 }}>
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-12 md:gap-20">
+          {/* Left */}
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>
+              FAQ
             </div>
-            <p className="text-[12px] leading-[1.7] mb-4" style={{ color: "var(--ink-muted)" }}>
-              Complete your Patient Medical History Form and our clinical team will design the right program for you.
+            <h2
+              className="font-display"
+              style={{
+                fontSize: "clamp(28px, 2.8vw, 38px)",
+                fontWeight: 400,
+                lineHeight: 1.15,
+                color: "var(--ink)",
+              }}
+            >
+              Common
+              <br />
+              questions
+            </h2>
+            <p
+              style={{
+                fontSize: 13,
+                lineHeight: 1.75,
+                fontWeight: 400,
+                color: "var(--ink-muted)",
+                marginTop: 20,
+              }}
+            >
+              Can&apos;t find an answer? Send us a message.
             </p>
             <Link
-              href="/book-consult"
-              className="inline-block text-white text-[11px] font-medium tracking-[0.08em] uppercase px-5 py-[10px] rounded-[2px] transition-opacity duration-200 hover:opacity-85"
-              style={{ background: "var(--teal)" }}
+              href="/contact"
+              className="inline-block text-[11px] font-medium tracking-[0.1em] uppercase pb-[2px] mt-5"
+              style={{
+                color: "var(--teal)",
+                borderBottom: "1px solid var(--teal)",
+                textDecoration: "none",
+              }}
             >
-              Book a Consult →
+              Contact us →
             </Link>
+
+            {/* CTA card */}
+            <div
+              className="mt-10 p-5 rounded-[4px]"
+              style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}
+            >
+              <div
+                className="text-[10px] font-semibold tracking-[0.16em] uppercase mb-2"
+                style={{ color: "var(--teal-dark)" }}
+              >
+                Ready to start?
+              </div>
+              <p className="text-[12px] leading-[1.7] mb-4" style={{ color: "var(--ink-muted)" }}>
+                Complete your Patient Medical History Form and our clinical team will design the right program for you.
+              </p>
+              <Link
+                href="/book-consult"
+                className="inline-block text-white text-[11px] font-medium tracking-[0.08em] uppercase px-5 py-[10px] rounded-[2px] transition-opacity duration-200 hover:opacity-85"
+                style={{ background: "var(--teal)" }}
+              >
+                Book a Consult →
+              </Link>
+            </div>
+          </div>
+
+          {/* Desktop — index + detail, side by side */}
+          <div
+            className="hidden lg:grid lg:grid-cols-[280px_1fr]"
+            style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, overflow: "hidden" }}
+          >
+            <div
+              className="faq-index"
+              style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}
+            >
+              {faqs.map((faq, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelected(i)}
+                  className={`faq-index-row${selected === i ? " active" : ""}`}
+                >
+                  <span className="mark" />
+                  <span>{faq.q}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ padding: "36px 32px" }}>
+              <h3
+                className="font-display"
+                style={{
+                  fontSize: "clamp(19px, 2vw, 24px)",
+                  fontWeight: 400,
+                  lineHeight: 1.3,
+                  color: "var(--ink)",
+                  marginBottom: 16,
+                }}
+              >
+                {faqs[selected].q}
+              </h3>
+              <p style={{ fontSize: 13.5, lineHeight: 1.8, color: "var(--ink-muted)", maxWidth: "58ch" }}>
+                {faqs[selected].a}
+              </p>
+            </div>
+          </div>
+
+          {/* Mobile/tablet — index list; tapping a question grows a glass
+              popover open directly below it, over a blurred backdrop, rather
+              than swapping to a full-screen drawer (VS-52 mobile follow-up). */}
+          <div className="lg:hidden">
+            {faqs.map((faq, i) => (
+              <button
+                key={i}
+                onClick={(e) => openPopover(i, e.currentTarget)}
+                className={`faq-mobile-row${popoverOpen && selected === i ? " active" : ""}`}
+              >
+                <span>{faq.q}</span>
+                <span className="arrow">›</span>
+              </button>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Accordion */}
-        <div>
-          {faqs.map((faq, i) => (
-            <div key={i} style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }}>
-              <button
-                onClick={() => setOpen(open === i ? null : i)}
-                className="w-full flex justify-between items-center text-left"
-                style={{
-                  padding: "20px 0",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: open === i ? 500 : 400,
-                    color: open === i ? "var(--teal)" : "var(--ink)",
-                    paddingRight: 24,
-                    lineHeight: 1.4,
-                    transition: "color 0.2s",
-                  }}
-                >
-                  {faq.q}
-                </span>
-                <span
-                  style={{
-                    fontSize: 18,
-                    color: "var(--teal)",
-                    flexShrink: 0,
-                    transform: open === i ? "rotate(45deg)" : "none",
-                    transition: "transform 0.2s",
-                    display: "inline-block",
-                  }}
-                >
-                  +
-                </span>
-              </button>
-              <div
-                style={{
-                  overflow: "hidden",
-                  maxHeight: open === i ? 400 : 0,
-                  transition: "max-height 0.3s cubic-bezier(0.22,1,0.36,1)",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.8,
-                    fontWeight: 400,
-                    color: "var(--ink-muted)",
-                    paddingBottom: 20,
-                  }}
-                >
-                  {faq.a}
-                </p>
-              </div>
-            </div>
-          ))}
-          <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }} />
-        </div>
+      <div
+        className={`faq-backdrop${popoverOpen ? " open" : ""}`}
+        onClick={() => setPopoverOpen(false)}
+        aria-hidden
+        style={{ backdropFilter: "blur(6px) saturate(140%)", WebkitBackdropFilter: "blur(6px) saturate(140%)" }}
+      />
+      <div
+        className={`faq-popover${popoverFromBottom ? " from-bottom" : ""}${popoverOpen ? " open" : ""}`}
+        style={{
+          ...popoverAnchor,
+          backdropFilter: "blur(18px) saturate(160%)",
+          WebkitBackdropFilter: "blur(18px) saturate(160%)",
+        }}
+      >
+        <div className="faq-popover-tag">Answer</div>
+        <h4
+          className="font-display"
+          style={{ fontSize: 17, fontWeight: 400, lineHeight: 1.35, color: "var(--ink)", marginBottom: 10 }}
+        >
+          {faqs[selected].q}
+        </h4>
+        <p style={{ fontSize: 12.5, lineHeight: 1.7, color: "var(--ink-mid)" }}>{faqs[selected].a}</p>
       </div>
     </section>
   );
