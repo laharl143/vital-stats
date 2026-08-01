@@ -112,6 +112,14 @@ body {
    anything below it. It grows into this section's own bottom padding, and
    z-index lifts it above whatever it happens to overlap while open. */
 .team-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 30px 26px;
+  border-radius: 8px;
+  background-color: var(--teal-pale);
+  border: 1px solid rgba(15,74,60,0.08);
   z-index: 1;
   transition: border-color 0.25s ease, background-color 0.25s ease;
   cursor: pointer;
@@ -119,8 +127,8 @@ body {
 .team-card:hover,
 .team-card.is-open {
   z-index: 5;
-  border-color: rgba(111,230,184,0.4);
-  background-color: rgba(255,255,255,0.06);
+  border-color: rgba(46,139,114,0.35);
+  background-color: #ffffff;
 }
 .team-note-wrap {
   max-height: 0;

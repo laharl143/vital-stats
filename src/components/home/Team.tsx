@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { useLiquidWaveBackground } from "@/lib/useLiquidWaveBackground";
 
 const team = [
   {
@@ -32,6 +33,12 @@ export default function Team() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Mirrors Testimonials' own wave (same draw code, see lib/useLiquidWaveBackground)
+  // flipped to sit at this section's top edge instead of the bottom — the two
+  // read as one continuous "sea" crossing the seam between the sections.
+  useLiquidWaveBackground(canvasRef, { flip: true });
 
   // Mobile/tablet swipe carousel (below lg). The desktop hover-grow grid below
   // this only works safely as a single row of 3 (lg:grid-cols-3) — at sm's 2
@@ -84,22 +91,24 @@ export default function Team() {
   }, []);
 
   return (
-    <section className="py-24 px-4 md:px-9" style={{ background: "var(--teal-deep)" }}>
-      <div className="mx-auto" style={{ maxWidth: 1360 }}>
+    <section className="relative py-24 px-4 md:px-9 overflow-hidden" style={{ background: "var(--cream)" }}>
+      <canvas ref={canvasRef} className="absolute inset-0" style={{ zIndex: 0 }} />
+      <div className="relative mx-auto" style={{ maxWidth: 1360, zIndex: 1 }}>
         <div
           className="flex justify-between items-end"
           style={{ marginBottom: 56 }}
         >
           <div>
-            <div className="eyebrow light" style={{ marginBottom: 16 }}>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>
               Our team
             </div>
             <h2
-              className="font-display text-white"
+              className="font-display"
               style={{
                 fontSize: "clamp(32px, 3vw, 42px)",
                 fontWeight: 400,
                 lineHeight: 1.12,
+                color: "var(--ink)",
               }}
             >
               The clinical team
@@ -122,8 +131,8 @@ export default function Team() {
                   style={{
                     flex: `0 0 ${CARD_WIDTH}px`,
                     padding: "24px 22px",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
+                    background: "var(--teal-pale)",
+                    border: "1px solid rgba(15,74,60,0.08)",
                     borderRadius: 8,
                     userSelect: "none",
                   }}
@@ -135,23 +144,23 @@ export default function Team() {
                       height: 48,
                       borderRadius: "50%",
                       background:
-                        "radial-gradient(circle at 32% 28%, rgba(111,230,184,0.35), rgba(46,139,114,0.12) 60%, rgba(15,74,60,0.4) 100%)",
-                      border: "1px solid rgba(92,175,160,0.25)",
+                        "radial-gradient(circle at 32% 28%, rgba(46,139,114,0.22), rgba(46,139,114,0.08) 60%, rgba(234,245,242,0.6) 100%)",
+                      border: "1px solid rgba(46,139,114,0.25)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       marginBottom: 14,
                       fontSize: 18,
                       fontWeight: 500,
-                      color: "rgba(234,245,242,0.75)",
+                      color: "var(--teal-deep)",
                       pointerEvents: "none",
                     }}
                   >
                     {member.initial}
                   </div>
                   <div
-                    className="font-display text-white"
-                    style={{ fontSize: 19, fontWeight: 400, marginBottom: 4 }}
+                    className="font-display"
+                    style={{ fontSize: 19, fontWeight: 400, marginBottom: 4, color: "var(--ink)" }}
                   >
                     {member.name}
                   </div>
@@ -161,13 +170,13 @@ export default function Team() {
                       fontWeight: 600,
                       letterSpacing: "0.07em",
                       textTransform: "uppercase" as const,
-                      color: "var(--teal-light)",
+                      color: "var(--teal-dark)",
                       marginBottom: 12,
                     }}
                   >
                     {member.role}
                   </div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.6 }}>
                     {member.note}
                   </div>
                 </div>
@@ -182,7 +191,7 @@ export default function Team() {
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: i === activeSlide ? "var(--mint)" : "rgba(255,255,255,0.2)",
+                  background: i === activeSlide ? "var(--teal)" : "rgba(15,74,60,0.15)",
                 }}
               />
             ))}
@@ -216,16 +225,6 @@ export default function Team() {
               <div
                 className={`team-card${openIndex === i ? " is-open" : ""}`}
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  padding: "30px 26px",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 8,
-                }}
               >
                 {/* Avatar mark — stands in for a portrait until real staff photos are ready */}
                 <div
@@ -235,22 +234,22 @@ export default function Team() {
                     height: 56,
                     borderRadius: "50%",
                     background:
-                      "radial-gradient(circle at 32% 28%, rgba(111,230,184,0.35), rgba(46,139,114,0.12) 60%, rgba(15,74,60,0.4) 100%)",
-                    border: "1px solid rgba(92,175,160,0.25)",
+                      "radial-gradient(circle at 32% 28%, rgba(46,139,114,0.22), rgba(46,139,114,0.08) 60%, rgba(234,245,242,0.6) 100%)",
+                    border: "1px solid rgba(46,139,114,0.25)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 16,
                     fontSize: 22,
                     fontWeight: 500,
-                    color: "rgba(234,245,242,0.75)",
+                    color: "var(--teal-deep)",
                   }}
                 >
                   {member.initial}
                 </div>
                 <div
-                  className="font-display text-white"
-                  style={{ fontSize: 21, fontWeight: 400, marginBottom: 4 }}
+                  className="font-display"
+                  style={{ fontSize: 21, fontWeight: 400, marginBottom: 4, color: "var(--ink)" }}
                 >
                   {member.name}
                 </div>
@@ -260,7 +259,7 @@ export default function Team() {
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase" as const,
-                    color: "var(--teal-light)",
+                    color: "var(--teal-dark)",
                   }}
                 >
                   {member.role}
@@ -269,9 +268,9 @@ export default function Team() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--ink-muted)",
                       lineHeight: 1.65,
-                      borderTop: "1px solid rgba(255,255,255,0.1)",
+                      borderTop: "1px solid rgba(15,74,60,0.12)",
                       paddingTop: 12,
                     }}
                   >

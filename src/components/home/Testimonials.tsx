@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLiquidWaveBackground } from "@/lib/useLiquidWaveBackground";
 
 const testimonials = [
   {
@@ -28,70 +29,6 @@ const testimonials = [
     gradient: "linear-gradient(150deg, #e8c9a0, #c9986b)",
   },
 ];
-
-// Soft flowing gradient waves along the bottom edge — quiet, ambient motion
-// behind the pull-quote. Pure canvas, no external libraries.
-function useLiquidWaveBackground(canvasRef: RefObject<HTMLCanvasElement | null>) {
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
-    let frameId = 0;
-    let t = 0;
-
-    function resize() {
-      const parent = canvas!.parentElement;
-      if (!parent) return;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = parent.clientWidth;
-      height = parent.clientHeight;
-      canvas!.width = width * dpr;
-      canvas!.height = height * dpr;
-      canvas!.style.width = `${width}px`;
-      canvas!.style.height = `${height}px`;
-    }
-
-    function wave(yBase: number, amp: number, freq: number, phase: number, color: string) {
-      ctx!.beginPath();
-      ctx!.moveTo(0, canvas!.height);
-      for (let x = 0; x <= canvas!.width; x += 8) {
-        const y = yBase + Math.sin(x * freq + phase) * amp;
-        ctx!.lineTo(x, y);
-      }
-      ctx!.lineTo(canvas!.width, canvas!.height);
-      ctx!.closePath();
-      ctx!.fillStyle = color;
-      ctx!.fill();
-    }
-
-    function draw() {
-      t += 0.015;
-      ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
-      const base = canvas!.height * 0.78;
-      wave(base, 22 * dpr, 0.006, t, "rgba(111,230,184,0.28)");
-      wave(base + 20 * dpr, 26 * dpr, 0.008, t * 1.3 + 2, "rgba(46,139,114,0.20)");
-      wave(base + 42 * dpr, 18 * dpr, 0.01, t * 0.8 + 4, "rgba(15,74,60,0.14)");
-      frameId = requestAnimationFrame(draw);
-    }
-
-    resize();
-    draw();
-    // ResizeObserver catches content-driven height changes (layout shifts,
-    // late-loading fonts) — a plain window "resize" listener misses those.
-    const parent = canvas.parentElement;
-    const observer = parent ? new ResizeObserver(resize) : null;
-    if (parent && observer) observer.observe(parent);
-    return () => {
-      cancelAnimationFrame(frameId);
-      observer?.disconnect();
-    };
-  }, [canvasRef]);
-}
 
 const EXIT_MS = 200;
 
