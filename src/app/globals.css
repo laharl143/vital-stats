@@ -102,3 +102,39 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee { animation: none; }
 }
+
+/* Team section — hover-reveal cards (VS-51). Cards show mark/name/role by
+   default; hovering (desktop) or tapping (via .is-open, for touch) grows the
+   card open to reveal the bio underneath. The card itself is absolutely
+   positioned over an invisible sizer (see Team.tsx) that reserves the
+   grid's row height — so the card is free to genuinely grow taller here
+   without that height change ever reaching the grid, the section, or
+   anything below it. It grows into this section's own bottom padding, and
+   z-index lifts it above whatever it happens to overlap while open. */
+.team-card {
+  z-index: 1;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+  cursor: pointer;
+}
+.team-card:hover,
+.team-card.is-open {
+  z-index: 5;
+  border-color: rgba(111,230,184,0.4);
+  background-color: rgba(255,255,255,0.06);
+}
+.team-note-wrap {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  transition: max-height 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease, margin-top 0.35s ease;
+}
+.team-card:hover .team-note-wrap,
+.team-card.is-open .team-note-wrap {
+  max-height: 160px;
+  opacity: 1;
+  margin-top: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .team-card, .team-note-wrap { transition: none; }
+}
