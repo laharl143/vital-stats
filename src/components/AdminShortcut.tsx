@@ -13,7 +13,7 @@ export default function AdminShortcut() {
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
         e.preventDefault();
-        router.push("/admin/login");
+        router.push("/admin");
       }
     }
     window.addEventListener("keydown", onKeyDown);
