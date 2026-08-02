@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { InquiryType, InquiryStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
+import { notifyAdmin } from "@/lib/notify-admin";
 
 // GET /api/inquiries  (admin only)
 export async function GET(req: NextRequest) {
@@ -91,6 +92,17 @@ export async function POST(req: NextRequest) {
         ipAddress,
       },
     });
+
+    try {
+      await notifyAdmin({
+        kind: "inquiry",
+        name: inquiry.name,
+        contactInfo: inquiry.contactInfo,
+        message: inquiry.message,
+      });
+    } catch (err) {
+      console.error("[notifyAdmin]", err);
+    }
 
     return NextResponse.json(
       {

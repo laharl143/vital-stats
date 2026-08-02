@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyAdmin } from "@/lib/notify-admin";
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxi56o7zn0-HIygaDaXNgJ7cMB_bmznow78a78mEYhco6s3Jb0N66HB9OF8fKSGYnLr/exec";
 
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       "unknown";
 
     // Save to DB
-    await prisma.medicalHistory.create({
+    const record = await prisma.medicalHistory.create({
       data: {
         fullName: data.fullName ?? "",
         dateOfBirth: `${data.dobMonth}/${data.dobDay}/${data.dobYear}`,
@@ -42,6 +43,17 @@ export async function POST(req: NextRequest) {
         ipAddress,
       },
     });
+
+    try {
+      await notifyAdmin({
+        kind: "consult",
+        fullName: record.fullName,
+        email: record.email ?? "",
+        phone: record.phone ?? "",
+      });
+    } catch (err) {
+      console.error("[notifyAdmin]", err);
+    }
 
     // Also send to Google Sheets
     const response = await fetch(APPS_SCRIPT_URL, {
