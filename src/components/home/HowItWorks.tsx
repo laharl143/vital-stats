@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import gsap from "gsap";
 
 const steps = [
   {
@@ -59,7 +60,94 @@ function Arrow({ direction }: { direction: "right" | "down" }) {
   );
 }
 
+function StepIcon({ icon }: { icon: React.ReactNode }) {
+  return (
+    <div
+      className="flex items-center justify-center"
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        background: "var(--teal)",
+        marginBottom: 18,
+      }}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#fff"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ width: 18, height: 18 }}
+      >
+        {icon}
+      </svg>
+    </div>
+  );
+}
+
+// Mobile carousel sizing — the connector arrow lives inside the track as its
+// own flex item between cards (not a separate section), so SLIDE_STEP (the
+// drag/snap distance) has to include the arrow's width + the gaps on both
+// sides of it, on top of the card width itself.
+const CARD_WIDTH = 248;
+const CARD_GAP = 10;
+const ARROW_WIDTH = 26;
+const SLIDE_STEP = CARD_WIDTH + ARROW_WIDTH + CARD_GAP * 2;
+
 export default function HowItWorks() {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // Mobile/tablet swipe carousel (below md) — copied from Team's drag/snap
+  // pattern (VS-51), adapted so the arrow between cards is folded into
+  // SLIDE_STEP instead of every step being an even, arrow-free width.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const drag = { active: false, startX: 0, startTrackX: 0, index: 0 };
+
+    function snapTo(i: number) {
+      const clamped = Math.max(0, Math.min(steps.length - 1, i));
+      drag.index = clamped;
+      gsap.to(track, { x: -clamped * SLIDE_STEP, duration: 0.45, ease: "power3.out" });
+      setActiveSlide(clamped);
+    }
+
+    function onDown(e: PointerEvent) {
+      drag.active = true;
+      drag.startX = e.clientX;
+      drag.startTrackX = Number(gsap.getProperty(track, "x"));
+      track!.style.cursor = "grabbing";
+      track!.setPointerCapture(e.pointerId);
+    }
+    function onMove(e: PointerEvent) {
+      if (!drag.active) return;
+      const dx = e.clientX - drag.startX;
+      gsap.set(track, { x: drag.startTrackX + dx });
+    }
+    function onUp(e: PointerEvent) {
+      if (!drag.active) return;
+      drag.active = false;
+      track!.style.cursor = "grab";
+      const dx = e.clientX - drag.startX;
+      if (dx < -40) snapTo(drag.index + 1);
+      else if (dx > 40) snapTo(drag.index - 1);
+      else snapTo(drag.index);
+    }
+
+    track.addEventListener("pointerdown", onDown);
+    track.addEventListener("pointermove", onMove);
+    track.addEventListener("pointerup", onUp);
+    return () => {
+      track.removeEventListener("pointerdown", onDown);
+      track.removeEventListener("pointermove", onMove);
+      track.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
   return (
     <section
       id="how-it-works"
@@ -98,18 +186,92 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        {/* Arrow-linked cards — row on desktop, stacked column on mobile */}
-        <div className="flex flex-col md:flex-row md:items-stretch gap-3 md:gap-4">
+        {/* Mobile/tablet — swipe carousel, one card at a time, connector
+            arrows between cards inside the track (VS-97) */}
+        <div className="md:hidden">
+          <div style={{ overflow: "hidden", margin: "0 -16px", padding: "0 16px" }}>
+            <div
+              ref={trackRef}
+              style={{ display: "flex", alignItems: "stretch", gap: CARD_GAP, cursor: "grab", touchAction: "pan-y" }}
+            >
+              {steps.map((s, i) => (
+                <Fragment key={s.step}>
+                  <div
+                    style={{
+                      flex: `0 0 ${CARD_WIDTH}px`,
+                      background: "var(--teal-pale)",
+                      borderRadius: 16,
+                      padding: "24px 20px",
+                      userSelect: "none",
+                    }}
+                  >
+                    <StepIcon icon={s.icon} />
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "var(--teal)",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Step {s.step}
+                    </div>
+                    <div
+                      className="font-display"
+                      style={{
+                        fontSize: 17,
+                        fontWeight: 400,
+                        lineHeight: 1.25,
+                        color: "var(--ink)",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {s.title}
+                    </div>
+                    <p
+                      style={{
+                        fontSize: 12.5,
+                        lineHeight: 1.65,
+                        fontWeight: 400,
+                        color: "var(--ink-muted)",
+                      }}
+                    >
+                      {s.desc}
+                    </p>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div style={{ flex: `0 0 ${ARROW_WIDTH}px` }}>
+                      <Arrow direction="right" />
+                    </div>
+                  )}
+                </Fragment>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 16 }}>
+            {steps.map((s, i) => (
+              <span
+                key={s.step}
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: i === activeSlide ? "var(--teal)" : "rgba(15,74,60,0.15)",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop — row of arrow-linked cards */}
+        <div className="hidden md:flex md:items-stretch gap-4">
           {steps.map((s, i) => (
             <Fragment key={s.step}>
               {i > 0 && (
-                <div className="flex justify-center md:items-center">
-                  <span className="md:hidden">
-                    <Arrow direction="down" />
-                  </span>
-                  <span className="hidden md:inline-flex">
-                    <Arrow direction="right" />
-                  </span>
+                <div className="flex items-center">
+                  <Arrow direction="right" />
                 </div>
               )}
               <div
@@ -121,28 +283,7 @@ export default function HowItWorks() {
                   minWidth: 0,
                 }}
               >
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    background: "var(--teal)",
-                    marginBottom: 18,
-                  }}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ width: 18, height: 18 }}
-                  >
-                    {s.icon}
-                  </svg>
-                </div>
+                <StepIcon icon={s.icon} />
                 <div
                   style={{
                     fontSize: 10,
