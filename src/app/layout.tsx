@@ -36,7 +36,7 @@ const plexSans = IBM_Plex_Sans({
 export const metadata: Metadata = {
   title: "VitalStats — Precision Wellness for Body & Skin",
   description:
-    "Medical-grade weight management, recovery, anti-aging, and skincare products. Clinically guided. Philippine FDA-Approved.",
+    "Medical-grade weight management, recovery, anti-aging, and skincare products. Clinically guided, from trusted and verifiable suppliers.",
   keywords: [
     "Tirzepatide Philippines",
     "NAD+ therapy Philippines",

@@ -44,11 +44,25 @@ export default function Footer() {
               fontWeight: 400,
               color: "var(--ink-mid)",
               maxWidth: 240,
-              marginBottom: 20,
+              marginBottom: 14,
             }}
           >
             Precision Wellness for Body &amp; Skin. Medically guided treatments
             and premium skincare in the Philippines.
+          </p>
+          <p
+            style={{
+              fontSize: 11,
+              lineHeight: 1.8,
+              fontWeight: 400,
+              color: "var(--ink-mid)",
+              maxWidth: 240,
+              marginBottom: 20,
+            }}
+          >
+            We source our products from trusted and verifiable suppliers, with
+            every peptide handled under strict cold chain conditions to help
+            maintain product integrity throughout storage.
           </p>
           <div className="flex flex-col gap-2">
             <a
@@ -203,7 +217,7 @@ export default function Footer() {
               color: "var(--ink-mid)",
             }}
           >
-            © {new Date().getFullYear()} VitalStats. All rights reserved. · Philippine FDA–Approved · Clinically Guided
+            © {new Date().getFullYear()} VitalStats. All rights reserved. · Trusted &amp; Verifiable Supplier · Clinically Guided
           </p>
         </div>
         <Link
