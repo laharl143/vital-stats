@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
+import { requireAdminSession } from "@/lib/require-admin";
 
 // GET /api/orders  (admin only)
 // Query params: ?status=PENDING&page=1&limit=20
 export async function GET(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as OrderStatus | null;
@@ -37,6 +41,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/orders  (admin — create an order)
 export async function POST(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const { customerName, customerContact, customerAddress, notes, items } = body;

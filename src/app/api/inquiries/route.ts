@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { InquiryType, InquiryStatus } from "@prisma/client";
+import { requireAdminSession } from "@/lib/require-admin";
 
 // GET /api/inquiries  (admin only)
 export async function GET(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as InquiryStatus | null;
@@ -103,6 +107,9 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/inquiries  (admin — bulk status update)
 export async function PATCH(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const { ids, status } = body;

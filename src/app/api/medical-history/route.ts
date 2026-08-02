@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MedicalHistoryStatus } from "@prisma/client";
+import { requireAdminSession } from "@/lib/require-admin";
 
+// POST /api/medical-history  (public — book-consult intake form)
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
@@ -43,7 +45,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// GET /api/medical-history  (admin only)
 export async function GET(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as MedicalHistoryStatus | null;
@@ -73,6 +79,9 @@ export async function GET(req: NextRequest) {
 
 // PATCH /api/medical-history  (admin — bulk status update)
 export async function PATCH(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const { ids, status } = body;

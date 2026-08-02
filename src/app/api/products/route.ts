@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Category } from "@prisma/client";
+import { requireAdminSession } from "@/lib/require-admin";
 
 // GET /api/products
 // Query params: ?category=SKIN_CARE&active=true
@@ -39,6 +40,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/products  (admin only)
 export async function POST(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
 
