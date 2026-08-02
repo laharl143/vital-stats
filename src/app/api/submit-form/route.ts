@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmin } from "@/lib/notify-admin";
+import { formatReferenceNumber } from "@/lib/reference-number";
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxi56o7zn0-HIygaDaXNgJ7cMB_bmznow78a78mEYhco6s3Jb0N66HB9OF8fKSGYnLr/exec";
 
@@ -72,7 +73,10 @@ export async function POST(req: NextRequest) {
     console.log("Apps Script response status:", response.status);
     console.log("Apps Script response body:", responseText);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      referenceNumber: formatReferenceNumber(record.sequence, record.createdAt),
+    });
   } catch (err) {
     console.error("Form submission error:", err);
     return NextResponse.json({ success: false }, { status: 500 });

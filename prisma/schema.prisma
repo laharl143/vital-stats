@@ -302,6 +302,7 @@ model MedicalHistory {
   status     MedicalHistoryStatus @default(NEW)
   adminNotes String?
   ipAddress  String?
+  sequence   Int                  @unique @default(autoincrement())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

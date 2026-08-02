@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatReferenceNumber } from "@/lib/reference-number";
 
 interface MedicalHistory {
   id: string;
+  sequence: number;
   fullName: string;
   dateOfBirth: string;
   gender: string;
@@ -158,8 +160,13 @@ export default function AdminMedicalHistoryPage() {
                   </div>
                   <div className="text-[11px] mb-1" style={{ color: "var(--teal)" }}>{rec.email || rec.phone || "—"}</div>
                   <div className="text-[12px] truncate" style={{ color: "var(--ink-faint)" }}>DOB {rec.dateOfBirth}</div>
-                  <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
-                    {new Date(rec.createdAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="text-[10px] font-mono" style={{ color: "var(--ink-faint)" }}>
+                      {formatReferenceNumber(rec.sequence, new Date(rec.createdAt))}
+                    </div>
+                    <div className="text-[10px]" style={{ color: "var(--ink-faint)" }}>
+                      {new Date(rec.createdAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -181,6 +188,9 @@ export default function AdminMedicalHistoryPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.fullName}</h2>
+                <div className="text-[11px] font-mono mb-1" style={{ color: "var(--ink-faint)" }}>
+                  {formatReferenceNumber(selected.sequence, new Date(selected.createdAt))}
+                </div>
                 <div className="text-[13px]" style={{ color: "var(--teal)" }}>{selected.email}</div>
                 {selected.phone && <div className="text-[13px]" style={{ color: "var(--ink-muted)" }}>{selected.phone}</div>}
               </div>

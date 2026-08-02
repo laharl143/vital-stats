@@ -30,6 +30,7 @@ const labelStyle = {
 export default function BookPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [modalDismissed, setModalDismissed] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const modalOpen = (status === "loading" || status === "success") && !modalDismissed;
 
   useEffect(() => {
@@ -135,6 +136,8 @@ export default function BookPage() {
         return;
       }
 
+      const json = await res.json();
+      setReferenceNumber(json.referenceNumber ?? null);
       setStatus("success");
     } catch {
       setStatus("error");
@@ -259,58 +262,49 @@ export default function BookPage() {
                 style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
                 {/* Top accent bar */}
                 <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--teal-deep), var(--teal-light))" }} />
-                
+
                 <div className="flex flex-col gap-6 p-10 md:p-14">
-                  {/* Icon + heading */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 flex items-center justify-center rounded-full"
-                      style={{ width: 52, height: 52, background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.2)" }}>
-                      <span style={{ fontSize: 22 }}>✓</span>
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-medium tracking-[0.18em] uppercase mb-1" style={{ color: "var(--teal)" }}>
-                        Submission confirmed
+                  <div>
+                    <h2 className="font-display font-light text-[26px] leading-[1.1]" style={{ color: "var(--ink)" }}>
+                      Your consult request
+                    </h2>
+                    {referenceNumber && (
+                      <div className="text-[12px] font-mono mt-1" style={{ color: "var(--ink-faint)" }}>
+                        REF #{referenceNumber}
                       </div>
-                      <h2 className="font-display font-light text-[28px] leading-[1.1]" style={{ color: "var(--ink)" }}>
-                        Your form has been received.
-                      </h2>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Divider */}
-                  <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }} />
-
-                  {/* Message */}
-                  <p className="text-[14px] leading-[1.8]" style={{ color: "var(--ink-muted)", maxWidth: 480 }}>
-                    Thank you for completing your Patient Medical History Form. Our licensed clinical team will review your information and reach out to you within <strong>24 hours</strong> via your provided contact details.
-                  </p>
-
-                  {/* What happens next */}
-                  <div className="p-5 rounded-[4px]" style={{ background: "var(--cream)" }}>
-                    <div className="text-[10px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "var(--teal)" }}>
-                      What happens next
-                    </div>
-                    <ul className="flex flex-col gap-2">
-                      {[
-                        "Our clinical team reviews your medical history",
-                        "We will contact you to discuss your personalized program",
-                        "A tailored wellness plan will be designed for you",
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-start gap-3 text-[12px]" style={{ color: "var(--ink-muted)" }}>
-                          <span style={{ color: "var(--teal)", marginTop: 1 }}>✓</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* PHI reminder */}
-                  <div className="flex items-start gap-3 p-4 rounded-[4px]"
-                    style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
-                    <span>🔒</span>
-                    <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
-                      Your submission is treated as <strong>Protected Health Information (PHI)</strong> — kept strictly confidential and accessible only to our licensed clinical team.
-                    </p>
+                  {/* Receipt timeline */}
+                  <div className="flex flex-col">
+                    {[
+                      { label: "Submitted", sub: "Just now", state: "done" as const },
+                      { label: "Clinical review", sub: "Within 24 hours", state: "next" as const },
+                      { label: "We contact you", sub: "Via phone or email", state: "pending" as const },
+                      { label: "Program designed", sub: "Tailored to your history", state: "pending" as const },
+                    ].map((step, i, arr) => (
+                      <div key={step.label} className="flex gap-4 relative pb-6">
+                        {i < arr.length - 1 && (
+                          <span className="absolute left-[11px] top-[26px] bottom-0 w-px"
+                            style={{ background: "rgba(0,0,0,0.08)" }} />
+                        )}
+                        <div
+                          className="flex-shrink-0 flex items-center justify-center rounded-full text-[10px] font-bold z-10"
+                          style={{
+                            width: 24, height: 24,
+                            background: step.state === "done" ? "var(--teal)" : "#ffffff",
+                            color: step.state === "done" ? "#ffffff" : step.state === "next" ? "var(--teal)" : "var(--ink-faint)",
+                            border: step.state === "next" ? "2px solid var(--teal)" : step.state === "pending" ? "1px solid rgba(0,0,0,0.12)" : "none",
+                          }}
+                        >
+                          {step.state === "done" ? "✓" : i + 1}
+                        </div>
+                        <div>
+                          <div className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>{step.label}</div>
+                          <div className="text-[12px]" style={{ color: "var(--ink-faint)" }}>{step.sub}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   <button
@@ -760,24 +754,26 @@ export default function BookPage() {
 
           {/* Sidebar */}
           <div className="flex flex-col gap-6">
-            <div className="p-6 rounded-[6px]" style={{ background: "var(--teal-deep)" }}>
-              <div className="text-[11px] font-medium tracking-[0.14em] uppercase mb-4" style={{ color: "var(--teal-light)" }}>
-                What happens next
+            {status !== "success" && (
+              <div className="p-6 rounded-[6px]" style={{ background: "var(--teal-deep)" }}>
+                <div className="text-[11px] font-medium tracking-[0.14em] uppercase mb-4" style={{ color: "var(--teal-light)" }}>
+                  What happens next
+                </div>
+                <ul className="flex flex-col gap-3">
+                  {[
+                    "Our clinical team reviews your form within 24 hours",
+                    "We will reach out via your provided contact info",
+                    "A personalized program will be designed for you",
+                    "All information is kept strictly confidential",
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span style={{ color: "var(--teal-light)" }}>✓</span>
+                      <span className="text-[12px] font-light leading-[1.6]" style={{ color: "rgba(255,255,255,0.7)" }}>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="flex flex-col gap-3">
-                {[
-                  "Our clinical team reviews your form within 24 hours",
-                  "We will reach out via your provided contact info",
-                  "A personalized program will be designed for you",
-                  "All information is kept strictly confidential",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span style={{ color: "var(--teal-light)" }}>✓</span>
-                    <span className="text-[12px] font-light leading-[1.6]" style={{ color: "rgba(255,255,255,0.7)" }}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
 
             <div className="p-5 rounded-[6px]"
               style={{ background: "#FFF8E1", border: "1px solid rgba(245,127,23,0.2)" }}>
