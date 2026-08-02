@@ -77,6 +77,28 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// DELETE /api/medical-history?id=xxx  (admin only)
+export async function DELETE(req: NextRequest) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    await prisma.medicalHistory.delete({ where: { id } });
+
+    return NextResponse.json({ message: "Record deleted" });
+  } catch (error) {
+    console.error("[DELETE /api/medical-history]", error);
+    return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });
+  }
+}
+
 // PATCH /api/medical-history  (admin — bulk status update)
 export async function PATCH(req: NextRequest) {
   const unauthorized = await requireAdminSession();

@@ -56,6 +56,8 @@ export default function AdminMedicalHistoryPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [selected, setSelected] = useState<MedicalHistory | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const fetchRecords = () => {
     setLoading(true);
@@ -71,6 +73,11 @@ export default function AdminMedicalHistoryPage() {
 
   useEffect(() => { fetchRecords(); }, [filterStatus]);
 
+  const selectRecord = (rec: MedicalHistory | null) => {
+    setSelected(rec);
+    setConfirmingDelete(false);
+  };
+
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
     await fetch("/api/medical-history", {
@@ -80,6 +87,15 @@ export default function AdminMedicalHistoryPage() {
     });
     setUpdating(false);
     if (selected?.id === id) setSelected((prev) => (prev ? { ...prev, status } : null));
+    fetchRecords();
+  };
+
+  const deleteRecord = async (id: string) => {
+    setDeleting(true);
+    await fetch(`/api/medical-history?id=${id}`, { method: "DELETE" });
+    setDeleting(false);
+    setConfirmingDelete(false);
+    if (selected?.id === id) setSelected(null);
     fetchRecords();
   };
 
@@ -127,7 +143,7 @@ export default function AdminMedicalHistoryPage() {
               {records.map((rec) => (
                 <div
                   key={rec.id}
-                  onClick={() => setSelected(rec)}
+                  onClick={() => selectRecord(rec)}
                   className="px-5 py-4 cursor-pointer transition-colors duration-150"
                   style={{ background: selected?.id === rec.id ? "var(--teal-pale)" : "transparent" }}
                 >
@@ -156,7 +172,7 @@ export default function AdminMedicalHistoryPage() {
           <div className="rounded-[8px] p-6 flex flex-col gap-5" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
             <button
               type="button"
-              onClick={() => setSelected(null)}
+              onClick={() => selectRecord(null)}
               className="lg:hidden text-[12px] font-medium self-start"
               style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
             >
@@ -276,6 +292,39 @@ export default function AdminMedicalHistoryPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Delete */}
+            <div className="pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+              {confirmingDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px]" style={{ color: "var(--ink-muted)" }}>Delete this request permanently?</span>
+                  <button
+                    onClick={() => deleteRecord(selected.id)}
+                    disabled={deleting}
+                    className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] text-white"
+                    style={{ background: "#C62828", opacity: deleting ? 0.6 : 1, cursor: deleting ? "not-allowed" : "pointer" }}
+                  >
+                    {deleting ? "Deleting…" : "Confirm delete"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={deleting}
+                    className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border"
+                    style={{ borderColor: "rgba(0,0,0,0.15)", color: "var(--ink-muted)" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmingDelete(true)}
+                  className="text-[11px] font-medium"
+                  style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: "pointer" }}
+                >
+                  Delete request
+                </button>
+              )}
             </div>
           </div>
         ) : (
