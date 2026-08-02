@@ -97,6 +97,20 @@ body {
   .animate-shake { animation: none; }
 }
 
+@keyframes modalCheckPop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.animate-modal-check-pop { animation: modalCheckPop 0.35s cubic-bezier(0.2,1.4,0.4,1) both; }
+
+@keyframes modalCheckDraw { to { stroke-dashoffset: 0; } }
+.animate-modal-check-draw { stroke-dasharray: 24; stroke-dashoffset: 24; animation: modalCheckDraw 0.4s 0.1s ease forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-modal-check-pop { animation: none; }
+  .animate-modal-check-draw { animation: none; stroke-dashoffset: 0; }
+}
+
 @keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .animate-marquee { animation: marqueeScroll 14s linear infinite; }
 @media (prefers-reduced-motion: reduce) {

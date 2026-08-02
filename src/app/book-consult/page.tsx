@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -29,6 +29,17 @@ const labelStyle = {
 
 export default function BookPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [modalDismissed, setModalDismissed] = useState(false);
+  const modalOpen = (status === "loading" || status === "success") && !modalDismissed;
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [modalOpen]);
   const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("ftIn");
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
@@ -102,6 +113,8 @@ export default function BookPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
+    setModalDismissed(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     try {
       const res = await fetch("/api/submit-form", {
@@ -123,7 +136,6 @@ export default function BookPage() {
       }
 
       setStatus("success");
-      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setStatus("error");
     }
@@ -150,6 +162,72 @@ export default function BookPage() {
   return (
     <>
       <Navbar />
+
+      {modalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-busy={status === "loading"}
+          className="fixed inset-0 z-[999] flex items-center justify-center p-6"
+          style={{ background: "rgba(15,74,60,0.75)", backdropFilter: "blur(3px)" }}
+        >
+          <div
+            className="flex flex-col items-center gap-4 text-center rounded-[14px]"
+            style={{ background: "#ffffff", padding: "3rem 2.5rem", width: 380, maxWidth: "100%" }}
+          >
+            {status === "loading" ? (
+              <>
+                <div
+                  className="rounded-full animate-spin"
+                  style={{ width: 48, height: 48, border: "3px solid var(--teal-pale)", borderTopColor: "var(--teal)" }}
+                />
+                <div className="font-display font-light text-[22px]" style={{ color: "var(--ink)" }}>
+                  Submitting your form
+                </div>
+                <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
+                  Hang tight, this only takes a moment.
+                </p>
+              </>
+            ) : (
+              <>
+                <div
+                  className="flex items-center justify-center rounded-full animate-modal-check-pop"
+                  style={{ width: 52, height: 52, background: "var(--teal-pale)" }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M4 12l6 6L20 6"
+                      stroke="var(--teal-dark)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="animate-modal-check-draw"
+                    />
+                  </svg>
+                </div>
+                <div className="font-display font-light text-[22px]" style={{ color: "var(--ink)" }}>
+                  Submission confirmed
+                </div>
+                <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
+                  Our clinical team will review your information and reach out within 24 hours.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalDismissed(true);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[12px] rounded-[3px] text-white"
+                  style={{ background: "var(--teal)" }}
+                >
+                  Continue
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <main>
         {/* Page header */}
         <div className="px-8 md:px-16 py-20"
