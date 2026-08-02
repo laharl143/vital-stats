@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
+import WebsiteShortcut from "@/components/WebsiteShortcut";
 
 const NAV_ITEMS = [
   { label: "Dashboard", mobileLabel: "Dashboard", href: "/admin", icon: "⬡" },
@@ -19,11 +20,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Show just children for login page — no sidebar
   if (pathname === "/admin/login") {
-    return <>{children}</>;
+    return (
+      <>
+        <WebsiteShortcut />
+        {children}
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen flex" style={{ background: "var(--cream)" }}>
+      <WebsiteShortcut />
       {/* Desktop sidebar */}
       <aside
         className="hidden md:flex w-[220px] flex-shrink-0 flex-col"
