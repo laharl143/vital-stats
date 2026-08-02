@@ -48,16 +48,28 @@ export default function FAQ() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverAnchor, setPopoverAnchor] = useState<{ top?: number; bottom?: number }>({});
   const [popoverFromBottom, setPopoverFromBottom] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Lock background scroll while the mobile answer popover is open, since its
-  // position is computed once (relative to the viewport) when it opens.
+  // Lock background scroll while the mobile answer popover or the desktop
+  // modal is open — the popover's position is computed once (relative to
+  // the viewport) when it opens, so background scroll would desync it.
   useEffect(() => {
-    if (!popoverOpen) return;
+    if (!popoverOpen && !modalOpen) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [popoverOpen]);
+  }, [popoverOpen, modalOpen]);
+
+  // Close the desktop modal on Escape.
+  useEffect(() => {
+    if (!modalOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setModalOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [modalOpen]);
 
   function openPopover(i: number, row: HTMLElement) {
     const rect = row.getBoundingClientRect();
@@ -70,12 +82,17 @@ export default function FAQ() {
     setPopoverOpen(true);
   }
 
+  function openModal(i: number) {
+    setSelected(i);
+    setModalOpen(true);
+  }
+
   return (
     <section className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24" style={{ background: "var(--cream)" }}>
       <div className="mx-auto" style={{ maxWidth: 1360 }}>
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-12 md:gap-20">
-          {/* Left */}
-          <div>
+        <div className="faq-grid grid gap-12 md:gap-20">
+          {/* Heading — stays on top at every breakpoint */}
+          <div style={{ gridArea: "heading" }}>
             <div className="eyebrow" style={{ marginBottom: 16 }}>
               FAQ
             </div>
@@ -92,13 +109,17 @@ export default function FAQ() {
               <br />
               questions
             </h2>
+          </div>
+
+          {/* Contact prompt + CTA — below the question list on mobile/tablet,
+              back in the left rail (under the heading) from md up. */}
+          <div className="faq-contact" style={{ gridArea: "contact" }}>
             <p
               style={{
                 fontSize: 13,
                 lineHeight: 1.75,
                 fontWeight: 400,
                 color: "var(--ink-muted)",
-                marginTop: 20,
               }}
             >
               Can&apos;t find an answer? Send us a message.
@@ -139,10 +160,12 @@ export default function FAQ() {
             </div>
           </div>
 
-          {/* Desktop — index + detail, side by side */}
+          {/* Desktop — index + detail, side by side. Clicking a question
+              also opens its answer in a centered glass-blur modal (VS-91),
+              the same interaction the mobile popover below already uses. */}
           <div
             className="hidden lg:grid lg:grid-cols-[280px_1fr]"
-            style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, overflow: "hidden" }}
+            style={{ gridArea: "list", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, overflow: "hidden" }}
           >
             <div
               className="faq-index"
@@ -151,7 +174,7 @@ export default function FAQ() {
               {faqs.map((faq, i) => (
                 <button
                   key={i}
-                  onClick={() => setSelected(i)}
+                  onClick={() => openModal(i)}
                   className={`faq-index-row${selected === i ? " active" : ""}`}
                 >
                   <span className="mark" />
@@ -181,7 +204,7 @@ export default function FAQ() {
           {/* Mobile/tablet — index list; tapping a question grows a glass
               popover open directly below it, over a blurred backdrop, rather
               than swapping to a full-screen drawer (VS-52 mobile follow-up). */}
-          <div className="lg:hidden">
+          <div className="lg:hidden" style={{ gridArea: "list" }}>
             {faqs.map((faq, i) => (
               <button
                 key={i}
@@ -197,8 +220,11 @@ export default function FAQ() {
       </div>
 
       <div
-        className={`faq-backdrop${popoverOpen ? " open" : ""}`}
-        onClick={() => setPopoverOpen(false)}
+        className={`faq-backdrop${popoverOpen || modalOpen ? " open" : ""}`}
+        onClick={() => {
+          setPopoverOpen(false);
+          setModalOpen(false);
+        }}
         aria-hidden
         style={{ backdropFilter: "blur(6px) saturate(140%)", WebkitBackdropFilter: "blur(6px) saturate(140%)" }}
       />
@@ -218,6 +244,36 @@ export default function FAQ() {
           {faqs[selected].q}
         </h4>
         <p style={{ fontSize: 12.5, lineHeight: 1.7, color: "var(--ink-mid)" }}>{faqs[selected].a}</p>
+      </div>
+
+      {/* Desktop answer modal (VS-91) — proportionate, centered card over
+          the same blurred backdrop as the mobile popover above. */}
+      <div
+        className={`faq-modal${modalOpen ? " open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="faq-modal-heading"
+        style={{
+          backdropFilter: "blur(18px) saturate(160%)",
+          WebkitBackdropFilter: "blur(18px) saturate(160%)",
+        }}
+      >
+        <button
+          className="faq-modal-close"
+          onClick={() => setModalOpen(false)}
+          aria-label="Close answer"
+        >
+          ×
+        </button>
+        <div className="faq-popover-tag" style={{ fontSize: 11 }}>Answer</div>
+        <h4
+          id="faq-modal-heading"
+          className="font-display"
+          style={{ fontSize: 30, fontWeight: 400, lineHeight: 1.28, color: "var(--ink)", marginBottom: 20 }}
+        >
+          {faqs[selected].q}
+        </h4>
+        <p style={{ fontSize: 16, lineHeight: 1.85, color: "var(--ink-mid)" }}>{faqs[selected].a}</p>
       </div>
     </section>
   );
