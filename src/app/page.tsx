@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AdminShortcut from "@/components/AdminShortcut";
 import Hero from "@/components/home/Hero";
 import TrustBar from "@/components/home/TrustBar";
 import Categories from "@/components/home/Categories";
@@ -13,6 +14,7 @@ import FAQ from "@/components/home/FAQ";
 export default function HomePage() {
   return (
     <>
+      <AdminShortcut />
       <Navbar />
       <main>
         <Hero />
