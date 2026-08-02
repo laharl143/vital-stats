@@ -88,7 +88,12 @@ export default function FAQ() {
   }
 
   return (
-    <section className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24" style={{ background: "var(--cream)" }}>
+    <section
+      className="px-6 py-16 sm:px-10 md:px-16 lg:px-20 md:py-24"
+      style={{
+        background: "linear-gradient(180deg, var(--cream) 0%, #eaf8f2 66%, #cdf2e2 100%)",
+      }}
+    >
       <div className="mx-auto" style={{ maxWidth: 1360 }}>
         <div className="faq-grid grid gap-12 md:gap-20">
           {/* Heading — stays on top at every breakpoint */}
@@ -165,7 +170,12 @@ export default function FAQ() {
               the same interaction the mobile popover below already uses. */}
           <div
             className="hidden lg:grid lg:grid-cols-[280px_1fr]"
-            style={{ gridArea: "list", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, overflow: "hidden" }}
+            style={{
+              gridArea: "list",
+              border: "1px solid rgba(0,0,0,0.08)",
+              borderRadius: 10,
+              overflow: "hidden",
+            }}
           >
             <div
               className="faq-index"
