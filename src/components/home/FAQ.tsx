@@ -263,7 +263,10 @@ export default function FAQ() {
           onClick={() => setModalOpen(false)}
           aria-label="Close answer"
         >
-          ×
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <line x1="3" y1="3" x2="13" y2="13" />
+            <line x1="13" y1="3" x2="3" y2="13" />
+          </svg>
         </button>
         <div className="faq-popover-tag" style={{ fontSize: 11 }}>Answer</div>
         <h4
