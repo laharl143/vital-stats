@@ -77,13 +77,34 @@ export default function AdminLoginPage() {
       style={{ background: "var(--teal-deep)" }}
     >
       <div
-        className="w-full rounded-[16px] overflow-hidden flex flex-col font-secure"
-        style={{
-          maxWidth: "clamp(340px, 32vw, 480px)",
-          background: "var(--teal-deep)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
-        }}
+        className="w-full"
+        style={{ position: "relative", maxWidth: "clamp(340px, 32vw, 480px)" }}
       >
+        {/* Folded corner — back to the public site (VS-89). Sits outside the
+            card's own overflow:hidden (as a sibling, not a child) so the
+            hover label can float above/outside the card instead of being
+            clipped by it. Breathes gently on a loop at all times; hovering
+            unrolls a small label above the fold explaining what it does. */}
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          aria-label="Back to website"
+          className="admin-back-corner"
+        >
+          <span className="admin-back-label-wrap">
+            <span className="admin-back-label">Back to website</span>
+          </span>
+          <span className="admin-back-fold" />
+          <span className="admin-back-arrow">←</span>
+        </button>
+
+        <div
+          className="w-full rounded-[16px] overflow-hidden flex flex-col font-secure"
+          style={{
+            background: "var(--teal-deep)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+          }}
+        >
         {/* Top section — badges, logo, headline, code slots */}
         <div
           className="text-center transition-all duration-300"
@@ -226,6 +247,7 @@ export default function AdminLoginPage() {
         >
           VitalStats Admin Portal
         </p>
+        </div>
       </div>
     </div>
   );

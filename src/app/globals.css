@@ -362,3 +362,92 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .team-card, .team-note-wrap { transition: none; }
 }
+
+/* Admin login — folded-corner back-to-site button (VS-89). A dog-ear fold
+   drawn with the border trick, matching the card's own top-left corner —
+   but the button itself is a *sibling* of the card, not a child, since the
+   card has overflow:hidden and would clip anything meant to float above or
+   outside it. It breathes gently on a loop at all times; hovering unrolls
+   a small label above the fold (outside the card entirely) explaining
+   what it does. */
+.admin-back-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 56px;
+  z-index: 20;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+@keyframes adminBackBreathe {
+  0%, 100% { border-top-width: 34px; border-right-width: 34px; }
+  50% { border-top-width: 40px; border-right-width: 40px; }
+}
+.admin-back-fold {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 34px solid var(--cream);
+  border-right: 34px solid transparent;
+  border-radius: 16px 0 0 0;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+  animation: adminBackBreathe 2.4s ease-in-out infinite;
+}
+.admin-back-arrow {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--teal-deep);
+}
+
+/* Label unrolls upward, floating above the card (not clipped by it) */
+.admin-back-label-wrap {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.24s cubic-bezier(0.22,1,0.36,1);
+}
+.admin-back-corner:hover .admin-back-label-wrap {
+  max-height: 42px;
+}
+.admin-back-label {
+  position: relative;
+  display: block;
+  background: var(--cream);
+  color: var(--teal-deep);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 7px 13px;
+  border-radius: 8px;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+  opacity: 0;
+  transition: opacity 0.2s ease 0.05s;
+}
+.admin-back-corner:hover .admin-back-label {
+  opacity: 1;
+}
+.admin-back-label::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 18px;
+  width: 8px;
+  height: 8px;
+  background: var(--cream);
+  transform: rotate(45deg) translateY(-6px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-back-fold, .admin-back-label-wrap, .admin-back-label { transition: none; animation: none; }
+}
+
+
