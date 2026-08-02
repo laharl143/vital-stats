@@ -24,32 +24,26 @@ const legalLinks = [
 
 export default function Footer() {
   return (
-    <footer style={{ background: "var(--ink)" }} className="px-16 pt-16 pb-7">
+    <footer
+      style={{
+        background:
+          "linear-gradient(180deg, var(--cream) 0%, #bdf0da 22%, var(--mint) 45%, var(--mint) 100%)",
+      }}
+      className="px-6 sm:px-10 md:px-16 lg:px-20 pt-16 pb-7"
+    >
+      <div className="mx-auto" style={{ maxWidth: 1360 }}>
       <div
         className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10 pb-10"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderBottom: "1px solid rgba(13,21,18,0.12)" }}
       >
         {/* Brand col */}
         <div>
-          <div style={{ marginBottom: 20 }}>
-            <Image
-              src="/logo.png"
-              alt="VitalStats"
-              width={160}
-              height={52}
-              className="w-auto object-contain"
-              style={{
-                height: 52,
-                filter: "brightness(0) invert(1) opacity(0.8)",
-              }}
-            />
-          </div>
           <p
             style={{
               fontSize: 11,
               lineHeight: 1.8,
               fontWeight: 400,
-              color: "rgba(255,255,255,0.35)",
+              color: "var(--ink-mid)",
               maxWidth: 240,
               marginBottom: 20,
             }}
@@ -62,15 +56,15 @@ export default function Footer() {
               href="https://www.facebook.com/vitalstatswellness"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] transition-colors duration-200"
-              style={{ color: "var(--teal-light)", textDecoration: "none" }}
+              className="text-[11px] font-semibold transition-colors duration-200"
+              style={{ color: "var(--teal-deep)", textDecoration: "none" }}
             >
               facebook.com/vitalstatswellness
             </a>
             <a
               href="tel:09278608705"
-              className="text-[11px] transition-colors duration-200"
-              style={{ color: "var(--teal-light)", textDecoration: "none" }}
+              className="text-[11px] font-semibold transition-colors duration-200"
+              style={{ color: "var(--teal-deep)", textDecoration: "none" }}
             >
               09278608705
             </a>
@@ -85,7 +79,7 @@ export default function Footer() {
               fontWeight: 600,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.22)",
+              color: "var(--teal-deep)",
               marginBottom: 20,
             }}
           >
@@ -98,14 +92,14 @@ export default function Footer() {
                   href={l.href}
                   className="text-[12px] font-light transition-colors duration-200"
                   style={{
-                    color: "rgba(255,255,255,0.45)",
+                    color: "var(--ink-mid)",
                     textDecoration: "none",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--teal-light)")
+                    (e.currentTarget.style.color = "var(--teal-deep)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+                    (e.currentTarget.style.color = "var(--ink-mid)")
                   }
                 >
                   {l.label}
@@ -123,7 +117,7 @@ export default function Footer() {
               fontWeight: 600,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.22)",
+              color: "var(--teal-deep)",
               marginBottom: 20,
             }}
           >
@@ -136,14 +130,14 @@ export default function Footer() {
                   href={l.href}
                   className="text-[12px] font-light transition-colors duration-200"
                   style={{
-                    color: "rgba(255,255,255,0.45)",
+                    color: "var(--ink-mid)",
                     textDecoration: "none",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--teal-light)")
+                    (e.currentTarget.style.color = "var(--teal-deep)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+                    (e.currentTarget.style.color = "var(--ink-mid)")
                   }
                 >
                   {l.label}
@@ -161,7 +155,7 @@ export default function Footer() {
               fontWeight: 600,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.22)",
+              color: "var(--teal-deep)",
               marginBottom: 20,
             }}
           >
@@ -174,14 +168,14 @@ export default function Footer() {
                   href={l.href}
                   className="text-[12px] font-light transition-colors duration-200"
                   style={{
-                    color: "rgba(255,255,255,0.45)",
+                    color: "var(--ink-mid)",
                     textDecoration: "none",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--teal-light)")
+                    (e.currentTarget.style.color = "var(--teal-deep)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "rgba(255,255,255,0.45)")
+                    (e.currentTarget.style.color = "var(--ink-mid)")
                   }
                 >
                   {l.label}
@@ -193,41 +187,36 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-        <p
-          style={{
-            fontSize: 10,
-            letterSpacing: "0.04em",
-            color: "rgba(255,255,255,0.22)",
-          }}
-        >
-          © {new Date().getFullYear()} VitalStats. All rights reserved.
-        </p>
-        <div className="flex items-center gap-5">
-          <Link
-            href="/admin/login"
-            className="text-[10px] tracking-[0.04em] transition-colors duration-200"
-            style={{ color: "rgba(255,255,255,0.22)", textDecoration: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal-light)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.22)")}
+      <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-4">
+        <div>
+          <Image
+            src="/vitalstats_logo_horizontal.png"
+            alt="VitalStats"
+            width={2066}
+            height={570}
+            className="w-auto object-contain"
+            style={{ height: 40, marginBottom: 10 }}
+          />
+          <p
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.04em",
+              color: "var(--ink-mid)",
+            }}
           >
-            Admin Portal
-          </Link>
-          <div
-            className="flex items-center gap-2 text-[9px] tracking-[0.12em] uppercase"
-            style={{ color: "rgba(255,255,255,0.25)" }}
-          >
-            <span
-              className="rounded-full inline-block"
-              style={{
-                width: 5,
-                height: 5,
-                background: "var(--teal-light)",
-              }}
-            />
-            Philippine FDA–Approved · Clinically Guided
-          </div>
+            © {new Date().getFullYear()} VitalStats. All rights reserved. · Philippine FDA–Approved · Clinically Guided
+          </p>
         </div>
+        <Link
+          href="/admin/login"
+          className="text-[10px] tracking-[0.04em] transition-colors duration-200"
+          style={{ color: "var(--ink-mid)", textDecoration: "none" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal-deep)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-mid)")}
+        >
+          Admin Portal
+        </Link>
+      </div>
       </div>
     </footer>
   );
