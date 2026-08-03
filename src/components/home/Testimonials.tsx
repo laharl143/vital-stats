@@ -127,33 +127,42 @@ export default function Testimonials() {
         >
           {/* Pull-quote */}
           <div>
-            <p
-              key={`quote-${displayIndex}`}
-              className="font-display"
-              style={{
-                fontSize: "clamp(22px, 2.4vw, 30px)",
-                lineHeight: 1.35,
-                color: "var(--ink)",
-                marginBottom: 24,
-                // Reserves room for the longest quote (currently 3 lines, e.g.
-                // Dr. Ramon Villanueva's) so shorter quotes (2 lines) don't
-                // shrink the block and shift the avatar/stat card/thumbnails
-                // below it on every rotation. In `em` so it scales with the
-                // font-size clamp above — bump the "3" if a future quote runs
-                // longer than 3 lines at mobile widths.
-                minHeight: "calc(1.35em * 3)",
-              }}
-            >
-              {quoteWords.map((word, i) => (
-                <span
-                  key={i}
-                  className="animate-word-in"
-                  style={{ display: "inline-block", animationDelay: `${180 + i * 150}ms` }}
-                >
-                  {word}&nbsp;
-                </span>
-              ))}
-            </p>
+            {/* All quotes are stacked in the same grid cell (only the active
+                one visible) so the cell height always matches the tallest
+                quote in the array, at any viewport width — no hardcoded
+                line count to keep in sync as testimonials are added. */}
+            <div className="grid" style={{ marginBottom: 24 }}>
+              {testimonials.map((t, i) => {
+                const isActive = i === displayIndex;
+                return (
+                  <p
+                    key={t.name}
+                    className="font-display"
+                    style={{
+                      gridArea: "1 / 1",
+                      visibility: isActive ? "visible" : "hidden",
+                      fontSize: "clamp(22px, 2.4vw, 30px)",
+                      lineHeight: 1.35,
+                      color: "var(--ink)",
+                      margin: 0,
+                    }}
+                    aria-hidden={!isActive}
+                  >
+                    {isActive
+                      ? quoteWords.map((word, wi) => (
+                          <span
+                            key={wi}
+                            className="animate-word-in"
+                            style={{ display: "inline-block", animationDelay: `${180 + wi * 150}ms` }}
+                          >
+                            {word}&nbsp;
+                          </span>
+                        ))
+                      : `“${t.quote}”`}
+                  </p>
+                );
+              })}
+            </div>
             <div className="flex items-center gap-3">
               <span
                 className="shrink-0"
