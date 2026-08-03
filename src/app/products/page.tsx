@@ -46,6 +46,7 @@ function ProductsPageContent() {
     const requested = searchParams.get("category");
     return CATEGORIES.some((c) => c.value === requested) ? requested! : "ALL";
   });
+  const searchQuery = searchParams.get("q")?.trim().toLowerCase() ?? "";
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,12 +64,16 @@ function ProductsPageContent() {
   }, []);
 
   useEffect(() => {
-    if (activeCategory === "ALL") {
-      setFiltered(products);
-    } else {
-      setFiltered(products.filter((p) => p.category === activeCategory));
+    let next = activeCategory === "ALL" ? products : products.filter((p) => p.category === activeCategory);
+    if (searchQuery) {
+      next = next.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery) ||
+          (p.tagline?.toLowerCase().includes(searchQuery) ?? false)
+      );
     }
-  }, [activeCategory, products]);
+    setFiltered(next);
+  }, [activeCategory, products, searchQuery]);
 
   return (
     <>
@@ -120,7 +125,11 @@ function ProductsPageContent() {
             className="text-[12px] tracking-[0.04em] mb-8"
             style={{ color: "var(--ink-faint)" }}
           >
-            {loading ? "Loading..." : `${filtered.length} product${filtered.length !== 1 ? "s" : ""}`}
+            {loading
+              ? "Loading..."
+              : `${filtered.length} product${filtered.length !== 1 ? "s" : ""}${
+                  searchQuery ? ` for "${searchParams.get("q")}"` : ""
+                }`}
           </p>
 
           {/* Grid */}

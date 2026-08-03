@@ -10,11 +10,19 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category") as Category | null;
     const activeOnly = searchParams.get("active") !== "false";
+    const q = searchParams.get("q")?.trim();
 
     const products = await prisma.product.findMany({
       where: {
         ...(category && { category }),
         ...(activeOnly && { isActive: true }),
+        ...(q && {
+          OR: [
+            { name: { contains: q, mode: "insensitive" } },
+            { tagline: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+          ],
+        }),
       },
       include: {
         images: {
