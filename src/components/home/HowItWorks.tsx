@@ -242,7 +242,7 @@ export default function HowItWorks() {
                     </p>
                   </div>
                   {i < steps.length - 1 && (
-                    <div style={{ flex: `0 0 ${ARROW_WIDTH}px` }}>
+                    <div className="flex items-center" style={{ flex: `0 0 ${ARROW_WIDTH}px` }}>
                       <Arrow direction="right" />
                     </div>
                   )}
