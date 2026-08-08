@@ -288,6 +288,15 @@ export default function AdminDashboard() {
         }
         .cc-scroll-x { -ms-overflow-style: none; scrollbar-width: none; }
         .cc-scroll-x::-webkit-scrollbar { display: none; }
+        .cc-shimmer {
+          background: linear-gradient(90deg, var(--cc-border-soft) 25%, var(--cc-border) 50%, var(--cc-border-soft) 75%);
+          background-size: 200% 100%;
+          animation: cc-shimmer 1.3s ease-in-out infinite;
+        }
+        @keyframes cc-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) {
+          .cc-shimmer { animation: none; }
+        }
         @media (max-width: 767px) {
           .cc-page { padding: 24px 16px 60px !important; }
           .cc-kpi-card { padding: 16px 18px !important; }
@@ -357,10 +366,7 @@ export default function AdminDashboard() {
             {/* Trend chart */}
             <div className="cc-panel" style={{ background: "var(--cc-surface)", border: "1px solid var(--cc-border-soft)", borderRadius: 7, padding: "30px 32px" }}>
               <div style={{ fontSize: 14.5, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--cc-ink-mid)", marginBottom: 18, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                <span>
-                  Graph Trend — {RANGE_TITLES[range]}
-                  {chartLoading && <span style={{ color: "var(--cc-ink-faint)", textTransform: "none", letterSpacing: 0 }}> · updating…</span>}
-                </span>
+                <span>Graph Trend — {RANGE_TITLES[range]}</span>
                 <button
                   onClick={() => setChartMode(chartMode === "area" ? "multiples" : "area")}
                   aria-label={chartMode === "area" ? "Switch to grid view" : "Switch to area view"}
@@ -442,17 +448,25 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {stats && chartMode === "area" && (
-                <ActivityAreaChart series={stats.series} width={1000} height={320} />
-              )}
+              <div style={{ minHeight: chartMode === "area" ? 354 : 154 }}>
+                {chartLoading ? (
+                  <div className="cc-shimmer" style={{ height: chartMode === "area" ? 354 : 154, borderRadius: 6 }} />
+                ) : (
+                  <>
+                    {stats && chartMode === "area" && (
+                      <ActivityAreaChart series={stats.series} width={1000} height={320} />
+                    )}
 
-              {stats && chartMode === "multiples" && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
-                  <MultiplesCell label="Consults" values={stats.series.consults} days={stats.series.days} color="var(--cc-purple)" />
-                  <MultiplesCell label="Inquiries" values={stats.series.inquiries} days={stats.series.days} color="var(--cc-blue)" />
-                  <MultiplesCell label="Orders" values={stats.series.orders} days={stats.series.days} color="var(--cc-teal)" />
-                </div>
-              )}
+                    {stats && chartMode === "multiples" && (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
+                        <MultiplesCell label="Consults" values={stats.series.consults} days={stats.series.days} color="var(--cc-purple)" />
+                        <MultiplesCell label="Inquiries" values={stats.series.inquiries} days={stats.series.days} color="var(--cc-blue)" />
+                        <MultiplesCell label="Orders" values={stats.series.orders} days={stats.series.days} color="var(--cc-teal)" />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr] lg:gap-5.5">

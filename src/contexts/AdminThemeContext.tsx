@@ -15,7 +15,7 @@ const AdminThemeContext = createContext<AdminThemeContextValue | null>(null);
 const STORAGE_KEY = "vitalstats-admin-theme";
 
 export function AdminThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AdminTheme>("dark");
+  const [theme, setThemeState] = useState<AdminTheme>("light");
 
   // Reads the persisted preference from localStorage post-mount rather than
   // as a lazy initial state, so server and first client render agree (no
