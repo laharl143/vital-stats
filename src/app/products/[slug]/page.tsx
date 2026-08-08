@@ -78,6 +78,8 @@ const emoji: Record<string, string> = {
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
+const PLAYBACK_RATES = [0.5, 0.75, 1, 1.5, 2];
+
 function videoThumbUrl(publicId: string) {
   return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/so_0,w_400,h_225,c_fill,q_auto/${publicId}.jpg`;
 }
@@ -659,6 +661,12 @@ export default function ProductDetailPage() {
                     src={video.publicId}
                     width="1080"
                     height="1920"
+                    // Cloudinary's player (video.js) only renders the speed menu
+                    // in the control bar when a rate list is supplied. Slower
+                    // rates are the point (VS-25 — following along with the
+                    // self-administration tutorials); the faster ones ride along
+                    // for free since viewers expect them.
+                    playbackRates={PLAYBACK_RATES}
                     videoRef={videoRefs[video.id]}
                   />
                 </div>
