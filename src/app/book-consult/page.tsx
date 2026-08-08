@@ -593,14 +593,14 @@ export default function BookPage() {
 
                     <div>
                       <label style={labelStyle}>
-                        Waist Circumference (in cm){" "}
+                        Waist Circumference (in inches){" "}
                         <span style={{ fontSize: 10, fontWeight: 400, color: "var(--ink-faint)", letterSpacing: "0.04em", textTransform: "none" }}>
                           — Optional
                         </span>
                       </label>
                       <input type="number" value={form.waistCircumference}
                         onChange={(e) => set("waistCircumference", e.target.value)}
-                        placeholder="e.g. 85 (optional)" style={inputStyle}
+                        placeholder="e.g. 33 (optional)" style={inputStyle}
                         onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                         onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
                       <p className="text-[11px] mt-2" style={{ color: "var(--ink-faint)" }}>
