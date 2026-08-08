@@ -79,20 +79,27 @@ export default function AdminMedicalHistoryPage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 10;
 
   const fetchRecords = () => {
     setLoading(true);
     const url =
-      filterStatus === "ALL" ? "/api/medical-history?limit=50" : `/api/medical-history?status=${filterStatus}&limit=50`;
+      filterStatus === "ALL"
+        ? `/api/medical-history?limit=${PAGE_SIZE}&page=${page}`
+        : `/api/medical-history?status=${filterStatus}&limit=${PAGE_SIZE}&page=${page}`;
     fetch(url)
       .then((r) => r.json())
       .then((json) => {
         setRecords(json.data ?? []);
+        setTotalPages(json.meta?.totalPages ?? 1);
         setLoading(false);
       });
   };
 
-  useEffect(() => { fetchRecords(); }, [filterStatus]);
+  useEffect(() => { fetchRecords(); }, [filterStatus, page]);
+  useEffect(() => { setPage(1); }, [filterStatus]);
 
   useEffect(() => {
     if (!noteModalOpen) return;
@@ -263,6 +270,34 @@ export default function AdminMedicalHistoryPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {!loading && totalPages > 1 && (
+            <div
+              className="flex items-center justify-between px-5 py-3 border-t"
+              style={{ borderColor: "rgba(0,0,0,0.05)" }}
+            >
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="text-[11px] font-medium"
+                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: page <= 1 ? "not-allowed" : "pointer", opacity: page <= 1 ? 0.4 : 1 }}
+              >
+                ← Prev
+              </button>
+              <div className="text-[11px]" style={{ color: "var(--ink-faint)" }}>
+                Page {page} of {totalPages}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="text-[11px] font-medium"
+                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: page >= totalPages ? "not-allowed" : "pointer", opacity: page >= totalPages ? 0.4 : 1 }}
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>
