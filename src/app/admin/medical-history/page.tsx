@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { Gift, Mail, PhoneCall } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 import { formatReferenceNumber } from "@/lib/reference-number";
 import { useAdminTheme, type AdminTheme } from "@/contexts/AdminThemeContext";
@@ -459,25 +460,31 @@ export default function AdminMedicalHistoryPage() {
                 <div>
                   <h2 className="font-display font-light text-[24px]" style={{ color: "var(--mh-ink)" }}>{selected.fullName}</h2>
                   <div className="text-[11px] mb-3" style={{ color: "var(--mh-ink-faint)" }}>
-                    {formatReferenceNumber(selected.sequence, new Date(selected.createdAt))} · DOB {selected.dateOfBirth}
+                    {formatReferenceNumber(selected.sequence, new Date(selected.createdAt))}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {selected.email && (
                       <span
-                        className="text-[11.5px] px-3 py-1.5 rounded-full"
+                        className="text-[11.5px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
                         style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)" }}
                       >
-                        ✉ {selected.email}
+                        <Mail size={13} /> {selected.email}
                       </span>
                     )}
                     {selected.phone && (
                       <span
-                        className="text-[11.5px] px-3 py-1.5 rounded-full"
+                        className="text-[11.5px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
                         style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)" }}
                       >
-                        ☎ {formatPhone(selected.phone)}
+                        <PhoneCall size={13} /> {formatPhone(selected.phone)}
                       </span>
                     )}
+                    <span
+                      className="text-[11.5px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
+                      style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)" }}
+                    >
+                      <Gift size={13} /> {selected.dateOfBirth}
+                    </span>
                   </div>
                 </div>
                 <span
@@ -489,8 +496,8 @@ export default function AdminMedicalHistoryPage() {
               </div>
             </div>
 
-            {/* Vitals strip */}
-            <div className="flex mt-5" style={{ background: "var(--mh-surface-alt)", borderTop: "1px solid var(--mh-border)", borderBottom: "1px solid var(--mh-border)" }}>
+            {/* Vitals strip — desktop: 4 cells, each pairing two values */}
+            <div className="hidden md:flex mt-5" style={{ background: "var(--mh-surface-alt)", borderTop: "1px solid var(--mh-border)", borderBottom: "1px solid var(--mh-border)" }}>
               <div className="flex-1 px-4 py-3" style={{ borderRight: "1px solid var(--mh-border)" }}>
                 <div className="text-[9px] tracking-[0.08em] uppercase mb-1" style={{ color: "var(--mh-ink-faint)" }}>Age / Gender</div>
                 <div className="font-display text-[16px]" style={{ color: "var(--mh-ink)" }}>
@@ -517,6 +524,52 @@ export default function AdminMedicalHistoryPage() {
                 <div className="font-display text-[16px]" style={{ color: "var(--mh-ink)" }}>
                   {selected.smokingStatus || "—"} · {selected.drinkingFrequency || "—"}
                 </div>
+              </div>
+            </div>
+
+            {/* Vitals strip — mobile: 4x2 grid, one value per cell */}
+            <div className="grid grid-cols-4 md:hidden mt-5" style={{ background: "var(--mh-surface-alt)", borderTop: "1px solid var(--mh-border)", borderBottom: "1px solid var(--mh-border)" }}>
+              <div className="px-2 py-2.5" style={{ borderRight: "1px solid var(--mh-border)", borderBottom: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Age</div>
+                <div className="font-display text-[14px]" style={{ color: "var(--mh-ink)" }}>{calculateAge(selected.dateOfBirth) ?? "—"}</div>
+              </div>
+              <div className="px-2 py-2.5" style={{ borderRight: "1px solid var(--mh-border)", borderBottom: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Height</div>
+                <div className="font-display text-[14px]" style={{ color: "var(--mh-ink)" }}>{formatHeightFeet(selected.height) ?? "—"}</div>
+              </div>
+              <div className="px-2 py-2.5" style={{ borderRight: "1px solid var(--mh-border)", borderBottom: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>BMI</div>
+                <div
+                  className="font-display text-[14px]"
+                  style={{ color: selected.bmiCategory?.toLowerCase().includes("obese") ? "var(--mh-danger)" : "var(--mh-ink)" }}
+                >
+                  {selected.bmi || "—"}
+                </div>
+              </div>
+              <div className="px-2 py-2.5" style={{ borderBottom: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Smoking</div>
+                <div className="text-[12.5px]" style={{ color: "var(--mh-ink)" }}>{selected.smokingStatus || "—"}</div>
+              </div>
+              <div className="px-2 py-2.5" style={{ borderRight: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Gender</div>
+                <div className="font-display text-[14px]" style={{ color: "var(--mh-ink)" }}>{selected.gender || "—"}</div>
+              </div>
+              <div className="px-2 py-2.5" style={{ borderRight: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Weight</div>
+                <div className="font-display text-[14px]" style={{ color: "var(--mh-ink)" }}>{selected.weight ? `${selected.weight} kg` : "—"}</div>
+              </div>
+              <div className="px-2 py-2.5" style={{ borderRight: "1px solid var(--mh-border)" }}>
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Classification</div>
+                <div
+                  className="text-[12px]"
+                  style={{ color: selected.bmiCategory?.toLowerCase().includes("obese") ? "var(--mh-danger)" : "var(--mh-ink)" }}
+                >
+                  {selected.bmiCategory || "—"}
+                </div>
+              </div>
+              <div className="px-2 py-2.5">
+                <div className="text-[8px] tracking-[0.06em] uppercase mb-1 truncate" style={{ color: "var(--mh-ink-faint)" }}>Drinking</div>
+                <div className="text-[12.5px]" style={{ color: "var(--mh-ink)" }}>{selected.drinkingFrequency || "—"}</div>
               </div>
             </div>
 
