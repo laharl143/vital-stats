@@ -130,6 +130,16 @@ function formatPhone(phone: string | null): string | null {
   return /^\d{10}$/.test(phone) ? `0${phone}` : phone;
 }
 
+// The "×" glyph renders off-center in circular close buttons across fonts —
+// an SVG centers reliably regardless of font metrics.
+function CloseIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 const MEDICAL_QUESTIONS: { key: keyof MedicalHistory; label: string }[] = [
   { key: "mtc", label: "Personal/family history of MTC or MEN 2" },
   { key: "pancreatitis", label: "History of pancreatitis" },
@@ -162,6 +172,7 @@ export default function AdminMedicalHistoryPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const PAGE_SIZE = 10;
 
   const fetchRecords = () => {
@@ -195,6 +206,20 @@ export default function AdminMedicalHistoryPage() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [noteModalOpen]);
+
+  useEffect(() => {
+    if (!viewingImage) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewingImage(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [viewingImage]);
 
   const selectRecord = (rec: MedicalHistory | null) => {
     setSelected(rec);
@@ -310,6 +335,11 @@ export default function AdminMedicalHistoryPage() {
           background: var(--mh-teal);
           border-color: var(--mh-teal);
           color: #0A0F0E;
+        }
+        .mh-lightbox-backdrop { animation: mh-lightbox-fade 0.15s ease; }
+        @keyframes mh-lightbox-fade { from { opacity: 0; } to { opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) {
+          .mh-lightbox-backdrop { animation: none; }
         }
       `}</style>
       <div className="mb-6">
@@ -595,7 +625,13 @@ export default function AdminMedicalHistoryPage() {
                             <p className="text-[13px] leading-[1.6] whitespace-pre-wrap" style={{ color: "var(--mh-ink-muted)" }}>{note.content}</p>
                           ) : (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={note.imageUrl ?? ""} alt="Doctor's note" className="rounded-[4px] max-h-[220px]" />
+                            <img
+                              src={note.imageUrl ?? ""}
+                              alt="Doctor's note"
+                              className="rounded-[4px] max-h-[220px] transition-opacity duration-150 hover:opacity-85"
+                              style={{ cursor: "zoom-in" }}
+                              onClick={() => note.imageUrl && setViewingImage(note.imageUrl)}
+                            />
                           )}
                           {editingNoteId !== note.id && (
                             <div className="text-[10px] mt-1" style={{ color: "var(--mh-ink-faint)" }}>
@@ -703,7 +739,7 @@ export default function AdminMedicalHistoryPage() {
       {/* Add note modal */}
       <div className={`note-backdrop${noteModalOpen ? " open" : ""}`} onClick={() => setNoteModalOpen(false)} />
       <div className={`note-modal${noteModalOpen ? " open" : ""}`} role="dialog" aria-modal="true" aria-labelledby="note-modal-heading">
-        <button type="button" onClick={() => setNoteModalOpen(false)} className="note-modal-close" aria-label="Close">×</button>
+        <button type="button" onClick={() => setNoteModalOpen(false)} className="note-modal-close" aria-label="Close"><CloseIcon size={15} /></button>
         <h3 id="note-modal-heading" className="font-display font-light text-[20px] mb-4" style={{ color: "var(--mh-ink)" }}>
           Add a doctor&apos;s note
         </h3>
@@ -779,6 +815,64 @@ export default function AdminMedicalHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* Photo note lightbox */}
+      {viewingImage && (
+        <div
+          className="mh-lightbox-backdrop"
+          onClick={() => setViewingImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Doctor's note photo, full size"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 90,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            cursor: "zoom-out",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setViewingImage(null)}
+            aria-label="Close"
+            style={{
+              position: "absolute",
+              top: 20,
+              right: 20,
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(255,255,255,0.12)",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <CloseIcon size={18} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={viewingImage}
+            alt="Doctor's note (full size)"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "92vw",
+              maxHeight: "88vh",
+              borderRadius: 8,
+              cursor: "default",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
