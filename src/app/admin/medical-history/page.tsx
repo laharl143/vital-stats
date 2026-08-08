@@ -54,6 +54,19 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   CLOSED:    { bg: "#F5F5F5", color: "#616161" },
 };
 
+function calculateAge(dob: string): number | null {
+  const [month, day, year] = dob.split("/").map(Number);
+  if (!month || !day || !year) return null;
+  const birth = new Date(year, month - 1, day);
+  if (Number.isNaN(birth.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const hasHadBirthdayThisYear =
+    now.getMonth() > birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
 const MEDICAL_QUESTIONS: { key: keyof MedicalHistory; label: string }[] = [
   { key: "mtc", label: "Personal/family history of MTC or MEN 2" },
   { key: "pancreatitis", label: "History of pancreatitis" },
@@ -74,6 +87,7 @@ export default function AdminMedicalHistoryPage() {
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteMode, setNoteMode] = useState<"write" | "photo">("write");
   const [noteText, setNoteText] = useState("");
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -123,6 +137,7 @@ export default function AdminMedicalHistoryPage() {
   const openNoteModal = () => {
     setNoteMode("write");
     setNoteText("");
+    setPhotoError(null);
     setNoteModalOpen(true);
   };
 
@@ -202,7 +217,7 @@ export default function AdminMedicalHistoryPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8" style={{ background: "var(--cream)" }}>
       <div className="mb-6">
         <h1 className="font-display font-light text-[32px]" style={{ color: "var(--ink)" }}>Consult Requests</h1>
         <p className="text-[13px]" style={{ color: "var(--ink-faint)" }}>Manage Book a Consult (medical history) submissions.</p>
@@ -214,11 +229,11 @@ export default function AdminMedicalHistoryPage() {
           <button
             key={s}
             onClick={() => setFilterStatus(s)}
-            className="text-[11px] tracking-[0.06em] uppercase px-4 py-2 rounded-[3px] border transition-all duration-200"
+            className="text-[11px] tracking-[0.06em] uppercase px-4 py-2 rounded-full border transition-all duration-200"
             style={{
-              background: filterStatus === s ? "var(--teal)" : "transparent",
+              background: filterStatus === s ? "var(--teal-dark)" : "#ffffff",
               color: filterStatus === s ? "white" : "var(--ink-muted)",
-              borderColor: filterStatus === s ? "var(--teal)" : "rgba(0,0,0,0.15)",
+              borderColor: filterStatus === s ? "var(--teal-dark)" : "rgba(0,0,0,0.12)",
             }}
           >
             {s}
@@ -229,7 +244,7 @@ export default function AdminMedicalHistoryPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* List — hidden on mobile once a record is selected, so the detail view gets the full screen */}
         <div
-          className={`${selected ? "hidden lg:block" : "block"} rounded-[8px] overflow-hidden`}
+          className={`${selected ? "hidden lg:block" : "block"} rounded-[10px] overflow-hidden`}
           style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}
         >
           {loading ? (
@@ -250,15 +265,15 @@ export default function AdminMedicalHistoryPage() {
                   style={{ background: selected?.id === rec.id ? "var(--teal-pale)" : "transparent" }}
                 >
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <div className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>{rec.fullName}</div>
+                    <div className="font-display text-[15px]" style={{ color: "var(--ink)" }}>{rec.fullName}</div>
                     <span
-                      className="text-[9px] tracking-[0.08em] uppercase px-2 py-1 rounded-[2px] flex-shrink-0"
+                      className="text-[9px] tracking-[0.08em] uppercase px-2.5 py-1 rounded-full flex-shrink-0"
                       style={STATUS_COLORS[rec.status] ?? STATUS_COLORS.CLOSED}
                     >
                       {rec.status}
                     </span>
                   </div>
-                  <div className="text-[11px] mb-1" style={{ color: "var(--teal)" }}>{rec.email || rec.phone || "—"}</div>
+                  <div className="text-[11px] mb-1" style={{ color: "var(--teal-dark)" }}>{rec.email || rec.phone || "—"}</div>
                   <div className="text-[12px] truncate" style={{ color: "var(--ink-faint)" }}>DOB {rec.dateOfBirth}</div>
                   <div className="flex items-center justify-between mt-1">
                     <div className="text-[10px] font-mono" style={{ color: "var(--ink-faint)" }}>
@@ -304,256 +319,265 @@ export default function AdminMedicalHistoryPage() {
 
         {/* Detail panel */}
         {selected ? (
-          <div className="rounded-[8px] p-6 flex flex-col gap-5" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
-            <button
-              type="button"
-              onClick={() => selectRecord(null)}
-              className="lg:hidden text-[12px] font-medium self-start"
-              style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
-            >
-              ← Back to list
-            </button>
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.fullName}</h2>
-                <div className="text-[11px] font-mono mb-1" style={{ color: "var(--ink-faint)" }}>
-                  {formatReferenceNumber(selected.sequence, new Date(selected.createdAt))}
-                </div>
-                <div className="text-[13px]" style={{ color: "var(--teal)" }}>{selected.email}</div>
-                {selected.phone && <div className="text-[13px]" style={{ color: "var(--ink-muted)" }}>{selected.phone}</div>}
-              </div>
-              <span
-                className="text-[10px] tracking-[0.08em] uppercase px-3 py-1 rounded-[2px]"
-                style={STATUS_COLORS[selected.status] ?? STATUS_COLORS.CLOSED}
+          <div className="rounded-[10px] flex flex-col overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
+            <div className="p-6 pb-0 flex flex-col gap-5">
+              <button
+                type="button"
+                onClick={() => selectRecord(null)}
+                className="lg:hidden text-[12px] font-medium self-start"
+                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
               >
-                {selected.status}
-              </span>
+                ← Back to list
+              </button>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.fullName}</h2>
+                  <div className="text-[11px]" style={{ color: "var(--ink-faint)" }}>
+                    {formatReferenceNumber(selected.sequence, new Date(selected.createdAt))} · {selected.email}
+                  </div>
+                </div>
+                <span
+                  className="text-[10px] tracking-[0.08em] uppercase px-3 py-1 rounded-full flex-shrink-0"
+                  style={STATUS_COLORS[selected.status] ?? STATUS_COLORS.CLOSED}
+                >
+                  {selected.status}
+                </span>
+              </div>
             </div>
 
-            {/* Demographics */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Date of Birth</div>
-                <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.dateOfBirth}</div>
+            {/* Vitals strip */}
+            <div className="flex mt-5" style={{ background: "var(--cream)", borderTop: "1px solid rgba(0,0,0,0.06)", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+              <div className="flex-1 px-4 py-3" style={{ borderRight: "1px solid rgba(0,0,0,0.06)" }}>
+                <div className="text-[9px] tracking-[0.08em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Age / Gender</div>
+                <div className="font-display text-[16px]" style={{ color: "var(--ink)" }}>
+                  {calculateAge(selected.dateOfBirth) ?? "—"} / {selected.gender || "—"}
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Gender</div>
-                <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.gender}</div>
-              </div>
-              <div>
-                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Height / Weight</div>
-                <div className="text-[13px]" style={{ color: "var(--ink)" }}>
+              <div className="flex-1 px-4 py-3" style={{ borderRight: "1px solid rgba(0,0,0,0.06)" }}>
+                <div className="text-[9px] tracking-[0.08em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Height / Weight</div>
+                <div className="font-display text-[16px]" style={{ color: "var(--ink)" }}>
                   {selected.height || "—"} / {selected.weight || "—"}
                 </div>
               </div>
-              <div>
-                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>BMI</div>
-                <div className="text-[13px]" style={{ color: "var(--ink)" }}>
-                  {selected.bmi ? `${selected.bmi} (${selected.bmiCategory})` : "—"}
+              <div className="flex-1 px-4 py-3" style={{ borderRight: "1px solid rgba(0,0,0,0.06)" }}>
+                <div className="text-[9px] tracking-[0.08em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>BMI</div>
+                <div
+                  className="font-display text-[16px]"
+                  style={{ color: selected.bmiCategory?.toLowerCase().includes("obese") ? "#A6412E" : "var(--ink)" }}
+                >
+                  {selected.bmi ? `${selected.bmi} · ${selected.bmiCategory}` : "—"}
                 </div>
               </div>
-              <div>
-                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Smoking</div>
-                <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.smokingStatus || "—"}</div>
-              </div>
-              <div>
-                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Drinking</div>
-                <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.drinkingFrequency || "—"}</div>
+              <div className="flex-1 px-4 py-3">
+                <div className="text-[9px] tracking-[0.08em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Smoking</div>
+                <div className="font-display text-[16px]" style={{ color: "var(--ink)" }}>{selected.smokingStatus || "—"}</div>
               </div>
             </div>
 
-            {/* Medical history Q&A */}
-            <div>
-              <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Medical History</div>
-              <div className="flex flex-col gap-2">
-                {MEDICAL_QUESTIONS.map((q) => (
-                  <div key={q.key} className="flex items-center justify-between gap-3 text-[13px]" style={{ color: "var(--ink-muted)" }}>
-                    <span>{q.label}</span>
-                    <span
-                      className="text-[10px] uppercase font-semibold flex-shrink-0"
-                      style={{ color: selected[q.key] === "Yes" ? "#C62828" : "var(--ink-faint)" }}
+            <div className="p-6 pt-5 flex flex-col gap-5">
+              <div className="flex gap-6 text-[12px]" style={{ color: "var(--ink-faint)" }}>
+                <span>DOB {selected.dateOfBirth}</span>
+                {selected.phone && <span>{selected.phone}</span>}
+                <span>Drinking: {selected.drinkingFrequency || "—"}</span>
+              </div>
+
+              {/* Medical history Q&A */}
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Medical History</div>
+                <div className="flex flex-col">
+                  {MEDICAL_QUESTIONS.map((q) => (
+                    <div
+                      key={q.key}
+                      className="flex items-center justify-between gap-3 text-[13px] py-2"
+                      style={{ color: "var(--ink-muted)", borderBottom: "1px dotted rgba(0,0,0,0.12)" }}
                     >
-                      {String(selected[q.key]) || "—"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {(selected.surgeries || selected.medications || selected.allergies) && (
-              <div className="flex flex-col gap-3">
-                {selected.surgeries && (
-                  <div>
-                    <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Surgeries</div>
-                    <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.surgeries}</p>
-                  </div>
-                )}
-                {selected.medications && (
-                  <div>
-                    <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Medications</div>
-                    <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.medications}</p>
-                  </div>
-                )}
-                {selected.allergies && (
-                  <div>
-                    <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Allergies</div>
-                    <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.allergies}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Received</div>
-              <div className="text-[13px]" style={{ color: "var(--ink)" }}>{new Date(selected.createdAt).toLocaleString("en-PH")}</div>
-            </div>
-
-            {/* Doctor's Notes */}
-            <div className="pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-[10px] tracking-[0.1em] uppercase" style={{ color: "var(--ink-faint)" }}>Doctor&apos;s Notes</div>
-                <button
-                  type="button"
-                  onClick={openNoteModal}
-                  className="text-[11px] font-medium"
-                  style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
-                >
-                  + Add note
-                </button>
-              </div>
-              {selected.doctorNotes.length === 0 ? (
-                <p className="text-[12px]" style={{ color: "var(--ink-faint)" }}>No notes yet.</p>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {selected.doctorNotes.map((note) => (
-                    <div key={note.id} className="flex items-start justify-between gap-3 p-3 rounded-[6px]" style={{ background: "var(--cream)" }}>
-                      <div className="flex-1 min-w-0">
-                        {editingNoteId === note.id ? (
-                          <div className="flex flex-col gap-2">
-                            <textarea
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              rows={3}
-                              className="w-full text-[13px] leading-[1.6] rounded-[4px] p-2"
-                              style={{ color: "var(--ink)", border: "1px solid rgba(0,0,0,0.12)", background: "#ffffff" }}
-                            />
-                            <div className="flex gap-3">
-                              <button
-                                type="button"
-                                onClick={() => saveEditNote(note.id)}
-                                disabled={savingEdit || !editText.trim()}
-                                className="text-[10px] font-medium"
-                                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: savingEdit ? "not-allowed" : "pointer", opacity: savingEdit || !editText.trim() ? 0.6 : 1 }}
-                              >
-                                {savingEdit ? "Saving…" : "Save"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={cancelEditNote}
-                                disabled={savingEdit}
-                                className="text-[10px] font-medium"
-                                style={{ background: "none", border: "none", padding: 0, color: "var(--ink-faint)", cursor: savingEdit ? "not-allowed" : "pointer" }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : note.type === "TEXT" ? (
-                          <p className="text-[13px] leading-[1.6] whitespace-pre-wrap" style={{ color: "var(--ink-muted)" }}>{note.content}</p>
-                        ) : (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={note.imageUrl ?? ""} alt="Doctor's note" className="rounded-[4px] max-h-[220px]" />
-                        )}
-                        {editingNoteId !== note.id && (
-                          <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
-                            {new Date(note.createdAt).toLocaleString("en-PH")}
-                          </div>
-                        )}
-                      </div>
-                      {editingNoteId !== note.id && (
-                        <div className="flex gap-3 flex-shrink-0">
-                          {note.type === "TEXT" && (
-                            <button
-                              type="button"
-                              onClick={() => startEditNote(note)}
-                              className="text-[10px] font-medium"
-                              style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
-                            >
-                              Edit
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => deleteNote(note.id)}
-                            disabled={deletingNoteId === note.id}
-                            className="text-[10px] font-medium"
-                            style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: deletingNoteId === note.id ? "not-allowed" : "pointer", opacity: deletingNoteId === note.id ? 0.6 : 1 }}
-                          >
-                            {deletingNoteId === note.id ? "Deleting…" : "Delete"}
-                          </button>
-                        </div>
-                      )}
+                      <span>{q.label}</span>
+                      <span
+                        className="text-[10px] uppercase font-semibold flex-shrink-0"
+                        style={{ color: selected[q.key] === "Yes" ? "#A6412E" : "var(--ink-faint)" }}
+                      >
+                        {String(selected[q.key]) || "—"}
+                      </span>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Update status */}
-            <div>
-              <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Update status</div>
-              <div className="flex flex-wrap gap-2">
-                {STATUS_OPTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => updateStatus(selected.id, s)}
-                    disabled={updating || selected.status === s}
-                    className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border transition-all duration-200"
-                    style={{
-                      background: selected.status === s ? "var(--teal)" : "transparent",
-                      color: selected.status === s ? "white" : "var(--ink-muted)",
-                      borderColor: selected.status === s ? "var(--teal)" : "rgba(0,0,0,0.15)",
-                      opacity: updating ? 0.6 : 1,
-                      cursor: updating || selected.status === s ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
               </div>
-            </div>
 
-            {/* Delete */}
-            <div className="pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-              {confirmingDelete ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px]" style={{ color: "var(--ink-muted)" }}>Delete this request permanently?</span>
+              {(selected.surgeries || selected.medications || selected.allergies) && (
+                <div className="flex flex-col gap-3">
+                  {selected.surgeries && (
+                    <div>
+                      <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Surgeries</div>
+                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.surgeries}</p>
+                    </div>
+                  )}
+                  {selected.medications && (
+                    <div>
+                      <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Medications</div>
+                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.medications}</p>
+                    </div>
+                  )}
+                  {selected.allergies && (
+                    <div>
+                      <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Allergies</div>
+                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.allergies}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+  
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Received</div>
+                <div className="text-[13px]" style={{ color: "var(--ink)" }}>{new Date(selected.createdAt).toLocaleString("en-PH")}</div>
+              </div>
+  
+              {/* Doctor's Notes */}
+              <div className="pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] tracking-[0.1em] uppercase" style={{ color: "var(--ink-faint)" }}>Doctor&apos;s Notes</div>
                   <button
-                    onClick={() => deleteRecord(selected.id)}
-                    disabled={deleting}
-                    className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] text-white"
-                    style={{ background: "#C62828", opacity: deleting ? 0.6 : 1, cursor: deleting ? "not-allowed" : "pointer" }}
+                    type="button"
+                    onClick={openNoteModal}
+                    className="text-[11px] font-medium"
+                    style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
                   >
-                    {deleting ? "Deleting…" : "Confirm delete"}
-                  </button>
-                  <button
-                    onClick={() => setConfirmingDelete(false)}
-                    disabled={deleting}
-                    className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border"
-                    style={{ borderColor: "rgba(0,0,0,0.15)", color: "var(--ink-muted)" }}
-                  >
-                    Cancel
+                    + Add note
                   </button>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmingDelete(true)}
-                  className="text-[11px] font-medium"
-                  style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: "pointer" }}
-                >
-                  Delete request
-                </button>
-              )}
+                {selected.doctorNotes.length === 0 ? (
+                  <p className="text-[12px]" style={{ color: "var(--ink-faint)" }}>No notes yet.</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {selected.doctorNotes.map((note) => (
+                      <div key={note.id} className="flex items-start justify-between gap-3 p-3 rounded-[6px]" style={{ background: "var(--cream)" }}>
+                        <div className="flex-1 min-w-0">
+                          {editingNoteId === note.id ? (
+                            <div className="flex flex-col gap-2">
+                              <textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                rows={3}
+                                className="w-full text-[13px] leading-[1.6] rounded-[4px] p-2"
+                                style={{ color: "var(--ink)", border: "1px solid rgba(0,0,0,0.12)", background: "#ffffff" }}
+                              />
+                              <div className="flex gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => saveEditNote(note.id)}
+                                  disabled={savingEdit || !editText.trim()}
+                                  className="text-[10px] font-medium"
+                                  style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: savingEdit ? "not-allowed" : "pointer", opacity: savingEdit || !editText.trim() ? 0.6 : 1 }}
+                                >
+                                  {savingEdit ? "Saving…" : "Save"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEditNote}
+                                  disabled={savingEdit}
+                                  className="text-[10px] font-medium"
+                                  style={{ background: "none", border: "none", padding: 0, color: "var(--ink-faint)", cursor: savingEdit ? "not-allowed" : "pointer" }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : note.type === "TEXT" ? (
+                            <p className="text-[13px] leading-[1.6] whitespace-pre-wrap" style={{ color: "var(--ink-muted)" }}>{note.content}</p>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={note.imageUrl ?? ""} alt="Doctor's note" className="rounded-[4px] max-h-[220px]" />
+                          )}
+                          {editingNoteId !== note.id && (
+                            <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
+                              {new Date(note.createdAt).toLocaleString("en-PH")}
+                            </div>
+                          )}
+                        </div>
+                        {editingNoteId !== note.id && (
+                          <div className="flex gap-3 flex-shrink-0">
+                            {note.type === "TEXT" && (
+                              <button
+                                type="button"
+                                onClick={() => startEditNote(note)}
+                                className="text-[10px] font-medium"
+                                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
+                              >
+                                Edit
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => deleteNote(note.id)}
+                              disabled={deletingNoteId === note.id}
+                              className="text-[10px] font-medium"
+                              style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: deletingNoteId === note.id ? "not-allowed" : "pointer", opacity: deletingNoteId === note.id ? 0.6 : 1 }}
+                            >
+                              {deletingNoteId === note.id ? "Deleting…" : "Delete"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+  
+              {/* Update status */}
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Update status</div>
+                <div className="flex flex-wrap gap-2">
+                  {STATUS_OPTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => updateStatus(selected.id, s)}
+                      disabled={updating || selected.status === s}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-full border transition-all duration-200"
+                      style={{
+                        background: selected.status === s ? "var(--teal-dark)" : "transparent",
+                        color: selected.status === s ? "white" : "var(--ink-muted)",
+                        borderColor: selected.status === s ? "var(--teal-dark)" : "rgba(0,0,0,0.15)",
+                        opacity: updating ? 0.6 : 1,
+                        cursor: updating || selected.status === s ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+  
+              {/* Delete */}
+              <div className="pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+                {confirmingDelete ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px]" style={{ color: "var(--ink-muted)" }}>Delete this request permanently?</span>
+                    <button
+                      onClick={() => deleteRecord(selected.id)}
+                      disabled={deleting}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-full text-white"
+                      style={{ background: "#C62828", opacity: deleting ? 0.6 : 1, cursor: deleting ? "not-allowed" : "pointer" }}
+                    >
+                      {deleting ? "Deleting…" : "Confirm delete"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={deleting}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-full border"
+                      style={{ borderColor: "rgba(0,0,0,0.15)", color: "var(--ink-muted)" }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingDelete(true)}
+                    className="text-[11px] font-medium"
+                    style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: "pointer" }}
+                  >
+                    Delete request
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -575,7 +599,7 @@ export default function AdminMedicalHistoryPage() {
         </h3>
         <div className="note-mode-tabs mb-4">
           <button type="button" onClick={() => setNoteMode("write")} className={`note-mode-tab${noteMode === "write" ? " active" : ""}`}>Write</button>
-          <button type="button" onClick={() => setNoteMode("photo")} className={`note-mode-tab${noteMode === "photo" ? " active" : ""}`}>Upload photo</button>
+          <button type="button" onClick={() => { setNoteMode("photo"); setPhotoError(null); }} className={`note-mode-tab${noteMode === "photo" ? " active" : ""}`}>Upload photo</button>
         </div>
 
         {noteMode === "write" ? (
@@ -612,11 +636,25 @@ export default function AdminMedicalHistoryPage() {
                   addNote({ type: "PHOTO", imageUrl: info.secure_url, publicId: info.public_id });
                 }
               }}
+              onError={() => {
+                setPhotoError(
+                  "The photo upload tool couldn't load. If you're on Brave, try turning Shields off for this site, then retry — otherwise check your connection."
+                );
+              }}
             >
               {({ open }) => (
                 <button
                   type="button"
-                  onClick={() => open()}
+                  onClick={() => {
+                    try {
+                      setPhotoError(null);
+                      open();
+                    } catch {
+                      setPhotoError(
+                        "Couldn't open the photo picker. If you're on Brave, try turning Shields off for this site, then retry."
+                      );
+                    }
+                  }}
                   disabled={savingNote}
                   className="text-[11px] tracking-[0.06em] uppercase px-4 py-3 rounded-[4px] self-start text-white"
                   style={{ background: "var(--teal)", opacity: savingNote ? 0.6 : 1, cursor: savingNote ? "not-allowed" : "pointer" }}
@@ -625,6 +663,9 @@ export default function AdminMedicalHistoryPage() {
                 </button>
               )}
             </CldUploadWidget>
+            {photoError && (
+              <p className="text-[12px]" style={{ color: "#C62828" }}>{photoError}</p>
+            )}
           </div>
         )}
       </div>
