@@ -304,6 +304,8 @@ model MedicalHistory {
   ipAddress  String?
   sequence   Int                  @unique @default(autoincrement())
 
+  doctorNotes DoctorNote[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -316,4 +318,29 @@ enum MedicalHistoryStatus {
   REVIEWED
   CONTACTED
   CLOSED
+}
+
+// ─────────────────────────────────────────
+// DOCTOR NOTES (attached to a MedicalHistory record)
+// ─────────────────────────────────────────
+
+enum DoctorNoteType {
+  TEXT
+  PHOTO
+}
+
+model DoctorNote {
+  id               String         @id @default(cuid())
+  medicalHistoryId String
+  type             DoctorNoteType
+  content          String? // typed note body (TEXT notes)
+  imageUrl         String? // Cloudinary secure_url (PHOTO notes)
+  publicId         String? // Cloudinary public_id (PHOTO notes)
+
+  medicalHistory MedicalHistory @relation(fields: [medicalHistoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([medicalHistoryId])
 }

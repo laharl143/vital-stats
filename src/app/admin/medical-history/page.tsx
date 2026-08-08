@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CldUploadWidget } from "next-cloudinary";
 import { formatReferenceNumber } from "@/lib/reference-number";
+
+interface DoctorNote {
+  id: string;
+  type: "TEXT" | "PHOTO";
+  content: string | null;
+  imageUrl: string | null;
+  publicId: string | null;
+  createdAt: string;
+}
 
 interface MedicalHistory {
   id: string;
@@ -33,6 +43,7 @@ interface MedicalHistory {
   status: string;
   adminNotes: string | null;
   createdAt: string;
+  doctorNotes: DoctorNote[];
 }
 
 const STATUS_OPTIONS = ["NEW", "REVIEWED", "CONTACTED", "CLOSED"];
@@ -60,6 +71,11 @@ export default function AdminMedicalHistoryPage() {
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [noteMode, setNoteMode] = useState<"write" | "photo">("write");
+  const [noteText, setNoteText] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
   const fetchRecords = () => {
     setLoading(true);
@@ -75,9 +91,54 @@ export default function AdminMedicalHistoryPage() {
 
   useEffect(() => { fetchRecords(); }, [filterStatus]);
 
+  useEffect(() => {
+    if (!noteModalOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNoteModalOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [noteModalOpen]);
+
   const selectRecord = (rec: MedicalHistory | null) => {
     setSelected(rec);
     setConfirmingDelete(false);
+  };
+
+  const openNoteModal = () => {
+    setNoteMode("write");
+    setNoteText("");
+    setNoteModalOpen(true);
+  };
+
+  const addNote = async (body: Record<string, unknown>) => {
+    if (!selected) return;
+    setSavingNote(true);
+    const res = await fetch(`/api/medical-history/${selected.id}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    setSavingNote(false);
+    if (json?.data) {
+      setSelected((prev) => (prev ? { ...prev, doctorNotes: [json.data, ...prev.doctorNotes] } : null));
+      setNoteModalOpen(false);
+      setNoteText("");
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
+    if (!selected) return;
+    setDeletingNoteId(noteId);
+    await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, { method: "DELETE" });
+    setDeletingNoteId(null);
+    setSelected((prev) => (prev ? { ...prev, doctorNotes: prev.doctorNotes.filter((n) => n.id !== noteId) } : null));
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -280,6 +341,51 @@ export default function AdminMedicalHistoryPage() {
               <div className="text-[13px]" style={{ color: "var(--ink)" }}>{new Date(selected.createdAt).toLocaleString("en-PH")}</div>
             </div>
 
+            {/* Doctor's Notes */}
+            <div className="pt-2 border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[10px] tracking-[0.1em] uppercase" style={{ color: "var(--ink-faint)" }}>Doctor&apos;s Notes</div>
+                <button
+                  type="button"
+                  onClick={openNoteModal}
+                  className="text-[11px] font-medium"
+                  style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
+                >
+                  + Add note
+                </button>
+              </div>
+              {selected.doctorNotes.length === 0 ? (
+                <p className="text-[12px]" style={{ color: "var(--ink-faint)" }}>No notes yet.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {selected.doctorNotes.map((note) => (
+                    <div key={note.id} className="flex items-start justify-between gap-3 p-3 rounded-[6px]" style={{ background: "var(--cream)" }}>
+                      <div className="flex-1 min-w-0">
+                        {note.type === "TEXT" ? (
+                          <p className="text-[13px] leading-[1.6] whitespace-pre-wrap" style={{ color: "var(--ink-muted)" }}>{note.content}</p>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={note.imageUrl ?? ""} alt="Doctor's note" className="rounded-[4px] max-h-[220px]" />
+                        )}
+                        <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
+                          {new Date(note.createdAt).toLocaleString("en-PH")}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteNote(note.id)}
+                        disabled={deletingNoteId === note.id}
+                        className="text-[10px] font-medium flex-shrink-0"
+                        style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: deletingNoteId === note.id ? "not-allowed" : "pointer", opacity: deletingNoteId === note.id ? 0.6 : 1 }}
+                      >
+                        {deletingNoteId === note.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Update status */}
             <div>
               <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Update status</div>
@@ -343,6 +449,69 @@ export default function AdminMedicalHistoryPage() {
             style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)", minHeight: 300 }}
           >
             <p className="text-[13px]" style={{ color: "var(--ink-faint)" }}>Select a consult request to view details</p>
+          </div>
+        )}
+      </div>
+
+      {/* Add note modal */}
+      <div className={`note-backdrop${noteModalOpen ? " open" : ""}`} onClick={() => setNoteModalOpen(false)} />
+      <div className={`note-modal${noteModalOpen ? " open" : ""}`} role="dialog" aria-modal="true" aria-labelledby="note-modal-heading">
+        <button type="button" onClick={() => setNoteModalOpen(false)} className="note-modal-close" aria-label="Close">×</button>
+        <h3 id="note-modal-heading" className="font-display font-light text-[20px] mb-4" style={{ color: "var(--ink)" }}>
+          Add a doctor&apos;s note
+        </h3>
+        <div className="note-mode-tabs mb-4">
+          <button type="button" onClick={() => setNoteMode("write")} className={`note-mode-tab${noteMode === "write" ? " active" : ""}`}>Write</button>
+          <button type="button" onClick={() => setNoteMode("photo")} className={`note-mode-tab${noteMode === "photo" ? " active" : ""}`}>Upload photo</button>
+        </div>
+
+        {noteMode === "write" ? (
+          <div className="flex flex-col gap-3">
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Type your note…"
+              rows={6}
+              className="w-full text-[13px] p-3 rounded-[6px] border resize-none"
+              style={{ borderColor: "rgba(0,0,0,0.15)", color: "var(--ink)" }}
+            />
+            <button
+              type="button"
+              onClick={() => addNote({ type: "TEXT", content: noteText })}
+              disabled={savingNote || !noteText.trim()}
+              className="text-[11px] tracking-[0.06em] uppercase px-4 py-3 rounded-[4px] self-end text-white"
+              style={{ background: "var(--teal)", opacity: savingNote || !noteText.trim() ? 0.6 : 1, cursor: savingNote || !noteText.trim() ? "not-allowed" : "pointer" }}
+            >
+              {savingNote ? "Saving…" : "Save note"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-[12px]" style={{ color: "var(--ink-faint)" }}>
+              Snap or select a photo of the physical note — it uploads directly and attaches to this record.
+            </p>
+            <CldUploadWidget
+              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+              options={{ folder: "doctor-notes", sources: ["local", "camera"], multiple: false }}
+              onSuccess={(result) => {
+                const info = typeof result.info === "object" ? result.info : undefined;
+                if (info?.secure_url && info?.public_id) {
+                  addNote({ type: "PHOTO", imageUrl: info.secure_url, publicId: info.public_id });
+                }
+              }}
+            >
+              {({ open }) => (
+                <button
+                  type="button"
+                  onClick={() => open()}
+                  disabled={savingNote}
+                  className="text-[11px] tracking-[0.06em] uppercase px-4 py-3 rounded-[4px] self-start text-white"
+                  style={{ background: "var(--teal)", opacity: savingNote ? 0.6 : 1, cursor: savingNote ? "not-allowed" : "pointer" }}
+                >
+                  {savingNote ? "Saving…" : "Choose photo"}
+                </button>
+              )}
+            </CldUploadWidget>
           </div>
         )}
       </div>

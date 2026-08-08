@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
+        include: { doctorNotes: { orderBy: { createdAt: "desc" } } },
       }),
       prisma.medicalHistory.count({ where: { ...(status && { status }) } }),
     ]);
