@@ -76,6 +76,9 @@ export default function AdminMedicalHistoryPage() {
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchRecords = () => {
     setLoading(true);
@@ -139,6 +142,35 @@ export default function AdminMedicalHistoryPage() {
     await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, { method: "DELETE" });
     setDeletingNoteId(null);
     setSelected((prev) => (prev ? { ...prev, doctorNotes: prev.doctorNotes.filter((n) => n.id !== noteId) } : null));
+  };
+
+  const startEditNote = (note: DoctorNote) => {
+    setEditingNoteId(note.id);
+    setEditText(note.content ?? "");
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditText("");
+  };
+
+  const saveEditNote = async (noteId: string) => {
+    if (!selected) return;
+    setSavingEdit(true);
+    const res = await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: editText }),
+    });
+    const json = await res.json();
+    setSavingEdit(false);
+    if (json?.data) {
+      setSelected((prev) =>
+        prev ? { ...prev, doctorNotes: prev.doctorNotes.map((n) => (n.id === noteId ? json.data : n)) } : null
+      );
+      setEditingNoteId(null);
+      setEditText("");
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -361,25 +393,71 @@ export default function AdminMedicalHistoryPage() {
                   {selected.doctorNotes.map((note) => (
                     <div key={note.id} className="flex items-start justify-between gap-3 p-3 rounded-[6px]" style={{ background: "var(--cream)" }}>
                       <div className="flex-1 min-w-0">
-                        {note.type === "TEXT" ? (
+                        {editingNoteId === note.id ? (
+                          <div className="flex flex-col gap-2">
+                            <textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              rows={3}
+                              className="w-full text-[13px] leading-[1.6] rounded-[4px] p-2"
+                              style={{ color: "var(--ink)", border: "1px solid rgba(0,0,0,0.12)", background: "#ffffff" }}
+                            />
+                            <div className="flex gap-3">
+                              <button
+                                type="button"
+                                onClick={() => saveEditNote(note.id)}
+                                disabled={savingEdit || !editText.trim()}
+                                className="text-[10px] font-medium"
+                                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: savingEdit ? "not-allowed" : "pointer", opacity: savingEdit || !editText.trim() ? 0.6 : 1 }}
+                              >
+                                {savingEdit ? "Saving…" : "Save"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEditNote}
+                                disabled={savingEdit}
+                                className="text-[10px] font-medium"
+                                style={{ background: "none", border: "none", padding: 0, color: "var(--ink-faint)", cursor: savingEdit ? "not-allowed" : "pointer" }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : note.type === "TEXT" ? (
                           <p className="text-[13px] leading-[1.6] whitespace-pre-wrap" style={{ color: "var(--ink-muted)" }}>{note.content}</p>
                         ) : (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={note.imageUrl ?? ""} alt="Doctor's note" className="rounded-[4px] max-h-[220px]" />
                         )}
-                        <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
-                          {new Date(note.createdAt).toLocaleString("en-PH")}
-                        </div>
+                        {editingNoteId !== note.id && (
+                          <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
+                            {new Date(note.createdAt).toLocaleString("en-PH")}
+                          </div>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteNote(note.id)}
-                        disabled={deletingNoteId === note.id}
-                        className="text-[10px] font-medium flex-shrink-0"
-                        style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: deletingNoteId === note.id ? "not-allowed" : "pointer", opacity: deletingNoteId === note.id ? 0.6 : 1 }}
-                      >
-                        {deletingNoteId === note.id ? "Deleting…" : "Delete"}
-                      </button>
+                      {editingNoteId !== note.id && (
+                        <div className="flex gap-3 flex-shrink-0">
+                          {note.type === "TEXT" && (
+                            <button
+                              type="button"
+                              onClick={() => startEditNote(note)}
+                              className="text-[10px] font-medium"
+                              style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: "pointer" }}
+                            >
+                              Edit
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => deleteNote(note.id)}
+                            disabled={deletingNoteId === note.id}
+                            className="text-[10px] font-medium"
+                            style={{ background: "none", border: "none", padding: 0, color: "#C62828", cursor: deletingNoteId === note.id ? "not-allowed" : "pointer", opacity: deletingNoteId === note.id ? 0.6 : 1 }}
+                          >
+                            {deletingNoteId === note.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
