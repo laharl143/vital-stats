@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { Suspense, useEffect, useState, type CSSProperties } from "react";
+import { useSearchParams } from "next/navigation";
 import { Gift, Mail, PhoneCall } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 import { formatReferenceNumber } from "@/lib/reference-number";
@@ -151,6 +152,15 @@ const MEDICAL_QUESTIONS: { key: keyof MedicalHistory; label: string }[] = [
 ];
 
 export default function AdminMedicalHistoryPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminMedicalHistoryPageContent />
+    </Suspense>
+  );
+}
+
+function AdminMedicalHistoryPageContent() {
+  const searchParams = useSearchParams();
   const { theme } = useAdminTheme();
   const tokens = MH_TOKENS[theme];
   const STATUS_COLORS = theme === "dark" ? STATUS_COLORS_DARK : STATUS_COLORS_LIGHT;
@@ -193,6 +203,17 @@ export default function AdminMedicalHistoryPage() {
 
   useEffect(() => { fetchRecords(); }, [filterStatus, page]);
   useEffect(() => { setPage(1); }, [filterStatus]);
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    fetch(`/api/medical-history/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data) setSelected(json.data);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!noteModalOpen) return;

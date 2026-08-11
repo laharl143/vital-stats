@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
 import {
   Package,
   Mail,
@@ -195,6 +196,7 @@ const RANGE_TITLES: Record<RangeValue, string> = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const { theme } = useAdminTheme();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [filter, setFilter] = useState<"all" | ActivityItem["type"]>("all");
@@ -288,6 +290,8 @@ export default function AdminDashboard() {
         }
         .cc-scroll-x { -ms-overflow-style: none; scrollbar-width: none; }
         .cc-scroll-x::-webkit-scrollbar { display: none; }
+        .cc-activity-row, .cc-activity-card { transition: background-color 150ms; }
+        .cc-activity-row:hover, .cc-activity-card:hover { background: color-mix(in srgb, var(--cc-teal) 10%, transparent); }
         .cc-shimmer {
           background: linear-gradient(90deg, var(--cc-border-soft) 25%, var(--cc-border) 50%, var(--cc-border-soft) 75%);
           background-size: 200% 100%;
@@ -520,7 +524,12 @@ export default function AdminDashboard() {
                           const meta = TYPE_META[item.type];
                           const s = STATUS_COLORS[item.status] ?? STATUS_COLORS.CLOSED;
                           return (
-                            <tr key={`${item.type}-${item.id}`}>
+                            <tr
+                              key={`${item.type}-${item.id}`}
+                              onClick={() => router.push(`${meta.href}?id=${item.id}`)}
+                              className="cc-activity-row"
+                              style={{ cursor: "pointer" }}
+                            >
                               <td style={td}>
                                 <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "50%", background: meta.dot }} />
                               </td>
@@ -557,7 +566,9 @@ export default function AdminDashboard() {
                         return (
                           <div
                             key={`${item.type}-${item.id}`}
-                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid var(--cc-border-soft)" }}
+                            onClick={() => router.push(`${meta.href}?id=${item.id}`)}
+                            className="cc-activity-card"
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid var(--cc-border-soft)", cursor: "pointer" }}
                           >
                             <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: meta.dot, flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>

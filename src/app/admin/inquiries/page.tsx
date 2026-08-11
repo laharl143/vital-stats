@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface Inquiry {
   id: string;
@@ -28,6 +29,15 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function AdminInquiriesPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminInquiriesPageContent />
+    </Suspense>
+  );
+}
+
+function AdminInquiriesPageContent() {
+  const searchParams = useSearchParams();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -43,6 +53,17 @@ export default function AdminInquiriesPage() {
   };
 
   useEffect(() => { fetchInquiries(); }, [filterStatus]);
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    fetch(`/api/inquiries/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data) setSelected(json.data);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);

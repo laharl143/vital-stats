@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface OrderItem {
   id: string;
@@ -34,6 +35,15 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminOrdersPageContent />
+    </Suspense>
+  );
+}
+
+function AdminOrdersPageContent() {
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -49,6 +59,17 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => { fetchOrders(); }, [filterStatus]);
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    fetch(`/api/orders/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data) setSelected(json.data);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
