@@ -223,12 +223,17 @@ function AdminLayoutShell({ pathname, children }: { pathname: string; children: 
         </div>
       </div>
 
-      {/* Background matches the Dashboard's own dark theme only on that route
-          (in dark mode) — otherwise other admin pages, which are light-only,
-          would get an unwanted dark strip behind their content. */}
+      {/* Background matches the current page's own dark theme only on routes
+          that support dark mode — otherwise other admin pages, which are
+          light-only, would get an unwanted dark strip behind their content. */}
       <main
         className="flex-1 overflow-auto pt-[52px] pb-16 xl:pt-0 xl:pb-0"
-        style={{ background: pathname === "/admin" && isDark ? "#0A0F0E" : "var(--cream)" }}
+        style={{
+          background:
+            isDark && (pathname === "/admin" || pathname === "/admin/medical-history")
+              ? "#0A0F0E"
+              : "var(--cream)",
+        }}
       >
         {children}
       </main>
