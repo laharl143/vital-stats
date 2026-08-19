@@ -17,19 +17,24 @@ export default function HomePage() {
     <>
       <AdminShortcut />
       <DesignSystemShortcut />
-      <Navbar />
-      <main>
-        <Hero />
-        <TrustBar />
-        <Categories />
-        <HowItWorks />
-        <FeaturedProducts />
-        {/* <BeforeAfter /> */}
-        <Testimonials />
-        <Team />
-        <FAQ />
-      </main>
-      <Footer />
+      {/* zoom shrinks effective layout width (real ÷ zoom factor), so md:
+          starved the Navbar and spilled the CTA past the pill. xl: leaves
+          enough room. */}
+      <div className="xl:[zoom:1.2]">
+        <Navbar />
+        <main>
+          <Hero />
+          <TrustBar />
+          <Categories />
+          <HowItWorks />
+          <FeaturedProducts />
+          {/* <BeforeAfter /> */}
+          <Testimonials />
+          <Team />
+          <FAQ />
+        </main>
+        <Footer />
+      </div>
     </>
   );
 }
