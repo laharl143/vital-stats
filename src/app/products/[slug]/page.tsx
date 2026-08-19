@@ -203,7 +203,7 @@ export default function ProductDetailPage() {
       <main className="flex-1">
         {/* Header */}
         <div
-          className="relative px-8 md:px-16 py-16 overflow-hidden"
+          className="relative px-8 md:px-16 pt-36 md:pt-44 pb-16 overflow-hidden"
           style={{ background: "linear-gradient(135deg, var(--teal-deep) 0%, var(--teal) 100%)" }}
         >
           {primaryImage ? (

@@ -81,7 +81,7 @@ function ProductsPageContent() {
       <main>
         {/* Page header */}
         <div
-          className="px-8 md:px-16 py-20"
+          className="px-8 md:px-16 pt-36 md:pt-44 pb-20"
           style={{
             background: "linear-gradient(135deg, var(--teal-deep) 0%, var(--teal) 100%)",
           }}
