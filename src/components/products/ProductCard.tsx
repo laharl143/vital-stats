@@ -163,9 +163,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
           {/* CTA */}
           <span
-            className="text-[11px] tracking-[0.08em] uppercase px-4 py-2 rounded-[2px] border transition-all duration-200 group-hover:bg-[var(--teal)] group-hover:text-white group-hover:border-[var(--teal)]"
+            className="text-[11px] tracking-[0.08em] uppercase px-4 py-2 rounded-[2px] border transition-all duration-200 text-[var(--teal)] group-hover:bg-[var(--teal)] group-hover:text-white group-hover:border-[var(--teal)]"
             style={{
-              color: "var(--teal)",
               borderColor: "var(--teal)",
             }}
           >
