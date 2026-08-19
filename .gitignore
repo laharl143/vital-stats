@@ -48,3 +48,7 @@ next-env.d.ts
 
 # Credentials — never commit
 Vital Stats Creds.txt
+
+# Local-only skill in progress — not meant to be committed
+/.agents/
+/skills-lock.json
