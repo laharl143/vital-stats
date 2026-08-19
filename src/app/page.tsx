@@ -17,21 +17,19 @@ export default function HomePage() {
     <>
       <AdminShortcut />
       <DesignSystemShortcut />
-      <div style={{ zoom: 1.1 }}>
-        <Navbar />
-        <main>
-          <Hero />
-          <TrustBar />
-          <Categories />
-          <HowItWorks />
-          <FeaturedProducts />
-          {/* <BeforeAfter /> */}
-          <Testimonials />
-          <Team />
-          <FAQ />
-        </main>
-        <Footer />
-      </div>
+      <Navbar />
+      <main>
+        <Hero />
+        <TrustBar />
+        <Categories />
+        <HowItWorks />
+        <FeaturedProducts />
+        {/* <BeforeAfter /> */}
+        <Testimonials />
+        <Team />
+        <FAQ />
+      </main>
+      <Footer />
     </>
   );
 }
