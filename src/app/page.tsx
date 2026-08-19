@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminShortcut from "@/components/AdminShortcut";
+import DesignSystemShortcut from "@/components/DesignSystemShortcut";
 import Hero from "@/components/home/Hero";
 import TrustBar from "@/components/home/TrustBar";
 import Categories from "@/components/home/Categories";
@@ -15,6 +16,7 @@ export default function HomePage() {
   return (
     <>
       <AdminShortcut />
+      <DesignSystemShortcut />
       <Navbar />
       <main>
         <Hero />
