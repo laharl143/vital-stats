@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Syringe, Sparkles, Leaf, Stethoscope, CircleCheck, type LucideIcon } from "lucide-react";
 
 interface Product {
   id: string;
@@ -32,14 +33,15 @@ const gradients: Record<string, string> = {
   MEDICAL_CONSULTATION: "linear-gradient(135deg, #F5EAF0, #DFA0C8)",
 };
 
-const emoji: Record<string, string> = {
-  WEIGHT_MANAGEMENT: "💉",
-  RECOVERY_ANTI_AGING: "✨",
-  SKIN_CARE: "🧴",
-  MEDICAL_CONSULTATION: "🩺",
+const categoryIcon: Record<string, LucideIcon> = {
+  WEIGHT_MANAGEMENT: Syringe,
+  RECOVERY_ANTI_AGING: Sparkles,
+  SKIN_CARE: Leaf,
+  MEDICAL_CONSULTATION: Stethoscope,
 };
 
 export default function ProductCard({ product }: { product: Product }) {
+  const CategoryIcon = categoryIcon[product.category] ?? Leaf;
   const badge = product.isBestSeller
     ? "Best Seller ✨"
     : product.deliveryMethod === "INJECTION"
@@ -67,7 +69,7 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       {/* Image / placeholder */}
       <div
-        className="relative flex items-center justify-center text-[48px]"
+        className="relative flex items-center justify-center"
         style={{
           height: 200,
           background: gradients[product.category] ?? gradients.SKIN_CARE,
@@ -76,7 +78,7 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* Badge */}
         <span
           className="absolute top-3 left-3 text-[9px] tracking-[0.1em] uppercase text-white px-[10px] py-1 rounded-[2px]"
-          style={{ background: "var(--teal)" }}
+          style={{ background: product.isBestSeller ? "var(--amber)" : "var(--teal)" }}
         >
           {badge}
         </span>
@@ -84,18 +86,19 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* FDA badge */}
         {product.isFdaApproved && (
           <span
-            className="absolute top-3 right-3 text-[9px] tracking-[0.08em] uppercase px-[8px] py-1 rounded-[2px]"
+            className="absolute top-3 right-3 inline-flex items-center gap-1 text-[9px] tracking-[0.08em] uppercase px-[8px] py-1 rounded-[2px]"
             style={{
               background: "rgba(255,255,255,0.85)",
               color: "var(--teal-dark)",
               fontWeight: 500,
             }}
           >
-            FDA ✓
+            FDA
+            <CircleCheck size={11} strokeWidth={2} />
           </span>
         )}
 
-        {emoji[product.category]}
+        <CategoryIcon size={40} strokeWidth={1.5} color="var(--teal-dark)" />
       </div>
 
       {/* Body */}
@@ -126,21 +129,17 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Benefits preview */}
         {product.benefits.length > 0 && (
-          <ul className="flex flex-col gap-[6px] mb-5">
+          <div className="flex flex-wrap gap-[6px] mb-5">
             {product.benefits.slice(0, 3).map((b, i) => (
-              <li
+              <span
                 key={i}
-                className="flex items-start gap-2 text-[12px] font-light"
-                style={{ color: "var(--ink-muted)" }}
+                className="text-[10.5px] font-semibold px-[9px] py-1 rounded-full"
+                style={{ background: "var(--teal-pale)", color: "var(--teal-dark)" }}
               >
-                <span
-                  className="mt-[5px] w-[4px] h-[4px] rounded-full flex-shrink-0"
-                  style={{ background: "var(--teal-light)" }}
-                />
                 {b.benefit}
-              </li>
+              </span>
             ))}
-          </ul>
+          </div>
         )}
 
         {/* Footer */}
