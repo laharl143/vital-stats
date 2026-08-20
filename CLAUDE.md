@@ -176,3 +176,8 @@ In Progress → In Review → Done, plus Blocked.
   - **Blocked** — can't proceed (missing input, external dependency, waiting on a decision)
 - Keep the issue's status in sync as work moves forward — don't leave it stale in the wrong column.
 - Ed (developer) is the point of contact for this project.
+- **Don't self-schedule periodic check-ins (`send_later`, polling reminders) to watch for a PR's
+  merge/close status.** A dedicated "Jira PR status sync" routine already handles this — it's
+  triggered instantly by a GitHub webhook on `pull_request` events, extracts the `[VS-##]` key
+  from the PR title, and moves the ticket to Done (merged) or Cancelled (closed unmerged) with a
+  comment. Opening a PR in any session does not need a follow-up self-poll for this purpose.
