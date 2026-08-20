@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Independently review a vital-stats GitHub PR for production-safety risk and code quality before Ed merges it. Gives an honest Confidence rating (High/Medium/Low, never a fabricated percentage) on whether the change is safe to merge without breaking production, plus a separate harsh structural/maintainability pass via the thermo-nuclear-code-quality-review skill. Invoke as "/review-pr <PR number>", e.g. "/review-pr #4" or "/review-pr 4".
+description: Independently review a vital-stats GitHub PR for production-safety risk and code quality before Ed merges it. Gives a Confidence rating (High/Medium/Low with a percentage estimate) and a final Verdict (Safe to merge / Not safe for merging / Don't merge at all cost, needs double checking from human) on whether the change is safe to merge without breaking production, plus a separate harsh structural/maintainability pass via the thermo-nuclear-code-quality-review skill. Invoke as "/review-pr <PR number>", e.g. "/review-pr #4" or "/review-pr 4".
 ---
 
 # Review PR (vital-stats)
@@ -71,14 +71,43 @@ production":
 
 End this section with:
 
-> **Confidence: High / Medium / Low**
+> **Confidence: <High/Medium/Low> (~<N>%)**
 
-immediately followed by the itemized evidence backing it (what was checked, what
+The percentage is a free-form estimate you set per PR, not a fixed band tied to the
+label — pick whatever number honestly reflects how sure you are for *this* diff. Both
+the label and the number must appear together, and the number is a labeled
+self-assessment (a rough estimate this process can actually back up with evidence),
+not a statistical measure — don't let it read as false precision on its own.
+
+Immediately follow with the itemized evidence backing it (what was checked, what
 passed, what — if anything — could not be verified, e.g. "no live browser/DB check
-performed since that would need Ed's go-ahead"). Never state a numeric percentage —
-it would just be a fabricated impression of precision this process doesn't actually
-have. A PR that couldn't be fully verified should say so plainly and land at Medium or
-Low rather than being rounded up to High.
+performed since that would need Ed's go-ahead"). A PR that couldn't be fully verified
+should say so plainly and land at Medium or Low rather than being rounded up to High.
+
+Then close the production-safety section with exactly one of these three Verdict
+strings, verbatim (so it can be scanned/matched on, not paraphrased):
+
+> **Verdict: Safe to merge**
+> **Verdict: Not safe for merging**
+> **Verdict: Don't merge at all cost, needs double checking from human**
+
+Choose between them using this test, not vibes:
+
+- **Safe to merge** — verification was actually completed (diff scope, callers,
+  lint/build, production-impact reasoning all done) and nothing concrete was found
+  wrong. This is "I checked, it's clean."
+- **Not safe for merging** — a specific, identified problem exists — name it
+  explicitly in the findings above (a broken/incompatible caller, a new lint/build
+  error, a real logic bug, a production-impact concern that isn't just theoretical).
+  This is "I checked, and it's broken/risky" — not "I'm not sure."
+- **Don't merge at all cost, needs double checking from human** — the opposite failure
+  mode from "Not safe": verification itself was incomplete, blocked, or reached
+  genuinely ambiguous/contradictory results, OR the diff touches a high-stakes area
+  (auth, payments, database migrations/schema, or anything else CLAUDE.md already
+  flags as sensitive) where an AI's yes/no shouldn't be trusted alone regardless of how
+  clean the diff looks. This tier exists specifically so this skill doesn't
+  rubber-stamp something it couldn't actually verify — it is not "worse than Not safe,"
+  it's a different kind of uncertainty that needs a human, not a confident wrong answer.
 
 ## 3. Code-quality pass
 
@@ -97,8 +126,10 @@ Present both passes clearly separated in chat, e.g.:
 
 <findings>
 
-**Confidence: <High/Medium/Low>**
+**Confidence: <High/Medium/Low> (~<N>%)**
 <evidence>
+
+**Verdict: <Safe to merge / Not safe for merging / Don't merge at all cost, needs double checking from human>**
 
 ## Code-quality review (thermo-nuclear)
 
