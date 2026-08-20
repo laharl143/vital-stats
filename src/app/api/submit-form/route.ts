@@ -57,21 +57,26 @@ export async function POST(req: NextRequest) {
     }
 
     // Also send to Google Sheets
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSfG9v4F_HcDG-ilpXhsjR3myFdBgpvNGfk45DFeB2tMVxZnIg/viewform",
-        "Origin": "https://docs.google.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-      body: JSON.stringify(data),
-      redirect: "follow",
-    });
+    try {
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSfG9v4F_HcDG-ilpXhsjR3myFdBgpvNGfk45DFeB2tMVxZnIg/viewform",
+          "Origin": "https://docs.google.com",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        body: JSON.stringify(data),
+        redirect: "follow",
+        signal: AbortSignal.timeout(5000),
+      });
 
-    const responseText = await response.text();
-    console.log("Apps Script response status:", response.status);
-    console.log("Apps Script response body:", responseText);
+      const responseText = await response.text();
+      console.log("Apps Script response status:", response.status);
+      console.log("Apps Script response body:", responseText);
+    } catch (err) {
+      console.error("[appsScriptForward]", err);
+    }
 
     return NextResponse.json({
       success: true,
