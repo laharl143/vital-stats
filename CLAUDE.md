@@ -93,6 +93,29 @@ later changes in the same session; each change gets its own ask. Options to pres
 Wait for their choice before running anything. This comes before the commit step below —
 verification method is a separate decision from whether the fix is confirmed good.
 
+**Exception — unattended/automated sessions:** the ask-first rule above applies to
+interactive sessions with Ed. A non-interactive/automated agent run (e.g. a scheduled
+routine with no one to ask) may use Playwright without asking, but only during these
+windows, Philippines time (UTC+8): 7:00-10:00 AM, and 12:00-1:00 PM. Outside these
+windows, automated sessions must skip Playwright verification rather than ask — there's
+no one to answer. This exception does not change anything for interactive sessions —
+still ask every time.
+
+An automated session must not stop a dev server it didn't start (it may already be Ed's).
+If Playwright verification needs a running server, check whether one is already running
+first; if not, start a temporary instance and stop only that instance when the run ends.
+
+**No staging environment exists — the local dev database (Supabase) is the real production
+database.** There is no separate test DB to point at. When Playwright (or any verification)
+needs to exercise a route that writes data, creating new test records is fine — INSERT-style
+writes are reversible, Ed can delete them any time. Use an obviously-fake identifier when
+creating test data (e.g. a name/email containing "TEST") so it's easy to spot and clean up.
+**Never perform a destructive operation** (DELETE, bulk update, or anything that mutates or
+removes existing real records) against this database during verification, interactive or
+automated. Incidental side effects from exercising a normal write path (e.g. an admin
+notification firing, an external webhook call) are acceptable — the concern is only ever
+data loss/destruction, not creating extra test rows or a stray notification.
+
 **Never kill the dev server after finishing a fix.** Ed keeps it running to continuously click
 through the site as work lands — stopping it out from under him is disruptive. Leave `npm run dev`
 running once it's up; only stop it if explicitly asked to, or if you need to restart it to pick up
@@ -106,6 +129,18 @@ and what you found — then stop and wait for Ed to explicitly confirm the fix i
 running `git commit`. Finishing a fix and verifying it (including automated checks like
 Playwright) is not the same as being told to commit it. This applies even when a Jira ticket
 exists for the work — don't commit just because a ticket is being closed out.
+
+**Exception — auto-fix routine (unattended):** the scheduled auto-fix routine (the one that
+works `routine-agent-vs-{ticket}` branches) may commit and push its own branch and open a pull
+request against `main`, without asking, once its fix is verified end-to-end — this is a standing
+exception Ed has approved specifically for that routine, so he can review the change as a normal
+PR instead of a raw branch diff. Even under this exception it must: use the commit message format
+below (`[VS-##]` prefix, also as the PR title), never touch `main` directly, never force-push,
+never merge or approve the PR itself, and never treat the ticket as Done — Jira only reaches Done
+after Ed reviews, confirms, and merges the PR (see Jira workflow below). If verification fails, it
+must not commit, push, or open a PR. This exception is scoped to that one routine — every other
+automated or interactive session still never commits, pushes, or opens PRs without Ed's explicit
+go-ahead, no exceptions.
 
 Every commit message must start with the Jira issue key in brackets, followed by one of these
 prefixes:
