@@ -122,6 +122,25 @@ running once it's up; only stop it if explicitly asked to, or if you need to res
 a config change (e.g. `.env`, `next.config`) that hot-reload won't catch — and in that case, start
 it back up again immediately after.
 
+## Ponytail (YAGNI enforcement)
+
+The `ponytail` plugin (project-scoped, see `.claude/settings.json`) auto-injects a
+"lazy senior dev" ruleset every session: does the code need to exist at all, does it
+already live in this codebase, does stdlib/a native platform feature/an already-installed
+dependency cover it, before writing anything new. It runs at intensity `full` by default —
+switch for a session with `/ponytail lite|full|ultra|off`. This reinforces the "Doing
+tasks" philosophy above rather than replacing it, and never overrides the workflow rules
+in this file (commit/push, Playwright, Jira) — those are a separate axis.
+
+- `/ponytail-review` — fast, diff-level "what can be cut" check. Use it as a quick
+  self-check during active dev; it does **not** replace `/review-pr`, which stays the
+  required production-safety + structural gate before merging.
+- `/ponytail-audit` — same scan across the whole repo. Use occasionally (e.g. before a
+  larger refactor), not as a per-PR step.
+- `/ponytail-debt` — harvests inline `ponytail: <what was cut>, <upgrade path>` comments
+  into a ledger. Use that comment convention when deliberately taking a shortcut with a
+  known ceiling, and check `/ponytail-debt` periodically to see what's been deferred.
+
 ## Commit message format
 
 **Never commit automatically.** Make the code change and, if you tested it, report what you did

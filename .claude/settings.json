@@ -1,7 +1,6 @@
 {
   "enabledPlugins": {
     "atlassian@claude-plugins-official": true,
-    "figma@claude-plugins-official": true,
     "ponytail@ponytail": true
   }
 }
