@@ -91,7 +91,15 @@ export default function Team() {
   }, []);
 
   return (
-    <section className="relative py-24 px-4 md:px-9 overflow-hidden" style={{ background: "var(--cream)" }}>
+    <section
+      className="relative py-24 px-4 md:px-9 overflow-hidden"
+      style={{ background: "var(--cream)", marginTop: -2 }}
+    >
+      {/* Overlaps Testimonials' bottom edge by 2px on purpose — a hairline
+          seam can show at this join from sub-pixel canvas-bitmap rounding
+          (more visible since the homepage's zoom scaling was added), and
+          overlapping is the standard fix rather than chasing exact pixel
+          math between two independent canvases. */}
       <canvas ref={canvasRef} className="absolute inset-0" style={{ zIndex: 0 }} />
       <div className="relative mx-auto" style={{ maxWidth: 1360, zIndex: 1 }}>
         <div
