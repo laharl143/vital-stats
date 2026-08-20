@@ -3,48 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { MedicalHistoryStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 
-// POST /api/medical-history  (public — book-consult intake form)
-export async function POST(req: NextRequest) {
-  try {
-    const data = await req.json();
-
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0] ??
-      req.headers.get("x-real-ip") ??
-      "unknown";
-
-    const record = await prisma.medicalHistory.create({
-      data: {
-        fullName: data.fullName ?? "",
-        dateOfBirth: `${data.dobMonth}/${data.dobDay}/${data.dobYear}`,
-        gender: data.gender ?? "",
-        phone: data.phone ?? "",
-        email: data.email ?? "",
-        height: data.height ?? "",
-        weight: data.weight ?? "",
-        mtc: data.mtc ?? "",
-        pancreatitis: data.pancreatitis ?? "",
-        gallbladder: data.gallbladder ?? "",
-        gi: data.gi ?? "",
-        diabetes: data.diabetes ?? "",
-        pregnant: data.pregnant ?? "",
-        surgeries: data.surgeries ?? "",
-        medications: data.medications ?? "",
-        allergies: data.allergies ?? "",
-        consent1: data.consent1 ?? false,
-        consent2: data.consent2 ?? false,
-        consent3: data.consent3 ?? false,
-        ipAddress,
-      },
-    });
-
-    return NextResponse.json({ success: true, id: record.id }, { status: 201 });
-  } catch (error) {
-    console.error("[POST /api/medical-history]", error);
-    return NextResponse.json({ success: false, error: "Failed to save medical history" }, { status: 500 });
-  }
-}
-
 // GET /api/medical-history  (admin only)
 export async function GET(req: NextRequest) {
   const unauthorized = await requireAdminSession();
