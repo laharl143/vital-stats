@@ -20,7 +20,7 @@ export default function HomePage() {
       {/* zoom shrinks effective layout width (real ÷ zoom factor), so md:
           starved the Navbar and spilled the CTA past the pill. xl: leaves
           enough room. */}
-      <div className="xl:[zoom:1.2]">
+      <div className="xl:[zoom:1.1]">
         <Navbar />
         <main>
           <Hero />
