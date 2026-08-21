@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface OrderItem {
@@ -50,15 +50,16 @@ function AdminOrdersPageContent() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
 
-  const fetchOrders = () => {
-    setLoading(true);
+  const fetchOrders = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
-    fetch(url)
+    Promise.resolve()
+      .then(() => setLoading(true))
+      .then(() => fetch(url))
       .then((r) => r.json())
       .then((json) => { setOrders(json.data ?? []); setLoading(false); });
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { fetchOrders(); }, [filterStatus]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   useEffect(() => {
     const id = searchParams.get("id");

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface Inquiry {
@@ -44,15 +44,16 @@ function AdminInquiriesPageContent() {
   const [selected, setSelected] = useState<Inquiry | null>(null);
   const [updating, setUpdating] = useState(false);
 
-  const fetchInquiries = () => {
-    setLoading(true);
+  const fetchInquiries = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/inquiries?limit=50" : `/api/inquiries?status=${filterStatus}&limit=50`;
-    fetch(url)
+    Promise.resolve()
+      .then(() => setLoading(true))
+      .then(() => fetch(url))
       .then((r) => r.json())
       .then((json) => { setInquiries(json.data ?? []); setLoading(false); });
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { fetchInquiries(); }, [filterStatus]);
+  useEffect(() => { fetchInquiries(); }, [fetchInquiries]);
 
   useEffect(() => {
     const id = searchParams.get("id");

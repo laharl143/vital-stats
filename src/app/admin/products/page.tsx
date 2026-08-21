@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface Product {
   id: string;
@@ -26,14 +26,15 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
 
-  const fetchProducts = () => {
-    setLoading(true);
-    fetch("/api/products?active=false")
+  const fetchProducts = useCallback(() => {
+    Promise.resolve()
+      .then(() => setLoading(true))
+      .then(() => fetch("/api/products?active=false"))
       .then((r) => r.json())
       .then((json) => { setProducts(json.data ?? []); setLoading(false); });
-  };
+  }, []);
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   const toggleActive = async (slug: string, currentlyActive: boolean) => {
     setToggling(slug);

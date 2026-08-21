@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, type CSSProperties } from "react";
+import { Suspense, useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { Gift, Mail, PhoneCall } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
@@ -186,23 +186,23 @@ function AdminMedicalHistoryPageContent() {
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const PAGE_SIZE = 10;
 
-  const fetchRecords = () => {
-    setLoading(true);
+  const fetchRecords = useCallback(() => {
     const url =
       filterStatus === "ALL"
         ? `/api/medical-history?limit=${PAGE_SIZE}&page=${page}`
         : `/api/medical-history?status=${filterStatus}&limit=${PAGE_SIZE}&page=${page}`;
-    fetch(url)
+    Promise.resolve()
+      .then(() => setLoading(true))
+      .then(() => fetch(url))
       .then((r) => r.json())
       .then((json) => {
         setRecords(json.data ?? []);
         setTotalPages(json.meta?.totalPages ?? 1);
         setLoading(false);
       });
-  };
+  }, [filterStatus, page]);
 
-  useEffect(() => { fetchRecords(); }, [filterStatus, page]);
-  useEffect(() => { setPage(1); }, [filterStatus]);
+  useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -374,7 +374,7 @@ function AdminMedicalHistoryPageContent() {
         {["ALL", ...STATUS_OPTIONS].map((s) => (
           <button
             key={s}
-            onClick={() => setFilterStatus(s)}
+            onClick={() => { setFilterStatus(s); setPage(1); }}
             className="text-[11px] tracking-[0.06em] uppercase px-4 py-2 rounded-full border transition-all duration-200"
             style={{
               background: filterStatus === s ? "var(--mh-teal-dark)" : "var(--mh-surface)",
