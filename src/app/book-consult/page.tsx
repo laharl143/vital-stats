@@ -27,6 +27,32 @@ const labelStyle = {
   marginBottom: 8,
 };
 
+function RadioGroup({ field, label, required, value, onChange }: {
+  field: string;
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (opt: string) => void;
+}) {
+  return (
+    <div>
+      <label style={labelStyle}>{label} {required && "*"}</label>
+      <div className="flex gap-6 mt-2">
+        {["Yes", "No"].map((opt) => (
+          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink-muted)" }}>
+            <input type="radio" name={field} value={opt}
+              checked={value === opt}
+              onChange={() => onChange(opt)}
+              style={{ accentColor: "var(--teal)" }}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function BookPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [modalDismissed, setModalDismissed] = useState(false);
@@ -143,24 +169,6 @@ export default function BookPage() {
       setStatus("error");
     }
   };
-
-  const RadioGroup = ({ field, label, required }: { field: string; label: string; required?: boolean }) => (
-    <div>
-      <label style={labelStyle}>{label} {required && "*"}</label>
-      <div className="flex gap-6 mt-2">
-        {["Yes", "No"].map((opt) => (
-          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink-muted)" }}>
-            <input type="radio" name={field} value={opt}
-              checked={(form as Record<string, string | boolean>)[field] === opt}
-              onChange={() => set(field, opt)}
-              style={{ accentColor: "var(--teal)" }}
-            />
-            {opt}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
 
   return (
     <>
@@ -649,11 +657,11 @@ export default function BookPage() {
                     Medical History
                   </div>
                   <div className="flex flex-col gap-5">
-                    <RadioGroup field="mtc" label="Do you or any family members have a history of Medullary Thyroid Carcinoma (MTC) or Multiple Endocrine Neoplasia Type 2 (MEN 2)?" required />
-                    <RadioGroup field="pancreatitis" label="Do you have a history of pancreatitis?" required />
-                    <RadioGroup field="gallbladder" label="Do you have a history of gallbladder disease? (Gallstone, Cholecystectomy)" required />
-                    <RadioGroup field="gi" label="Do you have a history of severe gastrointestinal disease?" required />
-                    <RadioGroup field="diabetes" label="Do you have type 2 diabetes?" required />
+                    <RadioGroup field="mtc" label="Do you or any family members have a history of Medullary Thyroid Carcinoma (MTC) or Multiple Endocrine Neoplasia Type 2 (MEN 2)?" required value={form.mtc} onChange={(opt) => set("mtc", opt)} />
+                    <RadioGroup field="pancreatitis" label="Do you have a history of pancreatitis?" required value={form.pancreatitis} onChange={(opt) => set("pancreatitis", opt)} />
+                    <RadioGroup field="gallbladder" label="Do you have a history of gallbladder disease? (Gallstone, Cholecystectomy)" required value={form.gallbladder} onChange={(opt) => set("gallbladder", opt)} />
+                    <RadioGroup field="gi" label="Do you have a history of severe gastrointestinal disease?" required value={form.gi} onChange={(opt) => set("gi", opt)} />
+                    <RadioGroup field="diabetes" label="Do you have type 2 diabetes?" required value={form.diabetes} onChange={(opt) => set("diabetes", opt)} />
                     {form.gender === "Female" && (
                       <div>
                         <label style={labelStyle}>Are you currently pregnant, breastfeeding, or planning to become pregnant? *</label>
