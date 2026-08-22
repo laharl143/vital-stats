@@ -5,14 +5,98 @@ import { formatReferenceNumber } from "@/lib/reference-number";
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxi56o7zn0-HIygaDaXNgJ7cMB_bmznow78a78mEYhco6s3Jb0N66HB9OF8fKSGYnLr/exec";
 
+const REQUIRED_FIELDS = [
+  "fullName",
+  "dobMonth",
+  "dobDay",
+  "dobYear",
+  "gender",
+  "mtc",
+  "pancreatitis",
+  "gallbladder",
+  "gi",
+  "diabetes",
+  "pregnant",
+] as const;
+
+const MAX_LENGTHS: Record<string, number> = {
+  fullName: 100,
+  gender: 20,
+  phone: 30,
+  email: 200,
+  height: 20,
+  weight: 20,
+  bmi: 20,
+  bmiCategory: 20,
+  waistCircumference: 20,
+  smokingStatus: 50,
+  drinkingFrequency: 50,
+  mtc: 20,
+  pancreatitis: 20,
+  gallbladder: 20,
+  gi: 20,
+  diabetes: 20,
+  pregnant: 20,
+  surgeries: 2000,
+  medications: 2000,
+  allergies: 2000,
+};
+
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
+
+    for (const field of REQUIRED_FIELDS) {
+      if (!data[field]) {
+        return NextResponse.json(
+          { success: false, error: `${field} is required` },
+          { status: 400 }
+        );
+      }
+    }
+
+    for (const [field, maxLength] of Object.entries(MAX_LENGTHS)) {
+      const value = data[field];
+      if (typeof value === "string" && value.length > maxLength) {
+        return NextResponse.json(
+          { success: false, error: `${field} exceeds maximum allowed length` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const dobMonth = Number(data.dobMonth);
+    const dobDay = Number(data.dobDay);
+    const dobYear = Number(data.dobYear);
+    const currentYear = new Date().getFullYear();
+
+    if (
+      !Number.isInteger(dobMonth) || dobMonth < 1 || dobMonth > 12 ||
+      !Number.isInteger(dobDay) || dobDay < 1 || dobDay > 31 ||
+      !Number.isInteger(dobYear) || dobYear < 1900 || dobYear > currentYear
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invalid date of birth" },
+        { status: 400 }
+      );
+    }
 
     const ipAddress =
       req.headers.get("x-forwarded-for")?.split(",")[0] ??
       req.headers.get("x-real-ip") ??
       "unknown";
+
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentCount = await prisma.medicalHistory.count({
+      where: { ipAddress, createdAt: { gte: oneHourAgo } },
+    });
+
+    if (recentCount >= 3) {
+      return NextResponse.json(
+        { success: false, error: "Too many submissions. Please try again later." },
+        { status: 429 }
+      );
+    }
 
     // Save to DB
     const record = await prisma.medicalHistory.create({
