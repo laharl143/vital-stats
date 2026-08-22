@@ -66,12 +66,16 @@ export default function Testimonials() {
   // dangling by the time its own callback finishes, so it's safe here.
   useEffect(() => {
     if (activeIndex === displayIndex) return;
-    setExiting(true);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setExiting(true);
+    });
     exitTimerRef.current = setTimeout(() => {
       setDisplayIndex(activeIndex);
       setExiting(false);
     }, EXIT_MS);
     return () => {
+      cancelled = true;
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     };
   }, [activeIndex, displayIndex]);

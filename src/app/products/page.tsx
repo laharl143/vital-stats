@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -41,7 +41,6 @@ export default function ProductsPage() {
 function ProductsPageContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
-  const [filtered, setFiltered] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState(() => {
     const requested = searchParams.get("category");
     return CATEGORIES.some((c) => c.value === requested) ? requested! : "ALL";
@@ -57,13 +56,12 @@ function ProductsPageContent() {
           (p) => p.category !== "MEDICAL_CONSULTATION"
         );
         setProducts(purchasable);
-        setFiltered(purchasable);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
+  const filtered = useMemo(() => {
     let next = activeCategory === "ALL" ? products : products.filter((p) => p.category === activeCategory);
     if (searchQuery) {
       next = next.filter(
@@ -72,7 +70,7 @@ function ProductsPageContent() {
           (p.tagline?.toLowerCase().includes(searchQuery) ?? false)
       );
     }
-    setFiltered(next);
+    return next;
   }, [activeCategory, products, searchQuery]);
 
   return (

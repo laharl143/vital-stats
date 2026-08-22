@@ -41,7 +41,10 @@ export function useProductSearch(active: boolean) {
     // Nothing to fetch — callers hide the results panel themselves when
     // the query is empty, so no state needs clearing here.
     if (!q) return;
-    setLoading(true);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setLoading(true);
+    });
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/products?q=${encodeURIComponent(q)}&active=true`);
@@ -54,6 +57,7 @@ export function useProductSearch(active: boolean) {
       }
     }, DEBOUNCE_MS);
     return () => {
+      cancelled = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
