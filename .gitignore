@@ -52,3 +52,6 @@ Vital Stats Creds.txt
 # Local-only skill in progress — not meant to be committed
 /.agents/
 /skills-lock.json
+
+# Playwright MCP's own scratch output (screenshots, console/page dumps)
+/.playwright-mcp/
