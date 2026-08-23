@@ -134,9 +134,10 @@ export default function Navbar() {
       <nav
         ref={navRef}
         className={
-          searchOpen
+          (searchOpen
             ? "relative flex items-center gap-3 mx-4 md:mx-8"
-            : "relative grid grid-cols-3 items-center md:flex md:justify-between mx-4 md:mx-8"
+            : "relative grid grid-cols-3 items-center md:flex md:justify-between mx-4 md:mx-8") +
+          " py-[10px] md:py-[clamp(14px,1.6vw,20px)]"
         }
         style={{
           width: "calc(100% - 32px)",
@@ -152,7 +153,8 @@ export default function Navbar() {
           backdropFilter: "blur(40px)",
           WebkitBackdropFilter: "blur(40px)",
           borderRadius: 32,
-          padding: "clamp(14px, 1.6vw, 20px) clamp(18px, 2.2vw, 32px)",
+          paddingLeft: "clamp(18px, 2.2vw, 32px)",
+          paddingRight: "clamp(18px, 2.2vw, 32px)",
           zIndex: 10,
         }}
       >
@@ -191,7 +193,7 @@ export default function Navbar() {
         <Link
           href="/"
           className="row-start-1 col-start-2 justify-self-center flex items-center shrink-0 md:hidden"
-          style={{ height: 56 }}
+          style={{ height: 40 }}
         >
           <Image
             src="/vitalstats_logo_horizontal.png"
@@ -199,7 +201,7 @@ export default function Navbar() {
             width={2066}
             height={570}
             className="w-auto object-contain"
-            style={{ height: "clamp(38px, 3.8vw, 48px)", pointerEvents: "none" }}
+            style={{ height: "clamp(28px, 3.8vw, 48px)", pointerEvents: "none" }}
             priority
           />
         </Link>
