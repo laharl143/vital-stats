@@ -97,6 +97,15 @@ export async function notifyAdmin(notification: ConsultNotification | InquiryNot
   await resend.emails.send({ from, to: recipients, subject, html });
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function renderNotificationEmail(params: {
   badge: string;
   title: string;
@@ -111,8 +120,8 @@ function renderNotificationEmail(params: {
     .map(
       ([label, value]) => `
         <tr>
-          <td style="padding:10px 0;border-top:1px solid #eef2f0;color:#5b6b64;width:80px;">${label}</td>
-          <td style="padding:10px 0;border-top:1px solid #eef2f0;">${value}</td>
+          <td style="padding:10px 0;border-top:1px solid #eef2f0;color:#5b6b64;width:80px;">${escapeHtml(label)}</td>
+          <td style="padding:10px 0;border-top:1px solid #eef2f0;">${escapeHtml(value)}</td>
         </tr>`
     )
     .join("");
@@ -122,15 +131,15 @@ function renderNotificationEmail(params: {
       <table role="presentation" width="100%" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #dce3df;">
         <tr><td style="background:#1f6f5c;padding:20px 28px;">
           <span style="color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.02em;">VITAL-STATS</span>
-          <span style="color:#bfe3d6;font-size:12px;float:right;margin-top:3px;">${badge}</span>
+          <span style="color:#bfe3d6;font-size:12px;float:right;margin-top:3px;">${escapeHtml(badge)}</span>
         </td></tr>
         <tr><td style="padding:28px;">
-          <h1 style="margin:0 0 4px;font-size:19px;color:#1b2421;">${title}</h1>
-          <p style="margin:0 0 20px;font-size:13px;color:#5b6b64;">${submittedAt}</p>
+          <h1 style="margin:0 0 4px;font-size:19px;color:#1b2421;">${escapeHtml(title)}</h1>
+          <p style="margin:0 0 20px;font-size:13px;color:#5b6b64;">${escapeHtml(submittedAt)}</p>
           <table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse;">${rowsHtml}
           </table>
           <table role="presentation" style="margin-top:24px;"><tr><td style="background:#1f6f5c;border-radius:6px;">
-            <a href="${ctaHref}" style="display:inline-block;padding:11px 20px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">${ctaLabel}</a>
+            <a href="${ctaHref}" style="display:inline-block;padding:11px 20px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">${escapeHtml(ctaLabel)}</a>
           </td></tr></table>
         </td></tr>
       </table>
