@@ -36,7 +36,13 @@ Four font families are loaded via `next/font/google` in `layout.tsx`, but **only
 | Cormorant Garamond | `--font-cormorant` | *(nothing)* | **Dead weight** — loaded on every page, never referenced |
 | DM Sans | `--font-dm-sans` | *(nothing)* | **Dead weight** — loaded on every page, never referenced |
 
-And separately: **`.font-display` — used everywhere for headlines and product names — sets `font-family: 'Playfair Display', serif`, but Playfair Display is never loaded** (not in `layout.tsx`'s `next/font` imports, no stylesheet link). Every "serif" headline on the site is actually rendering the browser's fallback system serif (Georgia on Windows, Times on macOS), not the intended typeface. This has been true long enough that it may be the de facto look at this point — worth a deliberate decision (load Playfair Display for real, or repoint `.font-display` at a serif that's actually shipping) rather than leaving it as an accident.
+**`.font-display` — used for headlines and product names — is sans-serif** (`var(--font-jakarta)`, same family as body), as of VS-157. It used to be `font-family: 'Playfair Display', serif` (with Playfair Display never actually loaded, so it silently fell back to the system serif) — Ed explicitly decided he prefers sans headlines site-wide and does *not* want Playfair Display loaded.
+
+**Two deliberate exceptions keep the old serif look on purpose** — both set `font-family: 'Playfair Display', serif` inline (resolves to the system-serif fallback) instead of using `.font-display`:
+1. **Homepage Hero H1** (`Hero.tsx`, "Clinically guided. Beautifully delivered.")
+2. **Homepage Testimonials pull-quote** (`Testimonials.tsx`, the active testimonial's quote text)
+
+Both are Ed's explicit picks, confirmed directly. Don't repoint either to `.font-display` and don't load real Playfair Display without checking with him first — more exceptions may be added the same way if he flags other spots.
 
 ### Real type scale (as used, not a formal system)
 
@@ -101,7 +107,7 @@ Full-width `linear-gradient(135deg, var(--teal-deep) 0%, var(--teal) 100%)`, whi
 ### Don't
 - Don't introduce a new accent color without a stated reason — amber was added for exactly one signal (best-seller) and shouldn't multiply informally
 - Don't add drop-shadows for decoration — the only shadow in the system is the ProductCard hover lift; elevation elsewhere is a hairline border, not a shadow
-- Don't assume `.font-display` renders Playfair Display in production — it currently falls back to the system serif (see Typography); verify before relying on Playfair-specific metrics
+- Don't assume `.font-display` is serif — as of VS-157 it's sans-serif (`var(--font-jakarta)`) everywhere except the two deliberate exceptions in Typography (Hero H1, Testimonials pull-quote), which are hardcoded to the serif fallback and don't use `.font-display` at all
 - Don't load new Google Fonts without wiring them to an actual CSS class — Cormorant Garamond and DM Sans are cautionary examples already sitting unused in the bundle
 - Don't use large (80px+) card radii — no component in the app does this; it would read as off-brand
 

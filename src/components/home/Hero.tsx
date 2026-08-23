@@ -5,12 +5,45 @@ import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 
 const dotPositions = [
-  { top: "18%", left: "62%" },
-  { top: "34%", left: "82%" },
+  { top: "18%", left: "48%" },
+  { top: "40%", left: "58%" },
+  { top: "70%", left: "52%" },
   { top: "52%", left: "45%" },
-  { top: "64%", left: "70%" },
   { top: "76%", left: "30%" },
-  { top: "22%", left: "22%" },
+  { top: "24%", left: "20%" },
+];
+
+const consultSteps = [
+  {
+    label: "Complete your intake",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="var(--teal-dark)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="3" width="12" height="15" rx="2" />
+        <path d="M7.5 3.5v-1h5v1" />
+        <path d="M7 8h6M7 11.5h6M7 15h3.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "Clinical review",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="var(--teal-dark)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="8" cy="7" r="3" />
+        <path d="M3 17c0-2.8 2.2-5 5-5s5 2.2 5 5" />
+        <path d="M13.5 8.5l1.5 1.5 3-3.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "Get your plan",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="var(--teal-dark)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 6.5l7-3.5 7 3.5v7l-7 3.5-7-3.5z" />
+        <path d="M3 6.5l7 3.5 7-3.5" />
+        <path d="M10 10v7" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Hero() {
@@ -22,7 +55,7 @@ export default function Hero() {
   const photoRef = useRef<HTMLDivElement>(null);
   const statRef = useRef<HTMLDivElement>(null);
   const cornerPatchRef = useRef<HTMLDivElement>(null);
-  const thumbrailRef = useRef<HTMLDivElement>(null);
+  const consultRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<Array<HTMLSpanElement | null>>([]);
 
   // "Quiet Drift": everything settles once, together, in a single unhurried
@@ -50,7 +83,7 @@ export default function Hero() {
     gsap.set([eyebrowRef.current, headlineRef.current, ctaRef.current], { autoAlpha: 0, y: 16 });
     gsap.set([cardRef.current, cornerPatchRef.current], { autoAlpha: 0, y: 20 });
     gsap.set(statRef.current, { autoAlpha: 0, y: 16 });
-    gsap.set(thumbrailRef.current, { autoAlpha: 0, y: 16 });
+    gsap.set(consultRef.current, { autoAlpha: 0, y: 16 });
     gsap.set(dots, { autoAlpha: 0 });
 
     const idleTweens: gsap.core.Tween[] = [];
@@ -61,7 +94,7 @@ export default function Hero() {
       .to(headlineRef.current, { autoAlpha: 1, y: 0, duration: 0.7 }, "-=0.3")
       .to(ctaRef.current, { autoAlpha: 1, y: 0, duration: 0.5 }, "-=0.35")
       .to(statRef.current, { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.5")
-      .to(thumbrailRef.current, { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.45")
+      .to(consultRef.current, { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.45")
       .to(dots, { autoAlpha: 1, duration: 0.8, stagger: 0.05 }, "-=0.5")
       .add(() => {
         // Deliberately not bobbing the stat pill (or the corner patch under
@@ -227,9 +260,13 @@ export default function Hero() {
             </div>
             <h1
               ref={headlineRef}
-              className="gsap-init font-display"
+              className="gsap-init"
               style={{
-                fontSize: "clamp(32px, 4.6vw, 56px)",
+                // Deliberate exception (VS-157): this headline keeps the serif
+                // look while .font-display elsewhere is sans-serif — Ed's
+                // explicit pick, do not change without checking with him.
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "clamp(36px, 5.8vw, 74px)",
                 fontWeight: 400,
                 lineHeight: 1.06,
                 color: "var(--ink)",
@@ -258,27 +295,52 @@ export default function Hero() {
             </Link>
           </div>
 
-          {/* Thumbnail rail — desktop only */}
+          {/* Consult panel — desktop only (VS-157, replaces the thumbnail rail) */}
           <div
-            ref={thumbrailRef}
-            className="gsap-init hidden lg:flex absolute flex-col gap-2"
-            style={{ right: "clamp(20px, 2.6vw, 32px)", top: 100 }}
+            ref={consultRef}
+            className="gsap-init hidden lg:flex absolute flex-col"
+            style={{
+              right: "clamp(24px, 3.4vw, 44px)",
+              top: 44,
+              width: "clamp(300px, 29.7vw, 380px)",
+              gap: 18,
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.62)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.6)",
+              boxShadow: "0 18px 40px -22px rgba(13,21,18,0.2)",
+              padding: 28,
+            }}
           >
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 110,
-                  height: 78,
-                  borderRadius: 10,
-                  background: "var(--cream)",
-                  backgroundImage:
-                    "linear-gradient(rgba(46,139,114,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(46,139,114,0.1) 1px, transparent 1px)",
-                  backgroundSize: "16px 16px",
-                  border: i === 0 ? "2px solid var(--mint)" : "1px solid rgba(46,139,114,0.15)",
-                }}
-              />
-            ))}
+            <div className="font-display" style={{ fontSize: 22, color: "var(--ink)" }}>
+              Book a consult
+            </div>
+            <div className="flex flex-col" style={{ gap: 14 }}>
+              {consultSteps.map((step) => (
+                <div key={step.label} className="flex items-center" style={{ gap: 12 }}>
+                  <span
+                    className="flex items-center justify-center shrink-0"
+                    style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(46,139,114,0.12)" }}
+                  >
+                    {step.icon}
+                  </span>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{step.label}</div>
+                </div>
+              ))}
+            </div>
+            <Link
+              href="/book-consult"
+              className="block text-center text-white font-medium tracking-[0.1em] uppercase transition-opacity duration-200 hover:opacity-90"
+              style={{
+                background: "var(--teal)",
+                fontSize: 11,
+                padding: "13px 26px",
+                borderRadius: 999,
+              }}
+            >
+              Start
+            </Link>
           </div>
           </div>
         </div>

@@ -141,8 +141,11 @@ export default function Testimonials() {
                 return (
                   <p
                     key={t.name}
-                    className="font-display"
                     style={{
+                      // Deliberate exception (VS-157): this pull-quote keeps
+                      // the serif look while .font-display elsewhere is
+                      // sans-serif — Ed's explicit pick, see DESIGN_SYSTEM.md.
+                      fontFamily: "'Playfair Display', serif",
                       gridArea: "1 / 1",
                       visibility: isActive ? "visible" : "hidden",
                       fontSize: "clamp(22px, 2.4vw, 30px)",
