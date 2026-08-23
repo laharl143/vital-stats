@@ -139,7 +139,7 @@ export default function Hero() {
       }}
     >
       <div
-        className="relative px-4 md:px-9 pt-50 md:pt-62.5"
+        className="relative px-4 md:px-9 pt-44 md:pt-62.5"
         style={{ paddingBottom: 36 }}
       >
         <div className="relative mx-auto" style={{ maxWidth: 1360 }}>
