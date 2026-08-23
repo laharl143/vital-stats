@@ -471,6 +471,28 @@ body {
   .note-backdrop { background: rgba(13,21,18,0.55); }
 }
 
+/* Hero — glass capsule centerpiece (VS-152). The capsule itself is a
+   self-contained WebGL custom element (public/capsule-3d.js, see
+   docs/adr/0001-hero-uses-webgl-3d.md) with its own motion and
+   reduced-motion handling; these classes only cover the ambient studio-glow
+   behind it and the floating stat tag. */
+@keyframes hero-glow-breathe {
+  0%,100% { opacity: 0.55; }
+  50%     { opacity: 0.8; }
+}
+.hero-glow-breathe { animation: hero-glow-breathe 9s ease-in-out infinite; }
+
+@keyframes hero-tag-float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-10px); }
+}
+.hero-tag-float { animation: hero-tag-float 8s ease-in-out infinite; animation-delay: -2s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow-breathe,
+  .hero-tag-float { animation: none; }
+}
+
 /* Admin login — folded-corner back-to-site button (VS-89). A dog-ear fold
    drawn with the border trick, matching the card's own top-left corner —
    but the button itself is a *sibling* of the card, not a child, since the

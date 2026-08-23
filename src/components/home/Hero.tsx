@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
+
+// Bump this whenever public/capsule-3d.js changes — it's cached for a year
+// (see the Cache-Control headers in next.config.ts), so the querystring is
+// what actually busts the cache on an update.
+const CAPSULE_SCRIPT_SRC = "/capsule-3d.js?v=4";
 
 const dotPositions = [
   { top: "18%", left: "62%" },
@@ -22,7 +28,6 @@ export default function Hero() {
   const photoRef = useRef<HTMLDivElement>(null);
   const statRef = useRef<HTMLDivElement>(null);
   const cornerPatchRef = useRef<HTMLDivElement>(null);
-  const thumbrailRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<Array<HTMLSpanElement | null>>([]);
 
   // "Quiet Drift": everything settles once, together, in a single unhurried
@@ -50,7 +55,6 @@ export default function Hero() {
     gsap.set([eyebrowRef.current, headlineRef.current, ctaRef.current], { autoAlpha: 0, y: 16 });
     gsap.set([cardRef.current, cornerPatchRef.current], { autoAlpha: 0, y: 20 });
     gsap.set(statRef.current, { autoAlpha: 0, y: 16 });
-    gsap.set(thumbrailRef.current, { autoAlpha: 0, y: 16 });
     gsap.set(dots, { autoAlpha: 0 });
 
     const idleTweens: gsap.core.Tween[] = [];
@@ -61,7 +65,6 @@ export default function Hero() {
       .to(headlineRef.current, { autoAlpha: 1, y: 0, duration: 0.7 }, "-=0.3")
       .to(ctaRef.current, { autoAlpha: 1, y: 0, duration: 0.5 }, "-=0.35")
       .to(statRef.current, { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.5")
-      .to(thumbrailRef.current, { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.45")
       .to(dots, { autoAlpha: 1, duration: 0.8, stagger: 0.05 }, "-=0.5")
       .add(() => {
         // Deliberately not bobbing the stat pill (or the corner patch under
@@ -210,6 +213,20 @@ export default function Hero() {
               />
             ))}
           </div>
+
+          {/* Capsule — right side of the card, where the thumbnail rail used
+              to sit (docs/adr/0001-hero-uses-webgl-3d.md). capsule-3d fills
+              its nearest positioned ancestor, so this wrapper is what
+              actually places it. */}
+          <link rel="preconnect" href="https://esm.sh" crossOrigin="anonymous" />
+          <link rel="modulepreload" href="https://esm.sh/three@0.166.0" crossOrigin="anonymous" />
+          <link rel="preload" href={CAPSULE_SCRIPT_SRC} as="script" />
+          <Script src={CAPSULE_SCRIPT_SRC} strategy="afterInteractive" />
+          <div style={{ position: "absolute", left: "56%", right: "4%", top: "4%", bottom: "2%" }}>
+            {/* @ts-expect-error custom element */}
+            <capsule-3d speed="1" grass="260" tilt="0" fallback="/capsule-fallback.jpg" />
+          </div>
+
           {/* Headline block */}
           <div
             className="absolute left-6 right-6 md:left-11 md:right-auto"
@@ -256,29 +273,6 @@ export default function Hero() {
             >
               View Products
             </Link>
-          </div>
-
-          {/* Thumbnail rail — desktop only */}
-          <div
-            ref={thumbrailRef}
-            className="gsap-init hidden lg:flex absolute flex-col gap-2"
-            style={{ right: "clamp(20px, 2.6vw, 32px)", top: 100 }}
-          >
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 110,
-                  height: 78,
-                  borderRadius: 10,
-                  background: "var(--cream)",
-                  backgroundImage:
-                    "linear-gradient(rgba(46,139,114,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(46,139,114,0.1) 1px, transparent 1px)",
-                  backgroundSize: "16px 16px",
-                  border: i === 0 ? "2px solid var(--mint)" : "1px solid rgba(46,139,114,0.15)",
-                }}
-              />
-            ))}
           </div>
           </div>
         </div>
