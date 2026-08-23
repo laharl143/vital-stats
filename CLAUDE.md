@@ -96,7 +96,8 @@ verification method is a separate decision from whether the fix is confirmed goo
 **Exception — unattended/automated sessions:** the ask-first rule above applies to
 interactive sessions with Ed. A non-interactive/automated agent run (e.g. a scheduled
 routine with no one to ask) may use Playwright without asking, but only during these
-windows, Philippines time (UTC+8): 7:00-10:00 AM, and 12:00-1:00 PM. Outside these
+windows, Philippines time (UTC+8): 7:00-10:00 AM, 12:00-1:00 PM, 12:30-1:30 AM, and
+5:00-6:00 PM. Outside these
 windows, automated sessions must skip Playwright verification rather than ask — there's
 no one to answer. This exception does not change anything for interactive sessions —
 still ask every time.
