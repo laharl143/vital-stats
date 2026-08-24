@@ -57,7 +57,8 @@ export default function BookPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [modalDismissed, setModalDismissed] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
-  const modalOpen = (status === "loading" || status === "success") && !modalDismissed;
+  const [errorMessage, setErrorMessage] = useState("");
+  const modalOpen = (status === "loading" || status === "success" || status === "error") && !modalDismissed;
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -157,15 +158,18 @@ export default function BookPage() {
         }),
       });
 
+      const json = await res.json();
+
       if (!res.ok) {
+        setErrorMessage(json.error ?? "Something went wrong. Please try again.");
         setStatus("error");
         return;
       }
 
-      const json = await res.json();
       setReferenceNumber(json.referenceNumber ?? null);
       setStatus("success");
     } catch {
+      setErrorMessage("Network error. Please check your connection and try again.");
       setStatus("error");
     }
   };
@@ -198,6 +202,29 @@ export default function BookPage() {
                 <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
                   Hang tight, this only takes a moment.
                 </p>
+              </>
+            ) : status === "error" ? (
+              <>
+                <div
+                  className="flex items-center justify-center rounded-full"
+                  style={{ width: 52, height: 52, background: "#FFEBEE" }}
+                >
+                  <span style={{ fontSize: 24 }}>⚠️</span>
+                </div>
+                <div className="font-display font-light text-[22px]" style={{ color: "var(--ink)" }}>
+                  Submission failed
+                </div>
+                <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
+                  {errorMessage}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setModalDismissed(true)}
+                  className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[12px] rounded-[3px] text-white"
+                  style={{ background: "var(--teal)" }}
+                >
+                  Try again
+                </button>
               </>
             ) : (
               <>
@@ -730,14 +757,6 @@ export default function BookPage() {
                     ))}
                   </div>
                 </div>
-
-                {status === "error" && (
-                  <div className="flex items-start gap-3 p-4 rounded-[4px]"
-                    style={{ background: "#FFEBEE", border: "1px solid rgba(211,47,47,0.2)" }}>
-                    <span>⚠️</span>
-                    <p className="text-[13px]" style={{ color: "#C62828" }}>Something went wrong. Please try again.</p>
-                  </div>
-                )}
 
                 <div className="flex items-start gap-3 p-4 rounded-[4px]"
                   style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
