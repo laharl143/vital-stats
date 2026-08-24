@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MedicalHistoryStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
+import { paginate } from "@/lib/paginate";
 
 // GET /api/medical-history  (admin only)
 export async function GET(req: NextRequest) {
@@ -11,25 +12,20 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as MedicalHistoryStatus | null;
-    const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "20");
-    const skip = (page - 1) * limit;
+    const where = { ...(status && { status }) };
 
-    const [records, total] = await prisma.$transaction([
-      prisma.medicalHistory.findMany({
-        where: { ...(status && { status }) },
+    const { data: records, meta } = await paginate(searchParams, (skip, take) => ({
+      findMany: prisma.medicalHistory.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take,
         include: { doctorNotes: { orderBy: { createdAt: "desc" } } },
       }),
-      prisma.medicalHistory.count({ where: { ...(status && { status }) } }),
-    ]);
+      count: prisma.medicalHistory.count({ where }),
+    }));
 
-    return NextResponse.json({
-      data: records,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json({ data: records, meta });
   } catch (error) {
     console.error("[GET /api/medical-history]", error);
     return NextResponse.json({ success: false, error: "Failed to fetch records" }, { status: 500 });

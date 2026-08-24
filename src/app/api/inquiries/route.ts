@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { InquiryType, InquiryStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 import { notifyAdmin } from "@/lib/notify-admin";
+import { paginate } from "@/lib/paginate";
 
 // GET /api/inquiries  (admin only)
 export async function GET(req: NextRequest) {
@@ -13,32 +14,22 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as InquiryStatus | null;
     const type = searchParams.get("type") as InquiryType | null;
-    const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "20");
-    const skip = (page - 1) * limit;
+    const where = {
+      ...(status && { status }),
+      ...(type && { type }),
+    };
 
-    const [inquiries, total] = await prisma.$transaction([
-      prisma.inquiry.findMany({
-        where: {
-          ...(status && { status }),
-          ...(type && { type }),
-        },
+    const { data: inquiries, meta } = await paginate(searchParams, (skip, take) => ({
+      findMany: prisma.inquiry.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take,
       }),
-      prisma.inquiry.count({
-        where: {
-          ...(status && { status }),
-          ...(type && { type }),
-        },
-      }),
-    ]);
+      count: prisma.inquiry.count({ where }),
+    }));
 
-    return NextResponse.json({
-      data: inquiries,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json({ data: inquiries, meta });
   } catch (error) {
     console.error("[GET /api/inquiries]", error);
     return NextResponse.json({ error: "Failed to fetch inquiries" }, { status: 500 });
