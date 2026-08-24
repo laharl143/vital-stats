@@ -10,8 +10,9 @@ export async function GET(
   try {
     const { slug } = await params;
 
+    // VS-164: hidden/inactive products must not be publicly readable by slug.
     const product = await prisma.product.findUnique({
-      where: { slug },
+      where: { slug, isActive: true },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
         videos: { orderBy: { sortOrder: "asc" } },
