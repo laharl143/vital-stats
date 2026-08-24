@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Category } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 
 // GET /api/products
 // Query params: ?category=SKIN_CARE&active=true
+// `active=false` (bypassing the isActive filter) is only honored for an
+// authenticated admin session — VS-164, unauthenticated callers must always
+// be forced to isActive: true regardless of the query param.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category") as Category | null;
-    const activeOnly = searchParams.get("active") !== "false";
+    const session = await getServerSession(authOptions);
+    const activeOnly = !session || searchParams.get("active") !== "false";
     const q = searchParams.get("q")?.trim();
 
     const products = await prisma.product.findMany({
