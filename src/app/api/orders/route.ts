@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
+import { paginate } from "@/lib/paginate";
 
 // GET /api/orders  (admin only)
 // Query params: ?status=PENDING&page=1&limit=20
@@ -12,27 +13,20 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as OrderStatus | null;
-    const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "20");
-    const skip = (page - 1) * limit;
+    const where = { ...(status && { status }) };
 
-    const [orders, total] = await prisma.$transaction([
-      prisma.order.findMany({
-        where: { ...(status && { status }) },
+    const { data: orders, meta } = await paginate(searchParams, (skip, take) => ({
+      findMany: prisma.order.findMany({
+        where,
         include: { items: true },
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take,
       }),
-      prisma.order.count({
-        where: { ...(status && { status }) },
-      }),
-    ]);
+      count: prisma.order.count({ where }),
+    }));
 
-    return NextResponse.json({
-      data: orders,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json({ data: orders, meta });
   } catch (error) {
     console.error("[GET /api/orders]", error);
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
