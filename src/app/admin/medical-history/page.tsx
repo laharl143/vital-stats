@@ -505,7 +505,6 @@ function AdminMedicalHistoryPageContent() {
                       style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)" }}
                     >
                       <Gift size={13} /> {selected.dateOfBirth}
-                      {calculateAge(selected.dateOfBirth) !== null && ` (${calculateAge(selected.dateOfBirth)})`}
                     </span>
                   </div>
                 </div>
