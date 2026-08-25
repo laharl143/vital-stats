@@ -4,6 +4,16 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+// Lowercases everything, then capitalizes the first letter of each word.
+// Deterministic on every keystroke regardless of typing order, so it also
+// normalizes text typed in ALL CAPS (a "preserve existing case" version
+// breaks mid-word once caps-lock input has been partially normalized).
+// Trade-off: an intentional internal capital ("McDonald", "O'Brien") gets
+// flattened too, since there's no way to tell it apart from shouted input.
+// Only changes letter case, never inserts/removes characters, so the cursor
+// position stays put while typing.
+const capitalizeWords = (value: string) => value.toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase());
+
 const inputStyle = {
   width: "100%",
   padding: "12px 16px",
@@ -394,7 +404,7 @@ export default function BookPage() {
                     <div>
                       <label style={labelStyle}>First and Last Name *</label>
                       <input type="text" required value={form.fullName}
-                        onChange={(e) => set("fullName", e.target.value)}
+                        onChange={(e) => set("fullName", capitalizeWords(e.target.value))}
                         placeholder="e.g. Maria Santos" style={inputStyle}
                         onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                         onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
