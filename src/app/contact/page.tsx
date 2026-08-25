@@ -182,7 +182,7 @@ export default function ContactPage() {
 
         {/* Main content */}
         <div className="px-8 md:px-16 py-10 grid grid-cols-1 md:grid-cols-3 gap-12"
-          style={{ background: "var(--cream)" }}>
+          style={{ background: "linear-gradient(180deg, var(--cream) 0%, var(--cream) calc(100% - 180px), #eaf8f2 calc(100% - 60px), #cdf2e2 100%)" }}>
 
           {/* Form — spans 2 cols */}
           <div className="md:col-span-2 flex flex-col gap-6">

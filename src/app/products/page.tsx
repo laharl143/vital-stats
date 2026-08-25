@@ -163,7 +163,10 @@ function ProductsPageContent() {
         {/* Disclaimer */}
         <div
           className="px-4 md:px-9 py-10"
-          style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.06)" }}
+          style={{
+            background:
+              "linear-gradient(180deg, var(--cream) 0%, var(--cream) calc(100% - 180px), #eaf8f2 calc(100% - 60px), #cdf2e2 100%)",
+          }}
         >
           <div className="mx-auto" style={{ maxWidth: 1360 }}>
             <p

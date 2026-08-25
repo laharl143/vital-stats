@@ -290,7 +290,7 @@ export default function BookPage() {
 
         {/* Form + Sidebar */}
         <div className="px-4 md:px-9 py-16"
-          style={{ background: "var(--cream)" }}>
+          style={{ background: "linear-gradient(180deg, var(--cream) 0%, var(--cream) calc(100% - 180px), #eaf8f2 calc(100% - 60px), #cdf2e2 100%)" }}>
           <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-12" style={{ maxWidth: 1360 }}>
 
           {/* Form */}

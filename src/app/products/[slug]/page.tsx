@@ -250,7 +250,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        <div className="px-8 md:px-16 py-16 grid grid-cols-1 md:grid-cols-3 gap-12" style={{ background: "var(--cream)" }}>
+        <div className="px-8 md:px-16 py-16 grid grid-cols-1 md:grid-cols-3 gap-12" style={{ background: "linear-gradient(180deg, var(--cream) 0%, var(--cream) calc(100% - 180px), #eaf8f2 calc(100% - 60px), #cdf2e2 100%)" }}>
           {/* Main content */}
           <div className="md:col-span-2 flex flex-col gap-8">
             {/* Tabs */}
