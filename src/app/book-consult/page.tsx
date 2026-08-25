@@ -61,6 +61,19 @@ const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 // word itself needs suggesting.
 const EMAIL_DOMAIN_SUGGESTIONS = ["gmail", "yahoo", "outlook", "icloud"];
 
+// Converts a cm value to its ft/in equivalent — used both to display the
+// confirmed-pill conversion and to carry the value over when the user
+// switches units mid-edit (e.g. 170 -> { feet: 5, inches: 7 }). Rounds to
+// the nearest inch, then carries a rounded-up 12 into the next foot rather
+// than returning 12 inches.
+const cmToFtIn = (cm: number) => {
+  const totalInches = cm / 2.54;
+  let feet = Math.floor(totalInches / 12);
+  let inches = Math.round(totalInches % 12);
+  if (inches === 12) { feet += 1; inches = 0; }
+  return { feet, inches };
+};
+
 const inputStyle = {
   width: "100%",
   padding: "12px 16px",
@@ -205,10 +218,13 @@ export default function BookPage() {
   const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("ftIn");
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
-  const [isEditingHeight, setIsEditingHeight] = useState(false);
-  // Starts true (unlike isEditingHeight) so the very first fill-out also
-  // waits for blur before merging — otherwise dobMerged flips to true the
-  // instant all three fields happen to be non-empty, mid-keystroke on Year.
+  // Starts true, same reasoning as isEditingDob below — wait for blur,
+  // don't merge mid-keystroke the instant both parts (or the single cm
+  // value) happen to be non-empty.
+  const [isEditingHeight, setIsEditingHeight] = useState(true);
+  // Starts true so the very first fill-out also waits for blur before
+  // merging — otherwise dobMerged flips to true the instant all three
+  // fields happen to be non-empty, mid-keystroke on Year.
   const [isEditingDob, setIsEditingDob] = useState(true);
   const dobDayRef = useRef<HTMLInputElement>(null);
   const dobYearRef = useRef<HTMLInputElement>(null);
@@ -222,6 +238,8 @@ export default function BookPage() {
   const emailDomainRef = useRef<HTMLInputElement>(null);
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
   const [weightLbs, setWeightLbs] = useState("");
+  // Same "starts true" reasoning as isEditingHeight — wait for blur.
+  const [isEditingWeight, setIsEditingWeight] = useState(true);
 
   
   const [form, setForm] = useState({
@@ -265,7 +283,11 @@ export default function BookPage() {
   const fullNameValue = firstName !== "" && lastName !== "" ? `${firstName} ${lastName}` : "";
   const nameMerged = fullNameValue !== "" && !isEditingName;
 
-  const heightMerged = heightUnit === "ftIn" && heightFeet !== "" && heightInches !== "" && !isEditingHeight;
+  const heightMerged = !isEditingHeight && (
+    heightUnit === "ftIn" ? heightFeet !== "" && heightInches !== "" : form.height !== ""
+  );
+
+  const weightMerged = !isEditingWeight && (weightUnit === "kg" ? form.weight !== "" : weightLbs !== "");
 
   const dobMerged = form.dobMonth !== "" && form.dobDay !== "" && form.dobYear !== "" && !isEditingDob;
 
@@ -280,9 +302,19 @@ export default function BookPage() {
     ? Math.round(heightInCm).toString()
     : form.height;
 
+  // The equivalent shown inside the confirmed pill, in whichever unit
+  // *wasn't* used to enter the value.
+  const heightConversionLabel = heightUnit === "ftIn"
+    ? `${convertedHeightCm} cm`
+    : (() => { const { feet, inches } = cmToFtIn(parseFloat(form.height || "0")); return `${feet}'${inches}"`; })();
+
   const convertedWeightKg = weightUnit === "lbs"
     ? (parseFloat(weightLbs || "0") * 0.453592).toFixed(1)
     : form.weight;
+
+  const weightConversionLabel = weightUnit === "kg"
+    ? `${(parseFloat(form.weight || "0") * 2.20462).toFixed(1)} lbs`
+    : `${convertedWeightKg} kg`;
 
   const bmiValue = heightInCm > 0 && parseFloat(convertedWeightKg) > 0
     ? parseFloat((parseFloat(convertedWeightKg) / Math.pow(heightInCm / 100, 2)).toFixed(1))
@@ -794,55 +826,84 @@ export default function BookPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                       <div>
-                        {/* Height label + unit toggle */}
+                        {/* Height label + unit toggle — hidden once confirmed */}
                         <div className="flex items-center justify-between mb-2">
                           <label style={{ ...labelStyle, marginBottom: 0 }}>Height *</label>
-                          <div className="flex rounded-[3px] overflow-hidden"
-                            style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
-                            {(["ft/in", "cm"] as const).map((unit) => (
-                              <button key={unit} type="button"
-                                onClick={() => setHeightUnit(unit === "ft/in" ? "ftIn" : "cm")}
-                                className="px-3 py-1 transition-all duration-150"
-                                style={{
-                                  background: (unit === "ft/in" ? heightUnit === "ftIn" : heightUnit === "cm") ? "var(--teal)" : "#fff",
-                                  color: (unit === "ft/in" ? heightUnit === "ftIn" : heightUnit === "cm") ? "#fff" : "var(--ink-muted)",
-                                  fontWeight: 500,
-                                  letterSpacing: "0.06em",
-                                  cursor: "pointer",
-                                  border: "none",
-                                }}>
-                                {unit}
-                              </button>
-                            ))}
-                          </div>
+                          {!heightMerged && (
+                            <div className="flex rounded-[3px] overflow-hidden"
+                              style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
+                              {(["ft/in", "cm"] as const).map((unit) => (
+                                <button key={unit} type="button"
+                                  onClick={() => {
+                                    const nextUnit = unit === "ft/in" ? "ftIn" : "cm";
+                                    if (nextUnit === heightUnit) return;
+                                    // Carry the value across instead of
+                                    // leaving the other unit's box empty —
+                                    // the user may just be switching units
+                                    // to double-check, not starting over.
+                                    if (nextUnit === "cm" && heightFeet !== "" && heightInches !== "") {
+                                      set("height", convertedHeightCm);
+                                    } else if (nextUnit === "ftIn" && form.height !== "") {
+                                      const { feet, inches } = cmToFtIn(parseFloat(form.height));
+                                      setHeightFeet(String(feet));
+                                      setHeightInches(String(inches));
+                                    }
+                                    setHeightUnit(nextUnit);
+                                  }}
+                                  className="px-3 py-1 transition-all duration-150"
+                                  style={{
+                                    background: (unit === "ft/in" ? heightUnit === "ftIn" : heightUnit === "cm") ? "var(--teal)" : "#fff",
+                                    color: (unit === "ft/in" ? heightUnit === "ftIn" : heightUnit === "cm") ? "#fff" : "var(--ink-muted)",
+                                    fontWeight: 500,
+                                    letterSpacing: "0.06em",
+                                    cursor: "pointer",
+                                    border: "none",
+                                  }}>
+                                  {unit}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
-                        {heightUnit === "cm" ? (
+                        {heightMerged ? (
+                          <div className="flex items-center justify-between"
+                            style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
+                            <span style={{ fontWeight: 700, color: "var(--ink)" }}>
+                              {heightUnit === "ftIn" ? <>{heightFeet}&apos;{heightInches}&quot;</> : `${form.height} cm`}
+                            </span>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span style={{
+                                fontSize: 11, fontWeight: 600, color: "var(--teal-dark)",
+                                background: "#fff", border: "1px solid rgba(46,139,114,0.35)",
+                                padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap",
+                              }}>
+                                ≈ {heightConversionLabel}
+                              </span>
+                              <button type="button" onClick={() => setIsEditingHeight(true)}
+                                style={{
+                                  background: "none", border: "none", padding: 0,
+                                  color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
+                                  letterSpacing: "0.02em", cursor: "pointer",
+                                }}>
+                                ✎ Edit
+                              </button>
+                            </div>
+                          </div>
+                        ) : heightUnit === "cm" ? (
                           <div className="relative">
                             <input type="number" required value={form.height}
                               onChange={(e) => set("height", e.target.value)}
                               style={{ ...inputStyle, paddingRight: 48 }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                              onBlur={(e) => {
+                                e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                if (form.height !== "") setIsEditingHeight(false);
+                              }} />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
                               style={{ color: "var(--ink-faint)", pointerEvents: "none" }}>
                               cm
                             </span>
-                          </div>
-                        ) : heightMerged ? (
-                          <div className="flex items-center justify-between"
-                            style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
-                            <span style={{ fontWeight: 700, color: "var(--ink)" }}>
-                              {heightFeet}&apos;{heightInches}&quot;
-                            </span>
-                            <button type="button" onClick={() => setIsEditingHeight(true)}
-                              style={{
-                                background: "none", border: "none", padding: 0,
-                                color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
-                                letterSpacing: "0.02em", cursor: "pointer",
-                              }}>
-                              ✎ Edit
-                            </button>
                           </div>
                         ) : (
                           <div className="flex gap-2"
@@ -853,7 +914,7 @@ export default function BookPage() {
                               // mid-transition (the other field may still be
                               // empty at that exact instant).
                               if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                              setIsEditingHeight(false);
+                              if (heightFeet !== "" && heightInches !== "") setIsEditingHeight(false);
                             }}>
                             <div className="flex-1">
                               <input type="number" required value={heightFeet}
@@ -873,61 +934,94 @@ export default function BookPage() {
                             </div>
                           </div>
                         )}
-
-                        {/* Show converted cm when using ft/in */}
-                        {heightUnit === "ftIn" && heightFeet && (
-                          <p className="text-[11px] mt-2" style={{ color: "var(--teal)" }}>
-                            ≈ {convertedHeightCm} cm
-                          </p>
-                        )}
                       </div>
                       <div>
+                        {/* Weight label + unit toggle — hidden once confirmed */}
                         <div className="flex items-center justify-between mb-2">
                           <label style={{ ...labelStyle, marginBottom: 0 }}>Current Weight *</label>
-                          <div className="flex rounded-[3px] overflow-hidden"
-                            style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
-                            {["kg", "lbs"].map((unit) => (
-                              <button key={unit} type="button"
-                                onClick={() => setWeightUnit(unit as "kg" | "lbs")}
-                                className="px-3 py-1 transition-all duration-150"
-                                style={{
-                                  background: weightUnit === unit ? "var(--teal)" : "#fff",
-                                  color: weightUnit === unit ? "#fff" : "var(--ink-muted)",
-                                  fontWeight: 500,
-                                  letterSpacing: "0.06em",
-                                  cursor: "pointer",
-                                  border: "none",
-                                }}>
-                                {unit}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="relative">
-                          {weightUnit === "kg" ? (
-                            <input type="number" required value={form.weight}
-                              onChange={(e) => set("weight", e.target.value)}
-                              style={{ ...inputStyle, paddingRight: 48 }}
-                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-                          ) : (
-                            <input type="number" required value={weightLbs}
-                              onChange={(e) => setWeightLbs(e.target.value)}
-                              style={{ ...inputStyle, paddingRight: 48 }}
-                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          {!weightMerged && (
+                            <div className="flex rounded-[3px] overflow-hidden"
+                              style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
+                              {["kg", "lbs"].map((unit) => (
+                                <button key={unit} type="button"
+                                  onClick={() => {
+                                    const nextUnit = unit as "kg" | "lbs";
+                                    if (nextUnit === weightUnit) return;
+                                    // Carry the value across instead of
+                                    // leaving the other unit's box empty.
+                                    if (nextUnit === "lbs" && form.weight !== "") {
+                                      setWeightLbs((parseFloat(form.weight) * 2.20462).toFixed(1));
+                                    } else if (nextUnit === "kg" && weightLbs !== "") {
+                                      set("weight", convertedWeightKg);
+                                    }
+                                    setWeightUnit(nextUnit);
+                                  }}
+                                  className="px-3 py-1 transition-all duration-150"
+                                  style={{
+                                    background: weightUnit === unit ? "var(--teal)" : "#fff",
+                                    color: weightUnit === unit ? "#fff" : "var(--ink-muted)",
+                                    fontWeight: 500,
+                                    letterSpacing: "0.06em",
+                                    cursor: "pointer",
+                                    border: "none",
+                                  }}>
+                                  {unit}
+                                </button>
+                              ))}
+                            </div>
                           )}
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
-                            style={{ color: "var(--ink-faint)", pointerEvents: "none" }}>
-                            {weightUnit}
-                          </span>
                         </div>
 
-                        {weightUnit === "lbs" && weightLbs && (
-                          <p className="text-[11px] mt-2" style={{ color: "var(--teal)" }}>
-                            ≈ {convertedWeightKg} kg
-                          </p>
+                        {weightMerged ? (
+                          <div className="flex items-center justify-between"
+                            style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
+                            <span style={{ fontWeight: 700, color: "var(--ink)" }}>
+                              {weightUnit === "kg" ? form.weight : weightLbs} {weightUnit}
+                            </span>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span style={{
+                                fontSize: 11, fontWeight: 600, color: "var(--teal-dark)",
+                                background: "#fff", border: "1px solid rgba(46,139,114,0.35)",
+                                padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap",
+                              }}>
+                                ≈ {weightConversionLabel}
+                              </span>
+                              <button type="button" onClick={() => setIsEditingWeight(true)}
+                                style={{
+                                  background: "none", border: "none", padding: 0,
+                                  color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
+                                  letterSpacing: "0.02em", cursor: "pointer",
+                                }}>
+                                ✎ Edit
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            {weightUnit === "kg" ? (
+                              <input type="number" required value={form.weight}
+                                onChange={(e) => set("weight", e.target.value)}
+                                style={{ ...inputStyle, paddingRight: 48 }}
+                                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                onBlur={(e) => {
+                                  e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                  if (form.weight !== "") setIsEditingWeight(false);
+                                }} />
+                            ) : (
+                              <input type="number" required value={weightLbs}
+                                onChange={(e) => setWeightLbs(e.target.value)}
+                                style={{ ...inputStyle, paddingRight: 48 }}
+                                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                onBlur={(e) => {
+                                  e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                  if (weightLbs !== "") setIsEditingWeight(false);
+                                }} />
+                            )}
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
+                              style={{ color: "var(--ink-faint)", pointerEvents: "none" }}>
+                              {weightUnit}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
