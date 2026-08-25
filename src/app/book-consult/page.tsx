@@ -693,7 +693,7 @@ export default function BookPage() {
                       <div>
                         <label style={labelStyle}>Are you currently pregnant, breastfeeding, or planning to become pregnant? *</label>
                         <div className="flex flex-wrap gap-6 mt-2">
-                          {["Pregnant", "Currently trying to get pregnant", "No"].map((opt) => (
+                          {["Pregnant", "Breastfeeding", "Currently trying to get pregnant", "No"].map((opt) => (
                             <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink-muted)" }}>
                               <input type="radio" name="pregnant" value={opt} required
                                 checked={form.pregnant === opt}
