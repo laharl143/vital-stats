@@ -24,6 +24,17 @@ const clampToRange = (value: string, min: number, max: number) => {
   return String(Math.min(Math.max(num, min), max));
 };
 
+// Restores a PH mobile number's leading 0 if it's missing (e.g. "9171234567"
+// typed or pasted without it, the most common way people write/copy their
+// number). Runs on blur, not on every keystroke — prepending a character
+// live while typing would shift the string length and could jump the
+// cursor mid-edit.
+const normalizePhPhone = (value: string) => {
+  let digits = value.replace(/\D/g, "");
+  if (digits.length > 0 && digits[0] !== "0") digits = "0" + digits;
+  return digits.slice(0, 11);
+};
+
 // Formats a completed DOB as "January 5, 1996". Clamps the day to the real
 // last day of the chosen month/year (e.g. day 31 typed for February) first
 // — otherwise Date silently rolls invalid combinations into the next month,
@@ -603,11 +614,15 @@ export default function BookPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label style={labelStyle}>Phone Number</label>
-                        <input type="tel" value={form.phone}
-                          onChange={(e) => set("phone", e.target.value.replace(/[^0-9+]/g, ""))}
+                        <input type="tel" value={form.phone} maxLength={11}
+                          pattern="09[0-9]{9}" title="Philippine mobile number: 11 digits starting with 09, e.g. 09171234567"
+                          onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 11))}
                           placeholder="e.g. 09171234567" style={inputStyle}
                           onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          onBlur={(e) => {
+                            e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                            set("phone", normalizePhPhone(e.target.value));
+                          }} />
                       </div>
                       <div>
                         <label style={labelStyle}>Email Address</label>
