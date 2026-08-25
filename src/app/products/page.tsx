@@ -79,38 +79,41 @@ function ProductsPageContent() {
       <main>
         {/* Page header */}
         <div
-          className="px-8 md:px-16 pt-36 md:pt-44 pb-20"
+          className="px-4 md:px-9 pt-36 md:pt-44 pb-20"
           style={{
             background: "linear-gradient(135deg, var(--teal-deep) 0%, var(--teal) 100%)",
           }}
         >
-          <div
-            className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
-            style={{ color: "rgba(255,255,255,0.6)" }}
-          >
-            <span className="block w-8 h-px" style={{ background: "rgba(255,255,255,0.4)" }} />
-            Our products
+          <div className="mx-auto" style={{ maxWidth: 1360 }}>
+            <div
+              className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
+              style={{ color: "rgba(255,255,255,0.6)" }}
+            >
+              <span className="block w-8 h-px" style={{ background: "rgba(255,255,255,0.4)" }} />
+              Our products
+            </div>
+            <h1
+              className="font-display font-light text-white leading-[1.1] mb-4"
+              style={{ fontSize: "clamp(36px, 4vw, 56px)" }}
+            >
+              Precision wellness,<br />
+              <em className="italic" style={{ color: "rgba(255,255,255,0.75)" }}>
+                clinically delivered.
+              </em>
+            </h1>
+            <p
+              className="text-[14px] leading-[1.75] font-light max-w-[480px]"
+              style={{ color: "rgba(255,255,255,0.65)" }}
+            >
+              From medical-grade injectables to FDA-approved skincare — every product
+              is supervised by licensed professionals and sourced from verified suppliers.
+            </p>
           </div>
-          <h1
-            className="font-display font-light text-white leading-[1.1] mb-4"
-            style={{ fontSize: "clamp(36px, 4vw, 56px)" }}
-          >
-            Precision wellness,<br />
-            <em className="italic" style={{ color: "rgba(255,255,255,0.75)" }}>
-              clinically delivered.
-            </em>
-          </h1>
-          <p
-            className="text-[14px] leading-[1.75] font-light max-w-[480px]"
-            style={{ color: "rgba(255,255,255,0.65)" }}
-          >
-            From medical-grade injectables to FDA-approved skincare — every product
-            is supervised by licensed professionals and sourced from verified suppliers.
-          </p>
         </div>
 
         {/* Filter + grid */}
-        <div className="px-8 md:px-16 py-16" style={{ background: "var(--cream)" }}>
+        <div className="px-4 md:px-9 py-16" style={{ background: "var(--cream)" }}>
+          <div className="mx-auto" style={{ maxWidth: 1360 }}>
           {/* Category filter */}
           <CategoryFilter
             categories={CATEGORIES}
@@ -154,22 +157,25 @@ function ProductsPageContent() {
               ))}
             </div>
           )}
+          </div>
         </div>
 
         {/* Disclaimer */}
         <div
-          className="px-8 md:px-16 py-10"
+          className="px-4 md:px-9 py-10"
           style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.06)" }}
         >
-          <p
-            className="text-[11px] leading-[1.8] max-w-3xl"
-            style={{ color: "var(--ink-faint)" }}
-          >
-            ⚠️ <strong>Medical Disclaimer:</strong> Injectable products (Tirzepatide, NAD+, GHK-Cu)
-            are administered under medical supervision by licensed healthcare professionals only.
-            These are not over-the-counter products. Results may vary. Please consult with our
-            clinical team before starting any program.
-          </p>
+          <div className="mx-auto" style={{ maxWidth: 1360 }}>
+            <p
+              className="text-[11px] leading-[1.8] max-w-3xl"
+              style={{ color: "var(--ink-faint)" }}
+            >
+              ⚠️ <strong>Medical Disclaimer:</strong> Injectable products (Tirzepatide, NAD+, GHK-Cu)
+              are administered under medical supervision by licensed healthcare professionals only.
+              These are not over-the-counter products. Results may vary. Please consult with our
+              clinical team before starting any program.
+            </p>
+          </div>
         </div>
       </main>
       <Footer />

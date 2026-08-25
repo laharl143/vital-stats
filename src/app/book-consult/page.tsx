@@ -268,27 +268,30 @@ export default function BookPage() {
 
       <main>
         {/* Page header */}
-        <div className="px-8 md:px-16 pt-36 md:pt-44 pb-20"
+        <div className="px-4 md:px-9 pt-36 md:pt-44 pb-20"
           style={{ background: "linear-gradient(135deg, var(--teal-deep) 0%, var(--teal) 100%)" }}>
-          <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
-            style={{ color: "rgba(255,255,255,0.6)" }}>
-            <span className="block w-8 h-px" style={{ background: "rgba(255,255,255,0.4)" }} />
-            Book a consultation
+          <div className="mx-auto" style={{ maxWidth: 1360 }}>
+            <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
+              style={{ color: "rgba(255,255,255,0.6)" }}>
+              <span className="block w-8 h-px" style={{ background: "rgba(255,255,255,0.4)" }} />
+              Book a consultation
+            </div>
+            <h1 className="font-display font-light text-white leading-[1.1] mb-4"
+              style={{ fontSize: "clamp(36px, 4vw, 56px)" }}>
+              Start your wellness<br />
+              <em className="italic" style={{ color: "rgba(255,255,255,0.75)" }}>journey today.</em>
+            </h1>
+            <p className="text-[14px] leading-[1.75] font-light max-w-[440px]"
+              style={{ color: "rgba(255,255,255,0.65)" }}>
+              This form is exclusively for patients interested in our <strong style={{ color: "rgba(255,255,255,0.9)" }}>Tirzepatide Weight Management Program</strong>. Complete your medical history so our clinical team can design the right program for you.
+            </p>
           </div>
-          <h1 className="font-display font-light text-white leading-[1.1] mb-4"
-            style={{ fontSize: "clamp(36px, 4vw, 56px)" }}>
-            Start your wellness<br />
-            <em className="italic" style={{ color: "rgba(255,255,255,0.75)" }}>journey today.</em>
-          </h1>
-          <p className="text-[14px] leading-[1.75] font-light max-w-[440px]"
-            style={{ color: "rgba(255,255,255,0.65)" }}>
-            This form is exclusively for patients interested in our <strong style={{ color: "rgba(255,255,255,0.9)" }}>Tirzepatide Weight Management Program</strong>. Complete your medical history so our clinical team can design the right program for you.
-          </p>
         </div>
 
         {/* Form + Sidebar */}
-        <div className="px-8 md:px-16 py-16 grid grid-cols-1 md:grid-cols-3 gap-12"
+        <div className="px-4 md:px-9 py-16"
           style={{ background: "var(--cream)" }}>
+          <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-12" style={{ maxWidth: 1360 }}>
 
           {/* Form */}
           <div className="md:col-span-2">
@@ -821,6 +824,7 @@ export default function BookPage() {
                 All information submitted through this form is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality. Your data is securely stored and accessible only to our licensed clinical team — never shared with third parties.
               </p>
             </div>
+          </div>
           </div>
         </div>
       </main>
