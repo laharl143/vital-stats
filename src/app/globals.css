@@ -98,6 +98,15 @@ body {
   .animate-shake { animation: none; }
 }
 
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+.animate-live-blink { animation: liveBlink 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-live-blink { animation: none; }
+}
+
 @keyframes modalCheckPop {
   from { transform: scale(0.5); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }

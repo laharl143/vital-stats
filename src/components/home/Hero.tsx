@@ -158,6 +158,10 @@ export default function Hero() {
           >
             <div
               style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
                 fontWeight: 800,
                 fontSize: "clamp(15px, 1.4vw, 18px)",
                 color: "var(--teal-deep)",
@@ -165,7 +169,19 @@ export default function Hero() {
                 whiteSpace: "nowrap",
               }}
             >
-              Products Available
+              <span
+                aria-hidden="true"
+                className="animate-live-blink"
+                style={{
+                  display: "inline-block",
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  flexShrink: 0,
+                }}
+              />
+              Stocks Currently Available
             </div>
             <div
               style={{
