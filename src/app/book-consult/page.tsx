@@ -52,6 +52,15 @@ const formatDob = (monthStr: string, dayStr: string, yearStr: string) => {
   });
 };
 
+// Simple shape check (local@domain.tld) — good enough to gate the
+// confirmed-pill merge without rejecting anything a real mail server would
+// accept; full deliverability isn't checkable client-side anyway.
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+// Unqualified — the .com suffix is fixed in the UI, so only the domain
+// word itself needs suggesting.
+const EMAIL_DOMAIN_SUGGESTIONS = ["gmail", "yahoo", "outlook", "icloud"];
+
 const inputStyle = {
   width: "100%",
   padding: "12px 16px",
@@ -198,6 +207,14 @@ export default function BookPage() {
   const [isEditingDob, setIsEditingDob] = useState(true);
   const dobDayRef = useRef<HTMLInputElement>(null);
   const dobYearRef = useRef<HTMLInputElement>(null);
+  // Same "starts true" reasoning as isEditingDob — wait for blur, don't
+  // merge mid-keystroke the instant the typed value happens to pass the
+  // email shape check.
+  const [isEditingEmail, setIsEditingEmail] = useState(true);
+  const [emailLocal, setEmailLocal] = useState("");
+  const [emailDomain, setEmailDomain] = useState("");
+  const [domainFocused, setDomainFocused] = useState(false);
+  const emailDomainRef = useRef<HTMLInputElement>(null);
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
   const [weightLbs, setWeightLbs] = useState("");
 
@@ -244,6 +261,9 @@ export default function BookPage() {
 
   const dobMerged = form.dobMonth !== "" && form.dobDay !== "" && form.dobYear !== "" && !isEditingDob;
 
+  const emailValue = emailLocal !== "" && emailDomain !== "" ? `${emailLocal}@${emailDomain}.com` : "";
+  const emailMerged = isValidEmail(emailValue) && !isEditingEmail;
+
   const heightInCm = heightUnit === "ftIn"
     ? (parseFloat(heightFeet || "0") * 30.48) + (parseFloat(heightInches || "0") * 2.54)
     : parseFloat(form.height || "0");
@@ -278,6 +298,7 @@ export default function BookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          email: emailValue,
           height: convertedHeightCm,
           weight: convertedWeightKg,
           bmi: bmiValue?.toString() ?? "",
@@ -626,11 +647,98 @@ export default function BookPage() {
                       </div>
                       <div>
                         <label style={labelStyle}>Email Address</label>
-                        <input type="email" value={form.email}
-                          onChange={(e) => set("email", e.target.value)}
-                          placeholder="e.g. maria@email.com" style={inputStyle}
-                          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                        {emailMerged ? (
+                          <div className="flex items-center justify-between"
+                            style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
+                            <span style={{ fontWeight: 700, color: "var(--ink)" }}>{emailValue}</span>
+                            <button type="button" onClick={() => setIsEditingEmail(true)}
+                              style={{
+                                background: "none", border: "none", padding: 0,
+                                color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
+                                letterSpacing: "0.02em", cursor: "pointer",
+                              }}>
+                              ✎ Edit
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1"
+                            onBlur={(e) => {
+                              // Only re-merge once focus actually leaves the
+                              // whole group (same reasoning as the DOB group
+                              // below) — Local -> Domain via Tab must not
+                              // merge mid-transition.
+                              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                              if (isValidEmail(emailValue)) setIsEditingEmail(false);
+                            }}>
+                            <div className="flex-1 min-w-0">
+                              <input type="text" value={emailLocal}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  // Typing (or pasting) a full address into
+                                  // this box still works — split it at the
+                                  // @ and hand the rest to Domain instead of
+                                  // requiring it be re-typed there.
+                                  if (raw.includes("@")) {
+                                    const [local, domainPart] = raw.split("@");
+                                    setEmailLocal(local);
+                                    if (domainPart) setEmailDomain(domainPart.replace(/\.com$/i, "").replace(/\.+$/, ""));
+                                    emailDomainRef.current?.focus();
+                                  } else {
+                                    setEmailLocal(raw);
+                                  }
+                                }}
+                                placeholder="maria" style={inputStyle}
+                                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+                                }}
+                                onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                            </div>
+                            <div style={{ padding: "0 2px", fontWeight: 700, color: "var(--ink-faint)", fontSize: 14 }}>@</div>
+                            <div className="flex-1 min-w-0 relative">
+                              <input type="text" ref={emailDomainRef} value={emailDomain}
+                                onChange={(e) => setEmailDomain(e.target.value.replace(/\.com$/i, "").replace(/\.+$/, ""))}
+                                placeholder="gmail" style={inputStyle}
+                                onFocus={(e) => { e.target.style.borderColor = "var(--teal)"; setDomainFocused(true); }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+                                }}
+                                onBlur={(e) => { e.target.style.borderColor = "rgba(0,0,0,0.15)"; setDomainFocused(false); }} />
+                              {domainFocused && (() => {
+                                const matches = EMAIL_DOMAIN_SUGGESTIONS.filter((d) => d.startsWith(emailDomain.toLowerCase()));
+                                if (matches.length === 0) return null;
+                                return (
+                                  <div className="flex flex-wrap gap-1.5 mt-2"
+                                    style={{ position: "absolute", top: "100%", left: 0, zIndex: 20 }}>
+                                    {matches.map((d) => (
+                                      <button key={d} type="button"
+                                        // Blocks the input from blurring on
+                                        // click, so this dropdown is still
+                                        // mounted when the click itself
+                                        // fires — otherwise blur closes it
+                                        // first and the click never lands.
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                          setEmailDomain(d);
+                                          setDomainFocused(false);
+                                          if (emailLocal !== "") setIsEditingEmail(false);
+                                        }}
+                                        style={{
+                                          padding: "4px 10px", borderRadius: 999,
+                                          background: "var(--cream)", border: "1px solid rgba(0,0,0,0.12)",
+                                          color: "var(--ink-muted)", cursor: "pointer",
+                                          fontSize: 11, fontWeight: 600,
+                                        }}>
+                                        {d}
+                                      </button>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            <div style={{ paddingLeft: 2, fontWeight: 600, color: "var(--ink-muted)", fontSize: 13, whiteSpace: "nowrap" }}>.com</div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
