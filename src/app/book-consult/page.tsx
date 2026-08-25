@@ -75,10 +75,15 @@ const labelStyle = {
   marginBottom: 8,
 };
 
-// A segmented pill group for categorical fields (2-4 named options).
-// Keeps a real (visually hidden) radio input per option for native keyboard
-// nav and required-field validation — only the visuals change from circles
-// to pills.
+// A segmented pill group for categorical fields (2-4 named options). Below
+// the `sm` breakpoint each option is its own independently-rounded chip —
+// a shared capsule background looks fine as a single row but turns into a
+// lopsided blob once options wrap to 2-3 rows on a narrow phone. At `sm`
+// and up there's room for groups to stay on one row, so the original
+// shared-capsule design with a sliding selection indicator takes over
+// instead. Keeps a real (visually hidden) radio input per option for
+// native keyboard nav and required-field validation — only the visuals
+// change from circles to pills.
 function PillGroup({ field, label, required, options, value, onChange }: {
   field: string;
   label: string;
@@ -92,9 +97,9 @@ function PillGroup({ field, label, required, options, value, onChange }: {
 
   // Measured (not index-based) so it works regardless of each option's text
   // width, and re-measured before paint on every selection change so the
-  // indicator is never visible in the wrong spot for even a frame. Tracks
-  // top as well as left/width so it still lands correctly if the row wraps
-  // to a second line (e.g. "More than once a week" on a narrow viewport).
+  // indicator is never visible in the wrong spot for even a frame. Only
+  // drives the sm+ sliding indicator — below sm each chip carries its own
+  // background instead, so a stale measurement there is harmless.
   useLayoutEffect(() => {
     const el = optionRefs.current[value];
     if (el) setIndicator({ top: el.offsetTop, left: el.offsetLeft, width: el.offsetWidth, height: el.offsetHeight });
@@ -103,8 +108,8 @@ function PillGroup({ field, label, required, options, value, onChange }: {
   return (
     <div>
       <label style={labelStyle}>{label} {required && "*"}</label>
-      <div className="relative inline-flex flex-wrap gap-1.5 mt-2" style={{ background: "var(--cream)", borderRadius: 999, padding: 4 }}>
-        <span aria-hidden="true" style={{
+      <div className="relative inline-flex flex-wrap gap-1.5 mt-2 sm:bg-[var(--cream)] sm:rounded-full sm:p-1">
+        <span aria-hidden="true" className="hidden sm:block" style={{
           position: "absolute",
           top: indicator.top, left: indicator.left, width: indicator.width, height: indicator.height,
           background: "var(--teal)", borderRadius: 999,
@@ -115,13 +120,8 @@ function PillGroup({ field, label, required, options, value, onChange }: {
           return (
             <label key={opt}
               ref={(el) => { optionRefs.current[opt] = el; }}
-              className="relative cursor-pointer text-[13px] font-medium transition-colors duration-150"
-              style={{
-                zIndex: 1,
-                padding: "9px 18px",
-                borderRadius: 999,
-                color: selected ? "#ffffff" : "var(--ink-muted)",
-              }}>
+              className={`relative cursor-pointer text-[13px] font-medium transition-colors duration-150 sm:bg-transparent ${selected ? "bg-[var(--teal)] text-white" : "bg-[var(--cream)] text-[var(--ink-muted)]"}`}
+              style={{ zIndex: 1, padding: "9px 18px", borderRadius: 999 }}>
               <input type="radio" name={field} value={opt} required={required}
                 checked={selected}
                 onChange={() => onChange(opt)}
