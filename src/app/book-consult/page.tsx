@@ -197,6 +197,11 @@ export default function BookPage() {
       document.body.style.overflow = previousOverflow;
     };
   }, [modalOpen]);
+  // Same "starts true" reasoning as isEditingDob below — wait for blur,
+  // don't merge mid-keystroke the instant Last Name happens to be non-empty.
+  const [isEditingName, setIsEditingName] = useState(true);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [heightUnit, setHeightUnit] = useState<"cm" | "ftIn">("ftIn");
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
@@ -257,6 +262,9 @@ export default function BookPage() {
     return { label: "Obese Class II", color: "#EF4444" };
   };
 
+  const fullNameValue = firstName !== "" && lastName !== "" ? `${firstName} ${lastName}` : "";
+  const nameMerged = fullNameValue !== "" && !isEditingName;
+
   const heightMerged = heightUnit === "ftIn" && heightFeet !== "" && heightInches !== "" && !isEditingHeight;
 
   const dobMerged = form.dobMonth !== "" && form.dobDay !== "" && form.dobYear !== "" && !isEditingDob;
@@ -298,6 +306,7 @@ export default function BookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          fullName: fullNameValue,
           email: emailValue,
           height: convertedHeightCm,
           weight: convertedWeightKg,
@@ -542,11 +551,52 @@ export default function BookPage() {
                   <div className="flex flex-col gap-5">
                     <div>
                       <label style={labelStyle}>First and Last Name *</label>
-                      <input type="text" required value={form.fullName}
-                        onChange={(e) => set("fullName", capitalizeWords(e.target.value))}
-                        style={inputStyle}
-                        onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                        onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                      {nameMerged ? (
+                        <div className="flex items-center justify-between"
+                          style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
+                          <span style={{ fontWeight: 700, color: "var(--ink)" }}>{fullNameValue}</span>
+                          <button type="button" onClick={() => setIsEditingName(true)}
+                            style={{
+                              background: "none", border: "none", padding: 0,
+                              color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
+                              letterSpacing: "0.02em", cursor: "pointer",
+                            }}>
+                            ✎ Edit
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3"
+                          onBlur={(e) => {
+                            // Only re-merge once focus actually leaves both
+                            // inputs — same reasoning as the Height/DOB
+                            // groups below.
+                            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                            if (firstName !== "" && lastName !== "") setIsEditingName(false);
+                          }}>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] mb-1" style={{ color: "var(--ink-faint)" }}>First Name</div>
+                            <input type="text" required value={firstName}
+                              onChange={(e) => setFirstName(capitalizeWords(e.target.value))}
+                              style={inputStyle}
+                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+                              }}
+                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] mb-1" style={{ color: "var(--ink-faint)" }}>Last Name</div>
+                            <input type="text" required value={lastName}
+                              onChange={(e) => setLastName(capitalizeWords(e.target.value))}
+                              style={inputStyle}
+                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+                              }}
+                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div>
