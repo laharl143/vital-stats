@@ -4,14 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Construction } from "lucide-react";
 import SearchBackdrop from "@/components/SearchBackdrop";
 import { useProductSearch } from "@/lib/useProductSearch";
 
-const navLinks: { label: string; href: string; matchPrefix?: boolean; disabled?: boolean }[] = [
+const navLinks: { label: string; href: string; matchPrefix?: boolean; comingSoon?: boolean }[] = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products", matchPrefix: true },
-  { label: "Programs", href: "/products#programs", disabled: true },
-  { label: "About", href: "/about" },
+  { label: "Programs", href: "/products#programs", comingSoon: true },
+  { label: "About", href: "/about", comingSoon: true },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -39,6 +40,7 @@ const searchCategoryEmoji: Record<string, string> = {
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [comingSoonLabel, setComingSoonLabel] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
@@ -224,16 +226,28 @@ export default function Navbar() {
           </Link>
           <ul className="flex gap-5 lg:gap-8 list-none items-center">
             {navLinks.map((link) => {
-              if (link.disabled) {
+              if (link.comingSoon) {
                 return (
                   <li key={link.label}>
-                    <span
-                      className="text-[14px] lg:text-[15px] font-semibold whitespace-nowrap"
-                      style={{ color: "var(--ink-faint)", cursor: "not-allowed" }}
-                      aria-disabled="true"
+                    <button
+                      type="button"
+                      onClick={() => setComingSoonLabel(link.label)}
+                      className="inline-block text-[14px] lg:text-[15px] font-semibold transition-colors duration-200 whitespace-nowrap"
+                      style={{
+                        color: "var(--ink)",
+                        background: "none",
+                        border: "none",
+                        borderBottom: "2px solid transparent",
+                        padding: 0,
+                        paddingBottom: 4,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink)")}
                     >
                       {link.label}
-                    </span>
+                    </button>
                   </li>
                 );
               }
@@ -396,20 +410,26 @@ export default function Navbar() {
             }}
           >
             {navLinks.map((link) => {
-              if (link.disabled) {
+              if (link.comingSoon) {
                 return (
-                  <span
+                  <button
                     key={link.label}
-                    className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
-                    style={{
-                      color: "var(--ink-faint)",
-                      borderColor: "rgba(0,0,0,0.05)",
-                      cursor: "not-allowed",
+                    type="button"
+                    onClick={() => {
+                      setComingSoonLabel(link.label);
+                      setMenuOpen(false);
                     }}
-                    aria-disabled="true"
+                    className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b text-left"
+                    style={{
+                      color: "var(--ink-muted)",
+                      borderColor: "rgba(0,0,0,0.05)",
+                      background: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
                   >
                     {link.label}
-                  </span>
+                  </button>
                 );
               }
               const active = isLinkActive(link);
@@ -523,6 +543,44 @@ export default function Navbar() {
     </div>
 
     <SearchBackdrop open={searchOpen} onClose={closeSearch} />
+
+    {comingSoonLabel && (
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-[999] flex items-center justify-center p-6"
+        style={{ background: "rgba(15,74,60,0.75)", backdropFilter: "blur(3px)" }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setComingSoonLabel(null);
+        }}
+      >
+        <div
+          className="flex flex-col items-center gap-4 text-center rounded-[14px]"
+          style={{ background: "#ffffff", padding: "3rem 2.5rem", width: 380, maxWidth: "100%" }}
+        >
+          <div
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 60, height: 60, background: "var(--teal-deep)" }}
+          >
+            <Construction size={26} color="#ffffff" strokeWidth={2} />
+          </div>
+          <div className="font-display font-bold text-[19px]" style={{ color: "var(--ink)" }}>
+            {comingSoonLabel} Page Coming Soon
+          </div>
+          <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
+            We&apos;re still building this page, wait for announcement.
+          </p>
+          <button
+            type="button"
+            onClick={() => setComingSoonLabel(null)}
+            className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[12px] rounded-[3px] text-white"
+            style={{ background: "var(--teal)" }}
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    )}
     </>
   );
 }
