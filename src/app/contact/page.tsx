@@ -162,27 +162,30 @@ export default function ContactPage() {
       <Navbar />
       <main>
         {/* Page header */}
-        <div className="px-8 md:px-16 pt-36 md:pt-44 pb-20"
+        <div className="px-4 md:px-9 pt-36 md:pt-44 pb-20"
           style={{ background: "linear-gradient(135deg, var(--teal-deep) 0%, var(--teal) 100%)" }}>
-          <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
-            style={{ color: "rgba(255,255,255,0.6)" }}>
-            <span className="block w-8 h-px" style={{ background: "rgba(255,255,255,0.4)" }} />
-            Get in touch
+          <div className="mx-auto" style={{ maxWidth: 1360 }}>
+            <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
+              style={{ color: "rgba(255,255,255,0.6)" }}>
+              <span className="block w-8 h-px" style={{ background: "rgba(255,255,255,0.4)" }} />
+              Get in touch
+            </div>
+            <h1 className="font-display font-light text-white leading-[1.1] mb-4"
+              style={{ fontSize: "clamp(36px, 4vw, 56px)" }}>
+              We&apos;d love to<br />
+              <em className="italic" style={{ color: "rgba(255,255,255,0.75)" }}>hear from you.</em>
+            </h1>
+            <p className="text-[14px] leading-[1.75] font-light max-w-[440px]"
+              style={{ color: "rgba(255,255,255,0.65)" }}>
+              Have questions about a product or program? Send us a message below or reach out directly.
+            </p>
           </div>
-          <h1 className="font-display font-light text-white leading-[1.1] mb-4"
-            style={{ fontSize: "clamp(36px, 4vw, 56px)" }}>
-            We&apos;d love to<br />
-            <em className="italic" style={{ color: "rgba(255,255,255,0.75)" }}>hear from you.</em>
-          </h1>
-          <p className="text-[14px] leading-[1.75] font-light max-w-[440px]"
-            style={{ color: "rgba(255,255,255,0.65)" }}>
-            Have questions about a product or program? Send us a message below or reach out directly.
-          </p>
         </div>
 
         {/* Main content */}
-        <div className="px-8 md:px-16 py-10 grid grid-cols-1 md:grid-cols-3 gap-12"
+        <div className="px-4 md:px-9 py-10"
           style={{ background: "linear-gradient(180deg, var(--cream) 0%, var(--cream) calc(100% - 180px), #eaf8f2 calc(100% - 60px), #cdf2e2 100%)" }}>
+          <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-12" style={{ maxWidth: 1360 }}>
 
           {/* Form — spans 2 cols */}
           <div className="md:col-span-2 flex flex-col gap-6">
@@ -257,6 +260,7 @@ export default function ContactPage() {
                 ⚠️ For medical emergencies, please contact your local healthcare provider or emergency services. VitalStats provides wellness consultations and is not a substitute for emergency medical care.
               </p>
             </div>
+          </div>
           </div>
         </div>
       </main>
