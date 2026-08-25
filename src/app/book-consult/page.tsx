@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -64,28 +64,100 @@ const labelStyle = {
   marginBottom: 8,
 };
 
-function RadioGroup({ field, label, required, value, onChange }: {
+// A segmented pill group for categorical fields (2-4 named options).
+// Keeps a real (visually hidden) radio input per option for native keyboard
+// nav and required-field validation — only the visuals change from circles
+// to pills.
+function PillGroup({ field, label, required, options, value, onChange }: {
   field: string;
   label: string;
   required?: boolean;
+  options: string[];
   value: string;
   onChange: (opt: string) => void;
 }) {
+  const optionRefs = useRef<Record<string, HTMLLabelElement | null>>({});
+  const [indicator, setIndicator] = useState({ top: 0, left: 0, width: 0, height: 0 });
+
+  // Measured (not index-based) so it works regardless of each option's text
+  // width, and re-measured before paint on every selection change so the
+  // indicator is never visible in the wrong spot for even a frame. Tracks
+  // top as well as left/width so it still lands correctly if the row wraps
+  // to a second line (e.g. "More than once a week" on a narrow viewport).
+  useLayoutEffect(() => {
+    const el = optionRefs.current[value];
+    if (el) setIndicator({ top: el.offsetTop, left: el.offsetLeft, width: el.offsetWidth, height: el.offsetHeight });
+  }, [value, options]);
+
   return (
     <div>
       <label style={labelStyle}>{label} {required && "*"}</label>
-      <div className="flex gap-6 mt-2">
-        {["Yes", "No"].map((opt) => (
-          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink-muted)" }}>
-            <input type="radio" name={field} value={opt}
-              checked={value === opt}
-              onChange={() => onChange(opt)}
-              style={{ accentColor: "var(--teal)" }}
-            />
-            {opt}
-          </label>
-        ))}
+      <div className="relative inline-flex flex-wrap gap-1.5 mt-2" style={{ background: "var(--cream)", borderRadius: 999, padding: 4 }}>
+        <span aria-hidden="true" style={{
+          position: "absolute",
+          top: indicator.top, left: indicator.left, width: indicator.width, height: indicator.height,
+          background: "var(--teal)", borderRadius: 999,
+          transition: "top 0.22s cubic-bezier(0.4,0,0.2,1), left 0.22s cubic-bezier(0.4,0,0.2,1), width 0.22s cubic-bezier(0.4,0,0.2,1)",
+        }} />
+        {options.map((opt) => {
+          const selected = value === opt;
+          return (
+            <label key={opt}
+              ref={(el) => { optionRefs.current[opt] = el; }}
+              className="relative cursor-pointer text-[13px] font-medium transition-colors duration-150"
+              style={{
+                zIndex: 1,
+                padding: "9px 18px",
+                borderRadius: 999,
+                color: selected ? "#ffffff" : "var(--ink-muted)",
+              }}>
+              <input type="radio" name={field} value={opt} required={required}
+                checked={selected}
+                onChange={() => onChange(opt)}
+                className="sr-only" />
+              {opt}
+            </label>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+// A compact Yes/No toggle for the medical history questions. Unlike
+// PillGroup this has no "unanswered" state and no required validation —
+// per product decision, it always starts on "No" (see the form's initial
+// state) rather than blocking submission until explicitly touched.
+function Toggle({ label, value, onChange }: {
+  label: string;
+  value: string;
+  onChange: (opt: string) => void;
+}) {
+  const isYes = value === "Yes";
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <label style={{ ...labelStyle, marginBottom: 0 }}>{label}</label>
+      <button type="button" role="switch" aria-checked={isYes} aria-label={label}
+        onClick={() => onChange(isYes ? "No" : "Yes")}
+        className="flex-shrink-0 flex items-center gap-2"
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+          width: 26, textAlign: "right", color: isYes ? "var(--teal)" : "var(--ink-faint)",
+        }}>
+          {value}
+        </span>
+        <span style={{
+          width: 44, height: 24, borderRadius: 999, display: "inline-block", position: "relative",
+          background: isYes ? "var(--teal)" : "#E1E6E4", transition: "background 0.15s",
+        }}>
+          <span style={{
+            position: "absolute", top: 2, left: isYes ? 22 : 2,
+            width: 20, height: 20, borderRadius: "50%", background: "#fff",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "left 0.15s",
+          }} />
+        </span>
+      </button>
     </div>
   );
 }
@@ -132,11 +204,11 @@ export default function BookPage() {
     waistCircumference: "",
     smokingStatus: "",
     drinkingFrequency: "",
-    mtc: "",
-    pancreatitis: "",
-    gallbladder: "",
-    gi: "",
-    diabetes: "",
+    mtc: "No",
+    pancreatitis: "No",
+    gallbladder: "No",
+    gi: "No",
+    diabetes: "No",
     pregnant: "",
     surgeries: "",
     medications: "",
@@ -524,21 +596,9 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <div>
-                      <label style={labelStyle}>Gender *</label>
-                      <div className="flex flex-wrap gap-5 mt-2">
-                        {["Female", "Male"].map((opt) => (
-                          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
-                            style={{ color: "var(--ink-muted)" }}>
-                            <input type="radio" name="gender" value={opt} required
-                              checked={form.gender === opt}
-                              onChange={() => set("gender", opt)}
-                              style={{ accentColor: "var(--teal)" }} />
-                            {opt}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    <PillGroup field="gender" label="Gender" required
+                      options={["Female", "Male"]} value={form.gender}
+                      onChange={(opt) => set("gender", opt)} />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -749,38 +809,19 @@ export default function BookPage() {
                       </p>
                     </div>
                     
-                    <div>
-                      <label style={labelStyle}>Smoking / Vaping Status *</label>
-                      <div className="flex flex-wrap gap-5 mt-2">
-                        {["Smoker", "Vaper", "Non-Smoker"].map((opt) => (
-                          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
-                            style={{ color: "var(--ink-muted)" }}>
-                            <input type="radio" name="smokingStatus" value={opt} required
-                              checked={form.smokingStatus === opt}
-                              onChange={() => set("smokingStatus", opt)}
-                              style={{ accentColor: "var(--teal)" }} />
-                            {opt}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    <PillGroup field="smokingStatus" label="Smoking / Vaping Status" required
+                      options={["Smoker", "Vaper", "Non-Smoker"]} value={form.smokingStatus}
+                      onChange={(opt) => set("smokingStatus", opt)} />
 
-                    <div>
-                      <label style={labelStyle}>Drinking Frequency *</label>
-                      <div className="flex flex-wrap gap-5 mt-2">
-                        {["Never", "Occasional", "More than once a week"].map((opt) => (
-                          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
-                            style={{ color: "var(--ink-muted)" }}>
-                            <input type="radio" name="drinkingFrequency" value={opt} required
-                              checked={form.drinkingFrequency === opt}
-                              onChange={() => set("drinkingFrequency", opt)}
-                              style={{ accentColor: "var(--teal)" }} />
-                            {opt}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    
+                    <PillGroup field="drinkingFrequency" label="Drinking Frequency" required
+                      options={["Never", "Occasional", "More than once a week"]} value={form.drinkingFrequency}
+                      onChange={(opt) => set("drinkingFrequency", opt)} />
+
+                    {form.gender === "Female" && (
+                      <PillGroup field="pregnant" label="Are you currently pregnant, breastfeeding, or planning to become pregnant?" required
+                        options={["Pregnant", "Breastfeeding", "Currently trying to get pregnant", "No"]} value={form.pregnant}
+                        onChange={(opt) => set("pregnant", opt)} />
+                    )}
                   </div>
                 </div>
 
@@ -790,28 +831,11 @@ export default function BookPage() {
                     Medical History
                   </div>
                   <div className="flex flex-col gap-5">
-                    <RadioGroup field="mtc" label="Do you or any family members have a history of Medullary Thyroid Carcinoma (MTC) or Multiple Endocrine Neoplasia Type 2 (MEN 2)?" required value={form.mtc} onChange={(opt) => set("mtc", opt)} />
-                    <RadioGroup field="pancreatitis" label="Do you have a history of pancreatitis?" required value={form.pancreatitis} onChange={(opt) => set("pancreatitis", opt)} />
-                    <RadioGroup field="gallbladder" label="Do you have a history of gallbladder disease? (Gallstone, Cholecystectomy)" required value={form.gallbladder} onChange={(opt) => set("gallbladder", opt)} />
-                    <RadioGroup field="gi" label="Do you have a history of severe gastrointestinal disease?" required value={form.gi} onChange={(opt) => set("gi", opt)} />
-                    <RadioGroup field="diabetes" label="Do you have type 2 diabetes?" required value={form.diabetes} onChange={(opt) => set("diabetes", opt)} />
-                    {form.gender === "Female" && (
-                      <div>
-                        <label style={labelStyle}>Are you currently pregnant, breastfeeding, or planning to become pregnant? *</label>
-                        <div className="flex flex-wrap gap-6 mt-2">
-                          {["Pregnant", "Breastfeeding", "Currently trying to get pregnant", "No"].map((opt) => (
-                            <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink-muted)" }}>
-                              <input type="radio" name="pregnant" value={opt} required
-                                checked={form.pregnant === opt}
-                                onChange={() => set("pregnant", opt)}
-                                style={{ accentColor: "var(--teal)" }}
-                              />
-                              {opt}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <Toggle label="Do you or any family members have a history of Medullary Thyroid Carcinoma (MTC) or Multiple Endocrine Neoplasia Type 2 (MEN 2)?" value={form.mtc} onChange={(opt) => set("mtc", opt)} />
+                    <Toggle label="Do you have a history of pancreatitis?" value={form.pancreatitis} onChange={(opt) => set("pancreatitis", opt)} />
+                    <Toggle label="Do you have a history of gallbladder disease? (Gallstone, Cholecystectomy)" value={form.gallbladder} onChange={(opt) => set("gallbladder", opt)} />
+                    <Toggle label="Do you have a history of severe gastrointestinal disease?" value={form.gi} onChange={(opt) => set("gi", opt)} />
+                    <Toggle label="Do you have type 2 diabetes?" value={form.diabetes} onChange={(opt) => set("diabetes", opt)} />
 
                     <div>
                       <label style={labelStyle}>Please list any major surgeries you&apos;ve had and their dates</label>
