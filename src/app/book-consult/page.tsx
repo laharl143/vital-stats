@@ -544,7 +544,7 @@ export default function BookPage() {
                       <label style={labelStyle}>First and Last Name *</label>
                       <input type="text" required value={form.fullName}
                         onChange={(e) => set("fullName", capitalizeWords(e.target.value))}
-                        placeholder="e.g. Maria Santos" style={inputStyle}
+                        style={inputStyle}
                         onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                         onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
                     </div>
@@ -687,7 +687,7 @@ export default function BookPage() {
                                     setEmailLocal(raw);
                                   }
                                 }}
-                                placeholder="maria" style={inputStyle}
+                                style={inputStyle}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
@@ -768,11 +768,17 @@ export default function BookPage() {
                         </div>
 
                         {heightUnit === "cm" ? (
-                          <input type="number" required value={form.height}
-                            onChange={(e) => set("height", e.target.value)}
-                            placeholder="e.g. 160" style={inputStyle}
-                            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                          <div className="relative">
+                            <input type="number" required value={form.height}
+                              onChange={(e) => set("height", e.target.value)}
+                              style={{ ...inputStyle, paddingRight: 48 }}
+                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
+                              style={{ color: "var(--ink-faint)", pointerEvents: "none" }}>
+                              cm
+                            </span>
+                          </div>
                         ) : heightMerged ? (
                           <div className="flex items-center justify-between"
                             style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
@@ -852,14 +858,12 @@ export default function BookPage() {
                           {weightUnit === "kg" ? (
                             <input type="number" required value={form.weight}
                               onChange={(e) => set("weight", e.target.value)}
-                              placeholder="e.g. 65"
                               style={{ ...inputStyle, paddingRight: 48 }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                               onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
                           ) : (
                             <input type="number" required value={weightLbs}
                               onChange={(e) => setWeightLbs(e.target.value)}
-                              placeholder="e.g. 143"
                               style={{ ...inputStyle, paddingRight: 48 }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                               onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
