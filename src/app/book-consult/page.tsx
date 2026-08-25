@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -13,6 +13,33 @@ import Footer from "@/components/Footer";
 // Only changes letter case, never inserts/removes characters, so the cursor
 // position stays put while typing.
 const capitalizeWords = (value: string) => value.toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase());
+
+// Snaps an out-of-range value back to the nearest bound on blur, rather
+// than on every keystroke — clamping while typing would fight a leading 0
+// (e.g. typing "09") since "0" alone is below a min of 1.
+const clampToRange = (value: string, min: number, max: number) => {
+  if (value === "") return value;
+  const num = parseInt(value, 10);
+  if (Number.isNaN(num)) return value;
+  return String(Math.min(Math.max(num, min), max));
+};
+
+// Formats a completed DOB as "January 5, 1996". Clamps the day to the real
+// last day of the chosen month/year (e.g. day 31 typed for February) first
+// — otherwise Date silently rolls invalid combinations into the next month,
+// which reads as a plainly wrong date once shown as a written month name.
+// Display-only: doesn't change the stored dobDay value.
+const formatDob = (monthStr: string, dayStr: string, yearStr: string) => {
+  const month = Number(monthStr);
+  const year = Number(yearStr);
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  const day = Math.min(Number(dayStr), lastDayOfMonth);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
 const inputStyle = {
   width: "100%",
@@ -82,6 +109,12 @@ export default function BookPage() {
   const [heightFeet, setHeightFeet] = useState("");
   const [heightInches, setHeightInches] = useState("");
   const [isEditingHeight, setIsEditingHeight] = useState(false);
+  // Starts true (unlike isEditingHeight) so the very first fill-out also
+  // waits for blur before merging — otherwise dobMerged flips to true the
+  // instant all three fields happen to be non-empty, mid-keystroke on Year.
+  const [isEditingDob, setIsEditingDob] = useState(true);
+  const dobDayRef = useRef<HTMLInputElement>(null);
+  const dobYearRef = useRef<HTMLInputElement>(null);
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
   const [weightLbs, setWeightLbs] = useState("");
 
@@ -125,6 +158,8 @@ export default function BookPage() {
   };
 
   const heightMerged = heightUnit === "ftIn" && heightFeet !== "" && heightInches !== "" && !isEditingHeight;
+
+  const dobMerged = form.dobMonth !== "" && form.dobDay !== "" && form.dobYear !== "" && !isEditingDob;
 
   const heightInCm = heightUnit === "ftIn"
     ? (parseFloat(heightFeet || "0") * 30.48) + (parseFloat(heightInches || "0") * 2.54)
@@ -412,23 +447,81 @@ export default function BookPage() {
 
                     <div>
                       <label style={labelStyle}>Date of Birth *</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { label: "Month", field: "dobMonth", placeholder: "MM" },
-                          { label: "Day", field: "dobDay", placeholder: "DD" },
-                          { label: "Year", field: "dobYear", placeholder: "YYYY" },
-                        ].map(({ label, field, placeholder }) => (
-                          <div key={field}>
-                            <div className="text-[10px] mb-1" style={{ color: "var(--ink-faint)" }}>{label}</div>
-                            <input type="number" required
-                              value={(form as Record<string, string | boolean>)[field] as string}
-                              onChange={(e) => set(field, e.target.value)}
-                              placeholder={placeholder} style={inputStyle}
-                              onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-                          </div>
-                        ))}
-                      </div>
+                      {dobMerged ? (
+                        <div className="flex items-center justify-between"
+                          style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
+                          <span style={{ fontWeight: 700, color: "var(--ink)" }}>
+                            {formatDob(form.dobMonth, form.dobDay, form.dobYear)}
+                          </span>
+                          <button type="button" onClick={() => setIsEditingDob(true)}
+                            style={{
+                              background: "none", border: "none", padding: 0,
+                              color: "var(--teal-dark)", fontSize: 11, fontWeight: 600,
+                              letterSpacing: "0.02em", cursor: "pointer",
+                            }}>
+                            ✎ Edit
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-3"
+                          onBlur={(e) => {
+                            // Only re-merge once focus actually leaves all
+                            // three inputs — tabbing between them is a focus
+                            // change within this group and must not merge
+                            // mid-transition (another field may still be
+                            // empty at that exact instant).
+                            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                            setIsEditingDob(false);
+                          }}>
+                          {[
+                            { label: "Month", field: "dobMonth", placeholder: "MM", min: 1, max: 12, digits: 2, ref: undefined, advanceTo: dobDayRef },
+                            { label: "Day", field: "dobDay", placeholder: "DD", min: 1, max: 31, digits: 2, ref: dobDayRef, advanceTo: dobYearRef },
+                            { label: "Year", field: "dobYear", placeholder: "YYYY", min: 1950, max: new Date().getFullYear(), digits: 4, ref: dobYearRef, advanceTo: null },
+                          ].map(({ label, field, placeholder, min, max, digits, ref, advanceTo }) => (
+                            <div key={field}>
+                              <div className="text-[10px] mb-1" style={{ color: "var(--ink-faint)" }}>{label}</div>
+                              <input type="number" required min={min} max={max} ref={ref}
+                                value={(form as Record<string, string | boolean>)[field] as string}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const previous = (form as Record<string, string | boolean>)[field] as string;
+                                  // Only hand off on the change that *completes*
+                                  // the field (previous value was short, this one
+                                  // isn't) — not on every change while it's
+                                  // already at full length. Otherwise a spinner
+                                  // click on an already-complete year (1995 ->
+                                  // 1996 is still 4 digits) would re-trigger the
+                                  // merge on every single click instead of
+                                  // letting the user keep adjusting it.
+                                  if (raw.length >= digits && previous.length < digits) {
+                                    set(field, clampToRange(raw, min, max));
+                                    if (advanceTo) advanceTo.current?.focus();
+                                    else setIsEditingDob(false);
+                                  } else {
+                                    set(field, raw);
+                                  }
+                                }}
+                                placeholder={placeholder} style={inputStyle}
+                                onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                onKeyDown={(e) => {
+                                  // Enter should finalize this field (blur ->
+                                  // clamp -> merge if complete), not submit the
+                                  // whole Medical History form — these inputs
+                                  // sit inside that <form>, and Enter in a text
+                                  // input submits it by default.
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.currentTarget.blur();
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                  set(field, clampToRange(e.target.value, min, max));
+                                }} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div>
