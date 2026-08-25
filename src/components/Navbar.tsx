@@ -7,10 +7,10 @@ import { usePathname, useRouter } from "next/navigation";
 import SearchBackdrop from "@/components/SearchBackdrop";
 import { useProductSearch } from "@/lib/useProductSearch";
 
-const navLinks = [
+const navLinks: { label: string; href: string; matchPrefix?: boolean; disabled?: boolean }[] = [
   { label: "Home", href: "/" },
-  { label: "Products", href: "/products" },
-  { label: "Programs", href: "/products#programs" },
+  { label: "Products", href: "/products", matchPrefix: true },
+  { label: "Programs", href: "/products#programs", disabled: true },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
@@ -45,6 +45,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const isHome = pathname === "/";
+  const isLinkActive = (link: { href: string; matchPrefix?: boolean }) =>
+    link.matchPrefix ? pathname === link.href || pathname.startsWith(`${link.href}/`) : pathname === link.href;
+  const isBookConsultActive = pathname === "/book-consult";
   const searchInputRef = useRef<HTMLInputElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const [pillHeight, setPillHeight] = useState<number | null>(null);
@@ -220,19 +223,39 @@ export default function Navbar() {
             />
           </Link>
           <ul className="flex gap-5 lg:gap-8 list-none items-center">
-            {navLinks.map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  className="text-[14px] lg:text-[15px] font-semibold transition-colors duration-200 whitespace-nowrap"
-                  style={{ color: "var(--ink)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--teal)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink)")}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+            {navLinks.map((link) => {
+              if (link.disabled) {
+                return (
+                  <li key={link.label}>
+                    <span
+                      className="text-[14px] lg:text-[15px] font-semibold whitespace-nowrap"
+                      style={{ color: "var(--ink-faint)", cursor: "not-allowed" }}
+                      aria-disabled="true"
+                    >
+                      {link.label}
+                    </span>
+                  </li>
+                );
+              }
+              const active = isLinkActive(link);
+              return (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="inline-block text-[14px] lg:text-[15px] font-semibold transition-colors duration-200 whitespace-nowrap"
+                    style={{
+                      color: active ? "var(--teal)" : "var(--ink)",
+                      borderBottom: active ? "2px solid var(--teal)" : "2px solid transparent",
+                      paddingBottom: 4,
+                    }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = "var(--teal)"; }}
+                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "var(--ink)"; }}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
@@ -283,7 +306,10 @@ export default function Navbar() {
           <Link
             href="/book-consult"
             className="inline-block text-white text-[13px] font-semibold px-5 lg:px-7 py-[13px] rounded-full transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
-            style={{ background: "var(--teal)" }}
+            style={{
+              background: "var(--teal)",
+              boxShadow: isBookConsultActive ? "0 0 0 2px #fff, 0 0 0 4px var(--teal)" : undefined,
+            }}
           >
             Book a Consult
           </Link>
@@ -369,20 +395,39 @@ export default function Navbar() {
               boxShadow: "0 12px 32px rgba(13,21,18,0.15)",
             }}
           >
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
-                style={{
-                  color: "var(--ink-muted)",
-                  borderColor: "rgba(0,0,0,0.05)",
-                }}
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              if (link.disabled) {
+                return (
+                  <span
+                    key={link.label}
+                    className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
+                    style={{
+                      color: "var(--ink-faint)",
+                      borderColor: "rgba(0,0,0,0.05)",
+                      cursor: "not-allowed",
+                    }}
+                    aria-disabled="true"
+                  >
+                    {link.label}
+                  </span>
+                );
+              }
+              const active = isLinkActive(link);
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
+                  style={{
+                    color: active ? "var(--teal)" : "var(--ink-muted)",
+                    borderColor: active ? "var(--teal)" : "rgba(0,0,0,0.05)",
+                  }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
             <Link
               href="/admin/login"
               className="px-8 py-4 text-[12px] tracking-[0.08em] uppercase border-b"
@@ -397,7 +442,10 @@ export default function Navbar() {
             <Link
               href="/book-consult"
               className="mx-8 my-4 text-center text-white text-[11px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-full"
-              style={{ background: "var(--teal)" }}
+              style={{
+                background: "var(--teal)",
+                boxShadow: isBookConsultActive ? "0 0 0 2px #fff, 0 0 0 4px var(--teal)" : undefined,
+              }}
               onClick={() => setMenuOpen(false)}
             >
               Book a Consult
