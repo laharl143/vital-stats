@@ -175,7 +175,7 @@ export default function BookPage() {
   };
 
   return (
-    <>
+    <div className="xl:[zoom:1.1]">
       <Navbar />
 
       {modalOpen && (
@@ -829,6 +829,6 @@ export default function BookPage() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

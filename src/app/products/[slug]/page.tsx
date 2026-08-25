@@ -164,19 +164,19 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <>
+      <div className="xl:[zoom:1.1]">
         <Navbar />
         <main className="px-8 md:px-16 py-24" style={{ background: "var(--cream)" }}>
           <div className="animate-pulse rounded-[4px]" style={{ height: 420, background: "rgba(0,0,0,0.06)" }} />
         </main>
         <Footer />
-      </>
+      </div>
     );
   }
 
   if (notFound || !product) {
     return (
-      <>
+      <div className="xl:[zoom:1.1]">
         <Navbar />
         <main className="px-8 md:px-16 py-24 text-center" style={{ background: "var(--cream)" }}>
           <p className="font-display text-[28px] font-light" style={{ color: "var(--ink-muted)" }}>
@@ -187,7 +187,7 @@ export default function ProductDetailPage() {
           </Link>
         </main>
         <Footer />
-      </>
+      </div>
     );
   }
 
@@ -197,7 +197,7 @@ export default function ProductDetailPage() {
     product.videos[0];
 
   return (
-    <>
+    <div className="xl:[zoom:1.1]">
       <Navbar />
       <div className="flex flex-col min-h-screen">
       <main className="flex-1">
@@ -678,6 +678,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

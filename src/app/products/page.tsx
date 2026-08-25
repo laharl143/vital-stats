@@ -74,7 +74,7 @@ function ProductsPageContent() {
   }, [activeCategory, products, searchQuery]);
 
   return (
-    <>
+    <div className="xl:[zoom:1.1]">
       <Navbar />
       <main>
         {/* Page header */}
@@ -182,6 +182,6 @@ function ProductsPageContent() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

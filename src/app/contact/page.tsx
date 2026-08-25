@@ -158,7 +158,7 @@ function InquiryForm() {
 
 export default function ContactPage() {
   return (
-    <>
+    <div className="xl:[zoom:1.1]">
       <Navbar />
       <main>
         {/* Page header */}
@@ -265,6 +265,6 @@ export default function ContactPage() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
