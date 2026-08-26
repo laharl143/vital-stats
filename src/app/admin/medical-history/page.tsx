@@ -184,6 +184,7 @@ function AdminMedicalHistoryPageContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const PAGE_SIZE = 10;
 
   const fetchRecords = useCallback(() => {
@@ -258,26 +259,38 @@ function AdminMedicalHistoryPageContent() {
   const addNote = async (body: Record<string, unknown>) => {
     if (!selected) return;
     setSavingNote(true);
-    const res = await fetch(`/api/medical-history/${selected.id}/notes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json();
-    setSavingNote(false);
-    if (json?.data) {
-      setSelected((prev) => (prev ? { ...prev, doctorNotes: [json.data, ...prev.doctorNotes] } : null));
-      setNoteModalOpen(false);
-      setNoteText("");
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/medical-history/${selected.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (json?.data) {
+        setSelected((prev) => (prev ? { ...prev, doctorNotes: [json.data, ...prev.doctorNotes] } : null));
+        setNoteModalOpen(false);
+        setNoteText("");
+      }
+    } catch {
+      setActionError("Couldn't save the note. Please try again.");
+    } finally {
+      setSavingNote(false);
     }
   };
 
   const deleteNote = async (noteId: string) => {
     if (!selected) return;
     setDeletingNoteId(noteId);
-    await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, { method: "DELETE" });
-    setDeletingNoteId(null);
-    setSelected((prev) => (prev ? { ...prev, doctorNotes: prev.doctorNotes.filter((n) => n.id !== noteId) } : null));
+    setActionError(null);
+    try {
+      await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, { method: "DELETE" });
+      setSelected((prev) => (prev ? { ...prev, doctorNotes: prev.doctorNotes.filter((n) => n.id !== noteId) } : null));
+    } catch {
+      setActionError("Couldn't delete the note. Please try again.");
+    } finally {
+      setDeletingNoteId(null);
+    }
   };
 
   const startEditNote = (note: DoctorNote) => {
@@ -293,41 +306,59 @@ function AdminMedicalHistoryPageContent() {
   const saveEditNote = async (noteId: string) => {
     if (!selected) return;
     setSavingEdit(true);
-    const res = await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: editText }),
-    });
-    const json = await res.json();
-    setSavingEdit(false);
-    if (json?.data) {
-      setSelected((prev) =>
-        prev ? { ...prev, doctorNotes: prev.doctorNotes.map((n) => (n.id === noteId ? json.data : n)) } : null
-      );
-      setEditingNoteId(null);
-      setEditText("");
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editText }),
+      });
+      const json = await res.json();
+      if (json?.data) {
+        setSelected((prev) =>
+          prev ? { ...prev, doctorNotes: prev.doctorNotes.map((n) => (n.id === noteId ? json.data : n)) } : null
+        );
+        setEditingNoteId(null);
+        setEditText("");
+      }
+    } catch {
+      setActionError("Couldn't save the note. Please try again.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
-    await fetch("/api/medical-history", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [id], status }),
-    });
-    setUpdating(false);
-    if (selected?.id === id) setSelected((prev) => (prev ? { ...prev, status } : null));
-    fetchRecords();
+    setActionError(null);
+    try {
+      await fetch("/api/medical-history", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [id], status }),
+      });
+      if (selected?.id === id) setSelected((prev) => (prev ? { ...prev, status } : null));
+      fetchRecords();
+    } catch {
+      setActionError("Couldn't update the status. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const deleteRecord = async (id: string) => {
     setDeleting(true);
-    await fetch(`/api/medical-history?id=${id}`, { method: "DELETE" });
-    setDeleting(false);
-    setConfirmingDelete(false);
-    if (selected?.id === id) setSelected(null);
-    fetchRecords();
+    setActionError(null);
+    try {
+      await fetch(`/api/medical-history?id=${id}`, { method: "DELETE" });
+      setConfirmingDelete(false);
+      if (selected?.id === id) setSelected(null);
+      fetchRecords();
+    } catch {
+      setActionError("Couldn't delete the request. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -477,6 +508,9 @@ function AdminMedicalHistoryPageContent() {
               >
                 ← Back to list
               </button>
+              {actionError && (
+                <p className="text-[12px]" style={{ color: "var(--mh-danger)" }}>{actionError}</p>
+              )}
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-display font-light text-[24px]" style={{ color: "var(--mh-ink)" }}>{selected.fullName}</h2>
