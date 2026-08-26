@@ -90,7 +90,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [activeVideo, setActiveVideo] = useState<ProductVideo | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState<string>("");
 
   // Plain memoized lookup map, not a React ref — one stable { current } holder per
   // video, built once per video list so next-cloudinary's videoRef prop has somewhere
@@ -196,6 +196,17 @@ export default function ProductDetailPage() {
     product.videos.find((v) => v.title?.toLowerCase().includes("self administration")) ??
     product.videos[0];
 
+  const tabs = [
+    ...(product.videos.length > 0 ? [{ id: "tutorial-videos", label: "Videos" }] : []),
+    ...(product.howItWorks ? [{ id: "how-it-works", label: "How It Works" }] : []),
+    ...(product.howAdministered ? [{ id: "administration", label: "Administration" }] : []),
+    ...(product.ingredients.length > 0 ? [{ id: "ingredients", label: "Ingredients" }] : []),
+  ];
+  // Falls back to the first available tab whenever activeTab isn't one of
+  // the currently rendered tabs (e.g. still at its initial "" value) —
+  // without this, nothing would be selected on first render.
+  const effectiveActiveTab = tabs.some((t) => t.id === activeTab) ? activeTab : tabs[0]?.id;
+
   return (
     <div className="xl:[zoom:1.1]">
       <Navbar />
@@ -247,6 +258,9 @@ export default function ProductDetailPage() {
                 {product.tagline}
               </p>
             )}
+            <p className="text-[14px] leading-[1.8] font-light max-w-[560px] mt-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+              {product.description}
+            </p>
           </div>
         </div>
 
@@ -254,44 +268,28 @@ export default function ProductDetailPage() {
           {/* Main content */}
           <div className="md:col-span-2 flex flex-col gap-8">
             {/* Tabs */}
-            <div className="flex gap-1 overflow-x-auto" style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-              {[
-                { id: "overview", label: "Overview" },
-                ...(product.videos.length > 0 ? [{ id: "tutorial-videos", label: "Videos" }] : []),
-                ...(product.howItWorks ? [{ id: "how-it-works", label: "How It Works" }] : []),
-                ...(product.howAdministered ? [{ id: "administration", label: "Administration" }] : []),
-                ...(product.ingredients.length > 0 ? [{ id: "ingredients", label: "Ingredients" }] : []),
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className="text-[12px] font-semibold px-3 py-3 whitespace-nowrap cursor-pointer"
-                  style={{
-                    background: "none",
-                    color: activeTab === tab.id ? "var(--teal)" : "var(--ink-muted)",
-                    borderBottom: activeTab === tab.id ? "2px solid var(--teal)" : "2px solid transparent",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Overview — bigger type scale */}
-            {activeTab === "overview" && (
-              <div>
-                <h2 className="font-display font-light text-[26px] mb-4" style={{ color: "var(--ink)" }}>
-                  Overview
-                </h2>
-                <p className="text-[16px] leading-[1.85] max-w-[560px]" style={{ color: "var(--ink-mid)" }}>
-                  {product.description}
-                </p>
+            {tabs.length > 0 && (
+              <div className="flex gap-1 overflow-x-auto" style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className="text-[12px] font-semibold px-3 py-3 whitespace-nowrap cursor-pointer"
+                    style={{
+                      background: "none",
+                      color: effectiveActiveTab === tab.id ? "var(--teal)" : "var(--ink-muted)",
+                      borderBottom: effectiveActiveTab === tab.id ? "2px solid var(--teal)" : "2px solid transparent",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             )}
 
             {/* Tutorial videos — bigger type scale */}
-            {activeTab === "tutorial-videos" && product.videos.length > 0 && (
+            {effectiveActiveTab === "tutorial-videos" && product.videos.length > 0 && (
               <div>
                 <h2 className="font-display font-light text-[26px] mb-5" style={{ color: "var(--ink)" }}>
                   Tutorial Videos
@@ -432,7 +430,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* How it works — icon-led rows, split from the real copy's sentences */}
-            {activeTab === "how-it-works" && product.howItWorks && (
+            {effectiveActiveTab === "how-it-works" && product.howItWorks && (
               <div>
                 <h2 className="font-display font-light text-[24px] mb-3" style={{ color: "var(--ink)" }}>
                   How It Works
@@ -466,7 +464,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* How administered — key-fact table */}
-            {activeTab === "administration" && product.howAdministered && (
+            {effectiveActiveTab === "administration" && product.howAdministered && (
               <div>
                 <h2 className="font-display font-light text-[24px] mb-4" style={{ color: "var(--ink)" }}>
                   Administration
@@ -528,7 +526,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Ingredients */}
-            {activeTab === "ingredients" && product.ingredients.length > 0 && (
+            {effectiveActiveTab === "ingredients" && product.ingredients.length > 0 && (
               <div>
                 <h2 className="font-display font-light text-[24px] mb-3" style={{ color: "var(--ink)" }}>
                   Key Ingredients
