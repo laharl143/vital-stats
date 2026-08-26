@@ -49,11 +49,13 @@ export function useProductSearch(active: boolean) {
       try {
         const res = await fetch(`/api/products?q=${encodeURIComponent(q)}&active=true`);
         const json = await res.json();
+        if (cancelled) return;
         setResults((json.data as SearchProduct[]).slice(0, RESULTS_LIMIT));
       } catch {
+        if (cancelled) return;
         setResults([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }, DEBOUNCE_MS);
     return () => {
