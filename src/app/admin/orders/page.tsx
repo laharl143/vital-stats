@@ -49,6 +49,7 @@ function AdminOrdersPageContent() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [selected, setSelected] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchOrders = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
@@ -74,14 +75,20 @@ function AdminOrdersPageContent() {
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
-    await fetch(`/api/orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    setUpdating(false);
-    if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null);
-    fetchOrders();
+    setActionError(null);
+    try {
+      await fetch(`/api/orders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null);
+      fetchOrders();
+    } catch {
+      setActionError("Couldn't update the status. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -217,6 +224,9 @@ function AdminOrdersPageContent() {
             {/* Update status */}
             <div>
               <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Update Status</div>
+              {actionError && (
+                <p className="text-[12px] mb-2" style={{ color: "#C62828" }}>{actionError}</p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {STATUS_OPTIONS.map((s) => (
                   <button
