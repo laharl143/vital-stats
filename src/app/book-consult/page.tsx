@@ -193,6 +193,52 @@ function RequiredMark({ invalid, text = "Required" }: { invalid?: boolean; text?
   );
 }
 
+// The blue counterpart to RequiredMark's red tag — a static "Optional" label
+// for fields that never block submission, so it's visually obvious at a
+// glance which fields are which without reading every label.
+function OptionalMark() {
+  return (
+    <span style={{
+      display: "inline-flex", marginLeft: 6, fontSize: 9.5, fontWeight: 700,
+      letterSpacing: "0.05em", textTransform: "uppercase", color: "#2563EB",
+      background: "#DBEAFE", padding: "3px 8px", borderRadius: 5, verticalAlign: "middle",
+    }}>
+      Optional
+    </span>
+  );
+}
+
+// A small switch for "I have none of these" next to a list-style optional
+// field's label (Surgeries, Medications, Allergies). Turning it on doesn't
+// clear whatever's already been entered — it just disables the field and
+// forces the submitted value to "None", so flipping it back off restores
+// exactly what was there before.
+function NoneToggle({ checked, onChange }: { checked: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label="None"
+      onClick={() => onChange(!checked)}
+      className="flex-shrink-0 flex items-center gap-2"
+      style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+      <span style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+        color: checked ? "var(--teal-dark)" : "var(--ink-faint)",
+      }}>
+        None
+      </span>
+      <span style={{
+        width: 30, height: 17, borderRadius: 999, display: "inline-block", position: "relative",
+        background: checked ? "var(--teal)" : "#E1E6E4", transition: "background 0.15s",
+      }}>
+        <span style={{
+          position: "absolute", top: 2, left: checked ? 15 : 2,
+          width: 13, height: 13, borderRadius: "50%", background: "#fff",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.2)", transition: "left 0.15s",
+        }} />
+      </span>
+    </button>
+  );
+}
+
 // A compact Yes/No toggle for the medical history questions. Unlike
 // PillGroup this has no "unanswered" state and no required validation —
 // per product decision, it always starts on "No" (see the form's initial
@@ -294,7 +340,21 @@ export default function BookPage() {
   const drinkingRef = useRef<HTMLDivElement>(null);
   const pregnantRef = useRef<HTMLDivElement>(null);
 
-  
+  // Structured entry for Surgeries/Medications/Allergies — each serializes
+  // down to the same flat string the API and admin view already expect
+  // (see surgeriesValue/medicationsValue/allergiesValue below), so nothing
+  // downstream needs to change to read this richer input.
+  const [surgeries, setSurgeries] = useState([{ name: "", year: "" }]);
+  const [medications, setMedications] = useState([{ name: "", dosage: "" }]);
+  const [allergyChips, setAllergyChips] = useState<string[]>([]);
+  const [allergyInput, setAllergyInput] = useState("");
+  // Default to "None" — most patients have none of these, so this saves
+  // the common case a tap instead of forcing everyone to opt out.
+  const [noSurgeries, setNoSurgeries] = useState(true);
+  const [noMedications, setNoMedications] = useState(true);
+  const [noAllergies, setNoAllergies] = useState(true);
+
+
   const [form, setForm] = useState({
     fullName: "",
     dobYear: "",
@@ -391,6 +451,21 @@ export default function BookPage() {
   const drinkingInvalid = form.drinkingFrequency === "";
   const pregnantInvalid = form.gender === "Female" && form.pregnant === "";
 
+  // Flattened for submission — same "name - year" / "name dosage" shape the
+  // freeform textareas used to produce, so the API and admin view keep
+  // working against a plain string without any changes on their end. The
+  // "None" toggle overrides this rather than clearing the rows/chips, so
+  // switching it back off restores whatever was already entered.
+  const surgeriesValue = noSurgeries ? "None" : surgeries
+    .filter((s) => s.name.trim() !== "")
+    .map((s) => (s.year.trim() ? `${s.name.trim()} - ${s.year.trim()}` : s.name.trim()))
+    .join("\n");
+  const medicationsValue = noMedications ? "None" : medications
+    .filter((m) => m.name.trim() !== "")
+    .map((m) => (m.dosage.trim() ? `${m.name.trim()} ${m.dosage.trim()}` : m.name.trim()))
+    .join("\n");
+  const allergiesValue = noAllergies ? "None" : allergyChips.join(", ");
+
   const bmiCategory = bmiValue ? getBMICategory(bmiValue) : null;
 
   // const convertedHeightCm = heightUnit === "ftIn"
@@ -438,6 +513,9 @@ export default function BookPage() {
           bmi: bmiValue?.toString() ?? "",
           bmiCategory: bmiCategory?.label ?? "",
           pregnant: form.gender === "Female" ? form.pregnant : "N/A",
+          surgeries: surgeriesValue,
+          medications: medicationsValue,
+          allergies: allergiesValue,
         }),
       });
 
@@ -1168,12 +1246,7 @@ export default function BookPage() {
                     )}
 
                     <div>
-                      <label style={labelStyle}>
-                        Waist Circumference (in inches){" "}
-                        <span style={{ fontSize: 10, fontWeight: 400, color: "var(--ink-faint)", letterSpacing: "0.04em", textTransform: "none" }}>
-                          — Optional
-                        </span>
-                      </label>
+                      <label style={labelStyle}>Waist Circumference (in inches) <OptionalMark /></label>
                       <input type="number" value={form.waistCircumference}
                         onChange={(e) => set("waistCircumference", e.target.value)}
                         placeholder="e.g. 33 (optional)" style={inputStyle}
@@ -1219,30 +1292,150 @@ export default function BookPage() {
                     <Toggle label="Do you have type 2 diabetes?" value={form.diabetes} onChange={(opt) => set("diabetes", opt)} />
 
                     <div>
-                      <label style={labelStyle}>Please list any major surgeries you&apos;ve had and their dates</label>
-                      <textarea value={form.surgeries} onChange={(e) => set("surgeries", e.target.value)}
-                        rows={3} placeholder="e.g. Appendectomy - 2018"
-                        style={{ ...inputStyle, resize: "vertical" }}
-                        onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                        onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                      <div className="flex items-center gap-3 mb-2">
+                        <label style={{ ...labelStyle, marginBottom: 0 }}>Major Surgeries</label>
+                        <NoneToggle checked={noSurgeries} onChange={setNoSurgeries} />
+                      </div>
+                      {noSurgeries ? (
+                        <div style={{ ...inputStyle, background: "var(--cream)", color: "var(--ink-faint)", fontStyle: "italic" }}>None</div>
+                      ) : (
+                        <>
+                          <div className="flex flex-col gap-2">
+                            {surgeries.map((row, i) => (
+                              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 100px 24px", gap: 8, alignItems: "center" }}>
+                                <input type="text" value={row.name}
+                                  onChange={(e) => setSurgeries((prev) => prev.map((r, ri) => (ri === i ? { ...r, name: e.target.value } : r)))}
+                                  placeholder="e.g. Appendectomy" style={inputStyle}
+                                  onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                  onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                <input type="text" inputMode="numeric" value={row.year}
+                                  onChange={(e) => setSurgeries((prev) => prev.map((r, ri) => (ri === i ? { ...r, year: e.target.value.replace(/\D/g, "").slice(0, 4) } : r)))}
+                                  placeholder="Year" style={inputStyle}
+                                  onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                  onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                <button type="button" aria-label="Remove"
+                                  onClick={() => {
+                                    // Removing the only remaining row means
+                                    // "I have none of these" — flip the
+                                    // toggle instead of leaving an empty row.
+                                    if (surgeries.length === 1) setNoSurgeries(true);
+                                    setSurgeries((prev) => {
+                                      const next = prev.filter((_, ri) => ri !== i);
+                                      return next.length > 0 ? next : [{ name: "", year: "" }];
+                                    });
+                                  }}
+                                  style={{ background: "none", border: "none", color: "var(--ink-faint)", fontSize: 18, lineHeight: 1, cursor: "pointer", padding: 0 }}>
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          {surgeries[surgeries.length - 1].name.trim() !== "" && (
+                            <button type="button" onClick={() => setSurgeries((prev) => [...prev, { name: "", year: "" }])}
+                              className="text-[12px] font-semibold mt-2"
+                              style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", padding: 0 }}>
+                              + Add another
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     <div>
-                      <label style={labelStyle}>Please list all current medications</label>
-                      <textarea value={form.medications} onChange={(e) => set("medications", e.target.value)}
-                        rows={3} placeholder="e.g. Metformin 500mg daily"
-                        style={{ ...inputStyle, resize: "vertical" }}
-                        onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                        onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                      <div className="flex items-center gap-3 mb-2">
+                        <label style={{ ...labelStyle, marginBottom: 0 }}>Current Medications</label>
+                        <NoneToggle checked={noMedications} onChange={setNoMedications} />
+                      </div>
+                      {noMedications ? (
+                        <div style={{ ...inputStyle, background: "var(--cream)", color: "var(--ink-faint)", fontStyle: "italic" }}>None</div>
+                      ) : (
+                        <>
+                          <div className="flex flex-col gap-2">
+                            {medications.map((row, i) => (
+                              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 140px 24px", gap: 8, alignItems: "center" }}>
+                                <input type="text" value={row.name}
+                                  onChange={(e) => setMedications((prev) => prev.map((r, ri) => (ri === i ? { ...r, name: e.target.value } : r)))}
+                                  placeholder="e.g. Metformin" style={inputStyle}
+                                  onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                  onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                <input type="text" value={row.dosage}
+                                  onChange={(e) => setMedications((prev) => prev.map((r, ri) => (ri === i ? { ...r, dosage: e.target.value } : r)))}
+                                  placeholder="500mg daily" style={inputStyle}
+                                  onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+                                  onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                <button type="button" aria-label="Remove"
+                                  onClick={() => {
+                                    // Removing the only remaining row means
+                                    // "I have none of these" — flip the
+                                    // toggle instead of leaving an empty row.
+                                    if (medications.length === 1) setNoMedications(true);
+                                    setMedications((prev) => {
+                                      const next = prev.filter((_, ri) => ri !== i);
+                                      return next.length > 0 ? next : [{ name: "", dosage: "" }];
+                                    });
+                                  }}
+                                  style={{ background: "none", border: "none", color: "var(--ink-faint)", fontSize: 18, lineHeight: 1, cursor: "pointer", padding: 0 }}>
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          {medications[medications.length - 1].name.trim() !== "" && (
+                            <button type="button" onClick={() => setMedications((prev) => [...prev, { name: "", dosage: "" }])}
+                              className="text-[12px] font-semibold mt-2"
+                              style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", padding: 0 }}>
+                              + Add another
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     <div>
-                      <label style={labelStyle}>Any known allergies</label>
-                      <input type="text" value={form.allergies}
-                        onChange={(e) => set("allergies", e.target.value)}
-                        placeholder="e.g. Penicillin, shellfish" style={inputStyle}
-                        onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                        onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                      <div className="flex items-center gap-3 mb-2">
+                        <label style={{ ...labelStyle, marginBottom: 0 }}>Known Allergies</label>
+                        <NoneToggle checked={noAllergies} onChange={setNoAllergies} />
+                      </div>
+                      {noAllergies ? (
+                        <div style={{ ...inputStyle, background: "var(--cream)", color: "var(--ink-faint)", fontStyle: "italic" }}>None</div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-1.5"
+                          style={{ ...inputStyle, height: "auto", minHeight: 46, padding: 8 }}
+                          onClick={(e) => {
+                            if (e.target === e.currentTarget) (e.currentTarget.querySelector("input") as HTMLInputElement | null)?.focus();
+                          }}>
+                          {allergyChips.map((chip, i) => (
+                            <span key={i} className="inline-flex items-center gap-1.5 text-[12px] font-medium"
+                              style={{ background: "var(--teal-pale)", color: "var(--teal-dark)", borderRadius: 999, padding: "5px 6px 5px 10px" }}>
+                              {chip}
+                              <button type="button" aria-label={`Remove ${chip}`}
+                                onClick={() => setAllergyChips((prev) => prev.filter((_, ci) => ci !== i))}
+                                style={{ background: "none", border: "none", color: "inherit", opacity: 0.7, fontSize: 13, lineHeight: 1, cursor: "pointer", padding: 0 }}>
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                          <input type="text" value={allergyInput}
+                            onChange={(e) => setAllergyInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if ((e.key === "Enter" || e.key === ",") && allergyInput.trim()) {
+                                e.preventDefault();
+                                setAllergyChips((prev) => [...prev, allergyInput.trim()]);
+                                setAllergyInput("");
+                              } else if (e.key === "Backspace" && allergyInput === "" && allergyChips.length > 0) {
+                                setAllergyChips((prev) => prev.slice(0, -1));
+                              }
+                            }}
+                            onBlur={() => {
+                              if (allergyInput.trim()) {
+                                setAllergyChips((prev) => [...prev, allergyInput.trim()]);
+                                setAllergyInput("");
+                              }
+                            }}
+                            placeholder={allergyChips.length === 0 ? "e.g. Penicillin, shellfish" : "Add another…"}
+                            style={{ border: "none", outline: "none", flex: 1, minWidth: 120, fontSize: 14, background: "transparent", color: "var(--ink)" }} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

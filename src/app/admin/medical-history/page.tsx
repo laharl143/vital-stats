@@ -622,13 +622,13 @@ function AdminMedicalHistoryPageContent() {
                   {selected.surgeries && (
                     <div>
                       <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--mh-ink-faint)" }}>Surgeries</div>
-                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--mh-ink-muted)" }}>{selected.surgeries}</p>
+                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--mh-ink-muted)", whiteSpace: "pre-line" }}>{selected.surgeries}</p>
                     </div>
                   )}
                   {selected.medications && (
                     <div>
                       <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--mh-ink-faint)" }}>Medications</div>
-                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--mh-ink-muted)" }}>{selected.medications}</p>
+                      <p className="text-[13px] leading-[1.6]" style={{ color: "var(--mh-ink-muted)", whiteSpace: "pre-line" }}>{selected.medications}</p>
                     </div>
                   )}
                   {selected.allergies && (
