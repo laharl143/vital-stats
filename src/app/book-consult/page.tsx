@@ -349,6 +349,7 @@ export default function BookPage() {
   const surgeriesRef = useRef<HTMLDivElement>(null);
   const medicationsRef = useRef<HTMLDivElement>(null);
   const allergiesRef = useRef<HTMLDivElement>(null);
+  const consentRef = useRef<HTMLDivElement>(null);
 
   // Structured entry for Surgeries/Medications/Allergies — each serializes
   // down to the same flat string the API and admin view already expect
@@ -468,6 +469,7 @@ export default function BookPage() {
   const smokingInvalid = form.smokingStatus === "";
   const drinkingInvalid = form.drinkingFrequency === "";
   const pregnantInvalid = form.gender === "Female" && form.pregnant === "";
+  const consentInvalid = !(form.consent1 && form.consent2 && form.consent3);
 
   // Flattened for submission — same "name - year" / "name dosage" shape the
   // freeform textareas used to produce, so the API and admin view keep
@@ -549,6 +551,7 @@ export default function BookPage() {
       [smokingInvalid, smokingRef],
       [drinkingInvalid, drinkingRef],
       [pregnantInvalid, pregnantRef],
+      [consentInvalid, consentRef],
     ];
     const firstInvalid = requiredFields.find(([invalid]) => invalid);
     if (firstInvalid) {
@@ -1557,18 +1560,18 @@ export default function BookPage() {
                 </div>
 
                 {/* Consent */}
-                <div className="pt-2">
+                <div className="pt-2" ref={consentRef}>
                   <div className="text-[10px] font-semibold tracking-[0.18em] uppercase mb-4" style={{ color: "var(--teal)" }}>
-                    Consent & Acknowledgement
+                    Consent & Acknowledgement <RequiredMark invalid={submitAttempted && consentInvalid} />
                   </div>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 p-1" style={{ boxShadow: submitAttempted && consentInvalid ? "0 0 0 1.5px #DC2626" : undefined, borderRadius: 6 }}>
                     {[
                       { field: "consent1", text: "I acknowledge the importance of medical supervision during GLP-1 treatment" },
                       { field: "consent2", text: "I understand this medication may have side effects such as nausea, constipation" },
                       { field: "consent3", text: "I certify that the information provided above is accurate to the best of my knowledge" },
                     ].map(({ field, text }) => (
                       <label key={field} className="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox"
+                        <input type="checkbox" required
                           checked={(form as Record<string, string | boolean>)[field] as boolean}
                           onChange={(e) => set(field, e.target.checked)}
                           style={{ marginTop: 2, accentColor: "var(--teal)" }} />
