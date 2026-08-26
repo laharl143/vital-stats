@@ -11,6 +11,8 @@ const REQUIRED_FIELDS = [
   "dobDay",
   "dobYear",
   "gender",
+  "phone",
+  "email",
   "mtc",
   "pancreatitis",
   "gallbladder",

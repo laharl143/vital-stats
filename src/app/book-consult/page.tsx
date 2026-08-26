@@ -74,6 +74,12 @@ const cmToFtIn = (cm: number) => {
   return { feet, inches };
 };
 
+// The resting (unfocused) border color for a text input — red once a
+// submit attempt has flagged it as missing/incomplete, the same neutral
+// gray as always otherwise. onFocus still overrides to teal; onBlur reverts
+// to this so a field that's still invalid stays visibly flagged.
+const restingBorderColor = (invalid: boolean) => (invalid ? "#DC2626" : "rgba(0,0,0,0.15)");
+
 const inputStyle = {
   width: "100%",
   padding: "12px 16px",
@@ -106,10 +112,11 @@ const labelStyle = {
 // instead. Keeps a real (visually hidden) radio input per option for
 // native keyboard nav and required-field validation — only the visuals
 // change from circles to pills.
-function PillGroup({ field, label, required, options, value, onChange }: {
+function PillGroup({ field, label, required, invalid, options, value, onChange }: {
   field: string;
   label: string;
   required?: boolean;
+  invalid?: boolean;
   options: string[];
   value: string;
   onChange: (opt: string) => void;
@@ -129,8 +136,9 @@ function PillGroup({ field, label, required, options, value, onChange }: {
 
   return (
     <div>
-      <label style={labelStyle}>{label} {required && "*"}</label>
-      <div className="relative inline-flex flex-wrap gap-1.5 mt-2 sm:bg-[var(--cream)] sm:rounded-full sm:p-1">
+      <label style={labelStyle}>{label} {required && <RequiredMark invalid={invalid} />}</label>
+      <div className="relative inline-flex flex-wrap gap-1.5 mt-2 sm:bg-[var(--cream)] sm:rounded-full sm:p-1"
+        style={{ boxShadow: invalid ? "0 0 0 1.5px #DC2626" : undefined }}>
         <span aria-hidden="true" className="hidden sm:block" style={{
           position: "absolute",
           top: indicator.top, left: indicator.left, width: indicator.width, height: indicator.height,
@@ -154,6 +162,25 @@ function PillGroup({ field, label, required, options, value, onChange }: {
         })}
       </div>
     </div>
+  );
+}
+
+// The marker next to a required field's label — a plain "*" normally,
+// swapping to a small red tag once a blocked submit has flagged this exact
+// field. Defaults to "Required" (the only possible problem for most fields
+// here — a name/number/choice is either present or it isn't); fields that
+// can also be non-empty-but-wrong (Phone, Email) pass their own `text` so
+// the tag says what actually happened instead of implying it's empty.
+function RequiredMark({ invalid, text = "Required" }: { invalid?: boolean; text?: string }) {
+  if (!invalid) return <span>*</span>;
+  return (
+    <span style={{
+      display: "inline-flex", marginLeft: 6, fontSize: 9.5, fontWeight: 700,
+      letterSpacing: "0.05em", textTransform: "uppercase", color: "#DC2626",
+      background: "#FCE8E8", padding: "3px 8px", borderRadius: 5, verticalAlign: "middle",
+    }}>
+      {text}
+    </span>
   );
 }
 
@@ -200,6 +227,10 @@ export default function BookPage() {
   const [modalDismissed, setModalDismissed] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  // Only true after a submit was blocked by a missing required field —
+  // gates the red highlighting so nothing turns red before the user has
+  // actually tried to submit.
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const modalOpen = (status === "loading" || status === "success" || status === "error") && !modalDismissed;
 
   useEffect(() => {
@@ -240,6 +271,19 @@ export default function BookPage() {
   const [weightLbs, setWeightLbs] = useState("");
   // Same "starts true" reasoning as isEditingHeight — wait for blur.
   const [isEditingWeight, setIsEditingWeight] = useState(true);
+
+  // One ref per required field, in the order they appear on the page — used
+  // to scroll to the first one still invalid after a blocked submit.
+  const nameRef = useRef<HTMLDivElement>(null);
+  const dobRef = useRef<HTMLDivElement>(null);
+  const genderRef = useRef<HTMLDivElement>(null);
+  const phoneRef = useRef<HTMLDivElement>(null);
+  const emailRef = useRef<HTMLDivElement>(null);
+  const heightRef = useRef<HTMLDivElement>(null);
+  const weightRef = useRef<HTMLDivElement>(null);
+  const smokingRef = useRef<HTMLDivElement>(null);
+  const drinkingRef = useRef<HTMLDivElement>(null);
+  const pregnantRef = useRef<HTMLDivElement>(null);
 
   
   const [form, setForm] = useState({
@@ -320,6 +364,24 @@ export default function BookPage() {
     ? parseFloat((parseFloat(convertedWeightKg) / Math.pow(heightInCm / 100, 2)).toFixed(1))
     : null;
 
+  // Required-field checks, evaluated against the same values submit sends
+  // (not the raw sub-fields) — e.g. Height is invalid based on whichever
+  // unit is active, not both ft/in and cm at once. Only surfaced once a
+  // submit has actually been attempted (see submitAttempted below), so
+  // fields don't turn red before the user has done anything.
+  const nameInvalid = fullNameValue === "";
+  const dobInvalid = form.dobMonth === "" || form.dobDay === "" || form.dobYear === "";
+  const genderInvalid = form.gender === "";
+  const phoneInvalid = !/^09\d{9}$/.test(form.phone);
+  const phoneRequiredText = form.phone === "" ? "Required" : "Invalid Number";
+  const emailInvalid = !isValidEmail(emailValue);
+  const emailRequiredText = emailLocal === "" && emailDomain === "" ? "Required" : "Incomplete";
+  const heightInvalid = heightUnit === "ftIn" ? (heightFeet === "" || heightInches === "") : form.height === "";
+  const weightInvalid = weightUnit === "kg" ? form.weight === "" : weightLbs === "";
+  const smokingInvalid = form.smokingStatus === "";
+  const drinkingInvalid = form.drinkingFrequency === "";
+  const pregnantInvalid = form.gender === "Female" && form.pregnant === "";
+
   const bmiCategory = bmiValue ? getBMICategory(bmiValue) : null;
 
   // const convertedHeightCm = heightUnit === "ftIn"
@@ -328,6 +390,28 @@ export default function BookPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Order matches the page, so the first entry still invalid is the
+    // first one the user actually sees.
+    const requiredFields: [boolean, React.RefObject<HTMLDivElement | null>][] = [
+      [nameInvalid, nameRef],
+      [dobInvalid, dobRef],
+      [genderInvalid, genderRef],
+      [phoneInvalid, phoneRef],
+      [emailInvalid, emailRef],
+      [heightInvalid, heightRef],
+      [weightInvalid, weightRef],
+      [smokingInvalid, smokingRef],
+      [drinkingInvalid, drinkingRef],
+      [pregnantInvalid, pregnantRef],
+    ];
+    const firstInvalid = requiredFields.find(([invalid]) => invalid);
+    if (firstInvalid) {
+      setSubmitAttempted(true);
+      firstInvalid[1].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     setStatus("loading");
     setModalDismissed(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -547,7 +631,7 @@ export default function BookPage() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-8 rounded-[6px]"
+              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 p-8 rounded-[6px]"
                 style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
                 <div>
                   <div className="text-[11px] font-medium tracking-[0.18em] uppercase mb-1" style={{ color: "var(--teal)" }}>
@@ -581,8 +665,8 @@ export default function BookPage() {
                     Patient Demographics
                   </div>
                   <div className="flex flex-col gap-5">
-                    <div>
-                      <label style={labelStyle}>First and Last Name *</label>
+                    <div ref={nameRef}>
+                      <label style={labelStyle}>Legal Name <RequiredMark invalid={submitAttempted && nameInvalid} /></label>
                       {nameMerged ? (
                         <div className="flex items-center justify-between"
                           style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
@@ -608,31 +692,31 @@ export default function BookPage() {
                           <div className="flex-1 min-w-0">
                             <div className="text-[10px] mb-1" style={{ color: "var(--ink-faint)" }}>First Name</div>
                             <input type="text" required value={firstName}
-                              onChange={(e) => setFirstName(capitalizeWords(e.target.value))}
-                              style={inputStyle}
+                              onChange={(e) => setFirstName(capitalizeWords(e.target.value.replace(/[0-9]/g, "")))}
+                              style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && nameInvalid) }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
                               }}
-                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                              onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && nameInvalid))} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-[10px] mb-1" style={{ color: "var(--ink-faint)" }}>Last Name</div>
                             <input type="text" required value={lastName}
-                              onChange={(e) => setLastName(capitalizeWords(e.target.value))}
-                              style={inputStyle}
+                              onChange={(e) => setLastName(capitalizeWords(e.target.value.replace(/[0-9]/g, "")))}
+                              style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && nameInvalid) }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
                               }}
-                              onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                              onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && nameInvalid))} />
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div>
-                      <label style={labelStyle}>Date of Birth *</label>
+                    <div ref={dobRef}>
+                      <label style={labelStyle}>Date of Birth <RequiredMark invalid={submitAttempted && dobInvalid} /></label>
                       {dobMerged ? (
                         <div className="flex items-center justify-between"
                           style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
@@ -687,7 +771,8 @@ export default function BookPage() {
                                     set(field, raw);
                                   }
                                 }}
-                                placeholder={placeholder} style={inputStyle}
+                                placeholder={placeholder}
+                                style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && dobInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onKeyDown={(e) => {
                                   // Enter should finalize this field (blur ->
@@ -701,7 +786,7 @@ export default function BookPage() {
                                   }
                                 }}
                                 onBlur={(e) => {
-                                  e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                  e.target.style.borderColor = restingBorderColor(submitAttempted && dobInvalid);
                                   set(field, clampToRange(e.target.value, min, max));
                                 }} />
                             </div>
@@ -710,25 +795,28 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <PillGroup field="gender" label="Gender" required
-                      options={["Female", "Male"]} value={form.gender}
-                      onChange={(opt) => set("gender", opt)} />
+                    <div ref={genderRef}>
+                      <PillGroup field="gender" label="Gender" required invalid={submitAttempted && genderInvalid}
+                        options={["Female", "Male"]} value={form.gender}
+                        onChange={(opt) => set("gender", opt)} />
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label style={labelStyle}>Phone Number</label>
-                        <input type="tel" value={form.phone} maxLength={11}
+                      <div ref={phoneRef}>
+                        <label style={labelStyle}>Phone Number <RequiredMark invalid={submitAttempted && phoneInvalid} text={phoneRequiredText} /></label>
+                        <input type="tel" required value={form.phone} maxLength={11}
                           pattern="09[0-9]{9}" title="Philippine mobile number: 11 digits starting with 09, e.g. 09171234567"
                           onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 11))}
-                          placeholder="e.g. 09171234567" style={inputStyle}
+                          placeholder="e.g. 09171234567"
+                          style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && phoneInvalid) }}
                           onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                           onBlur={(e) => {
-                            e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                            e.target.style.borderColor = restingBorderColor(submitAttempted && phoneInvalid);
                             set("phone", normalizePhPhone(e.target.value));
                           }} />
                       </div>
-                      <div>
-                        <label style={labelStyle}>Email Address</label>
+                      <div ref={emailRef}>
+                        <label style={labelStyle}>Email Address <RequiredMark invalid={submitAttempted && emailInvalid} text={emailRequiredText} /></label>
                         {emailMerged ? (
                           <div className="flex items-center justify-between"
                             style={{ ...inputStyle, background: "var(--teal-pale)", borderColor: "var(--teal)" }}>
@@ -753,7 +841,7 @@ export default function BookPage() {
                               if (isValidEmail(emailValue)) setIsEditingEmail(false);
                             }}>
                             <div className="flex-1 min-w-0">
-                              <input type="text" value={emailLocal}
+                              <input type="text" required value={emailLocal}
                                 onChange={(e) => {
                                   const raw = e.target.value;
                                   // Typing (or pasting) a full address into
@@ -769,23 +857,24 @@ export default function BookPage() {
                                     setEmailLocal(raw);
                                   }
                                 }}
-                                style={inputStyle}
+                                style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && emailInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
                                 }}
-                                onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && emailInvalid))} />
                             </div>
                             <div style={{ padding: "0 2px", fontWeight: 700, color: "var(--ink-faint)", fontSize: 14 }}>@</div>
                             <div className="flex-1 min-w-0 relative">
-                              <input type="text" ref={emailDomainRef} value={emailDomain}
+                              <input type="text" required ref={emailDomainRef} value={emailDomain}
                                 onChange={(e) => setEmailDomain(e.target.value.replace(/\.com$/i, "").replace(/\.+$/, ""))}
-                                placeholder="gmail" style={inputStyle}
+                                placeholder="gmail"
+                                style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && emailInvalid) }}
                                 onFocus={(e) => { e.target.style.borderColor = "var(--teal)"; setDomainFocused(true); }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
                                 }}
-                                onBlur={(e) => { e.target.style.borderColor = "rgba(0,0,0,0.15)"; setDomainFocused(false); }} />
+                                onBlur={(e) => { e.target.style.borderColor = restingBorderColor(submitAttempted && emailInvalid); setDomainFocused(false); }} />
                               {domainFocused && (() => {
                                 const matches = EMAIL_DOMAIN_SUGGESTIONS.filter((d) => d.startsWith(emailDomain.toLowerCase()));
                                 if (matches.length === 0) return null;
@@ -825,10 +914,10 @@ export default function BookPage() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-                      <div>
+                      <div ref={heightRef}>
                         {/* Height label + unit toggle — hidden once confirmed */}
                         <div className="flex items-center justify-between mb-2">
-                          <label style={{ ...labelStyle, marginBottom: 0 }}>Height *</label>
+                          <label style={{ ...labelStyle, marginBottom: 0 }}>Height <RequiredMark invalid={submitAttempted && heightInvalid} /></label>
                           {!heightMerged && (
                             <div className="flex rounded-[3px] overflow-hidden"
                               style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
@@ -894,10 +983,10 @@ export default function BookPage() {
                           <div className="relative">
                             <input type="number" required value={form.height}
                               onChange={(e) => set("height", e.target.value)}
-                              style={{ ...inputStyle, paddingRight: 48 }}
+                              style={{ ...inputStyle, paddingRight: 48, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                               onBlur={(e) => {
-                                e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid);
                                 if (form.height !== "") setIsEditingHeight(false);
                               }} />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
@@ -919,26 +1008,26 @@ export default function BookPage() {
                             <div className="flex-1">
                               <input type="number" required value={heightFeet}
                                 onChange={(e) => setHeightFeet(e.target.value)}
-                                placeholder="ft" style={inputStyle}
+                                placeholder="ft" style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                                onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid))} />
                               <div className="text-[10px] mt-1 text-center" style={{ color: "var(--ink-faint)" }}>feet</div>
                             </div>
                             <div className="flex-1">
                               <input type="number" required value={heightInches}
                                 onChange={(e) => setHeightInches(e.target.value)}
-                                placeholder="in" min="0" max="11" style={inputStyle}
+                                placeholder="in" min="0" max="11" style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                                onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+                                onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid))} />
                               <div className="text-[10px] mt-1 text-center" style={{ color: "var(--ink-faint)" }}>inches</div>
                             </div>
                           </div>
                         )}
                       </div>
-                      <div>
+                      <div ref={weightRef}>
                         {/* Weight label + unit toggle — hidden once confirmed */}
                         <div className="flex items-center justify-between mb-2">
-                          <label style={{ ...labelStyle, marginBottom: 0 }}>Current Weight *</label>
+                          <label style={{ ...labelStyle, marginBottom: 0 }}>Current Weight <RequiredMark invalid={submitAttempted && weightInvalid} /></label>
                           {!weightMerged && (
                             <div className="flex rounded-[3px] overflow-hidden"
                               style={{ border: "1px solid rgba(0,0,0,0.12)", fontSize: 10 }}>
@@ -1001,19 +1090,19 @@ export default function BookPage() {
                             {weightUnit === "kg" ? (
                               <input type="number" required value={form.weight}
                                 onChange={(e) => set("weight", e.target.value)}
-                                style={{ ...inputStyle, paddingRight: 48 }}
+                                style={{ ...inputStyle, paddingRight: 48, borderColor: restingBorderColor(submitAttempted && weightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onBlur={(e) => {
-                                  e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                  e.target.style.borderColor = restingBorderColor(submitAttempted && weightInvalid);
                                   if (form.weight !== "") setIsEditingWeight(false);
                                 }} />
                             ) : (
                               <input type="number" required value={weightLbs}
                                 onChange={(e) => setWeightLbs(e.target.value)}
-                                style={{ ...inputStyle, paddingRight: 48 }}
+                                style={{ ...inputStyle, paddingRight: 48, borderColor: restingBorderColor(submitAttempted && weightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onBlur={(e) => {
-                                  e.target.style.borderColor = "rgba(0,0,0,0.15)";
+                                  e.target.style.borderColor = restingBorderColor(submitAttempted && weightInvalid);
                                   if (weightLbs !== "") setIsEditingWeight(false);
                                 }} />
                             )}
@@ -1080,18 +1169,24 @@ export default function BookPage() {
                       </p>
                     </div>
                     
-                    <PillGroup field="smokingStatus" label="Smoking / Vaping Status" required
-                      options={["Smoker", "Vaper", "Non-Smoker"]} value={form.smokingStatus}
-                      onChange={(opt) => set("smokingStatus", opt)} />
+                    <div ref={smokingRef}>
+                      <PillGroup field="smokingStatus" label="Smoking / Vaping Status" required invalid={submitAttempted && smokingInvalid}
+                        options={["Smoker", "Vaper", "Non-Smoker"]} value={form.smokingStatus}
+                        onChange={(opt) => set("smokingStatus", opt)} />
+                    </div>
 
-                    <PillGroup field="drinkingFrequency" label="Drinking Frequency" required
-                      options={["Never", "Occasional", "More than once a week"]} value={form.drinkingFrequency}
-                      onChange={(opt) => set("drinkingFrequency", opt)} />
+                    <div ref={drinkingRef}>
+                      <PillGroup field="drinkingFrequency" label="Drinking Frequency" required invalid={submitAttempted && drinkingInvalid}
+                        options={["Never", "Occasional", "More than once a week"]} value={form.drinkingFrequency}
+                        onChange={(opt) => set("drinkingFrequency", opt)} />
+                    </div>
 
                     {form.gender === "Female" && (
-                      <PillGroup field="pregnant" label="Are you currently pregnant, breastfeeding, or planning to become pregnant?" required
-                        options={["Pregnant", "Breastfeeding", "Currently trying to get pregnant", "No"]} value={form.pregnant}
-                        onChange={(opt) => set("pregnant", opt)} />
+                      <div ref={pregnantRef}>
+                        <PillGroup field="pregnant" label="Are you currently pregnant, breastfeeding, or planning to become pregnant?" required invalid={submitAttempted && pregnantInvalid}
+                          options={["Pregnant", "Breastfeeding", "Currently trying to get pregnant", "No"]} value={form.pregnant}
+                          onChange={(opt) => set("pregnant", opt)} />
+                      </div>
                     )}
                   </div>
                 </div>
