@@ -61,6 +61,12 @@ const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 // word itself needs suggesting.
 const EMAIL_DOMAIN_SUGGESTIONS = ["gmail", "yahoo", "outlook", "icloud"];
 
+// "a", "a and b", "a, b, and c" — used to name the blank fields in the
+// confirm-none modal, since all three being blank at once is common enough
+// that "a and b and c" would read noticeably worse.
+const joinWithAnd = (items: string[]) =>
+  items.length <= 2 ? items.join(" and ") : `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+
 // Converts a cm value to its ft/in equivalent — used both to display the
 // confirmed-pill conversion and to carry the value over when the user
 // switches units mid-edit (e.g. 170 -> { feet: 5, inches: 7 }). Rounds to
@@ -222,17 +228,18 @@ function NoneToggle({ checked, onChange }: { checked: boolean; onChange: (next: 
       <span style={{
         fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
         color: checked ? "var(--teal-dark)" : "var(--ink-faint)",
+        transition: "color 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}>
         None
       </span>
       <span style={{
         width: 30, height: 17, borderRadius: 999, display: "inline-block", position: "relative",
-        background: checked ? "var(--teal)" : "#E1E6E4", transition: "background 0.15s",
+        background: checked ? "var(--teal)" : "#E1E6E4", transition: "background 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}>
         <span style={{
           position: "absolute", top: 2, left: checked ? 15 : 2,
           width: 13, height: 13, borderRadius: "50%", background: "#fff",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.2)", transition: "left 0.15s",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.2)", transition: "left 0.4s cubic-bezier(0.4,0,0.2,1)",
         }} />
       </span>
     </button>
@@ -339,6 +346,9 @@ export default function BookPage() {
   const smokingRef = useRef<HTMLDivElement>(null);
   const drinkingRef = useRef<HTMLDivElement>(null);
   const pregnantRef = useRef<HTMLDivElement>(null);
+  const surgeriesRef = useRef<HTMLDivElement>(null);
+  const medicationsRef = useRef<HTMLDivElement>(null);
+  const allergiesRef = useRef<HTMLDivElement>(null);
 
   // Structured entry for Surgeries/Medications/Allergies — each serializes
   // down to the same flat string the API and admin view already expect
@@ -348,11 +358,19 @@ export default function BookPage() {
   const [medications, setMedications] = useState([{ name: "", dosage: "" }]);
   const [allergyChips, setAllergyChips] = useState<string[]>([]);
   const [allergyInput, setAllergyInput] = useState("");
-  // Default to "None" — most patients have none of these, so this saves
-  // the common case a tap instead of forcing everyone to opt out.
-  const [noSurgeries, setNoSurgeries] = useState(true);
-  const [noMedications, setNoMedications] = useState(true);
-  const [noAllergies, setNoAllergies] = useState(true);
+  const [noSurgeries, setNoSurgeries] = useState(false);
+  const [noMedications, setNoMedications] = useState(false);
+  const [noAllergies, setNoAllergies] = useState(false);
+  // Set when Submit is blocked because one or more of the three above are
+  // still blank and undecided — lists exactly which ones, so the "Before
+  // we submit…" modal can name them and "No" can scroll to the first one.
+  const [confirmNoneFields, setConfirmNoneFields] = useState<
+    { key: "surgeries" | "medications" | "allergies"; label: string; ref: React.RefObject<HTMLDivElement | null> }[] | null
+  >(null);
+  // True only during the ~2s pause after "Yes, none" — the toggles above
+  // already flipped, this just keeps Submit visibly busy until the real
+  // submission (submitForm) actually kicks off.
+  const [confirmingSubmit, setConfirmingSubmit] = useState(false);
 
 
   const [form, setForm] = useState({
@@ -472,30 +490,10 @@ export default function BookPage() {
   //   ? Math.round((parseFloat(heightFeet || "0") * 30.48) + (parseFloat(heightInches || "0") * 2.54)).toString()
   //   : form.height;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Order matches the page, so the first entry still invalid is the
-    // first one the user actually sees.
-    const requiredFields: [boolean, React.RefObject<HTMLDivElement | null>][] = [
-      [nameInvalid, nameRef],
-      [dobInvalid, dobRef],
-      [genderInvalid, genderRef],
-      [phoneInvalid, phoneRef],
-      [emailInvalid, emailRef],
-      [heightInvalid, heightRef],
-      [weightInvalid, weightRef],
-      [smokingInvalid, smokingRef],
-      [drinkingInvalid, drinkingRef],
-      [pregnantInvalid, pregnantRef],
-    ];
-    const firstInvalid = requiredFields.find(([invalid]) => invalid);
-    if (firstInvalid) {
-      setSubmitAttempted(true);
-      firstInvalid[1].current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
+  // The actual network submission — split out from handleSubmit so the
+  // "Yes, none" path can trigger it itself after its confirmation pause,
+  // without needing a fake form-submit event.
+  const submitForm = async () => {
     setStatus("loading");
     setModalDismissed(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -533,6 +531,83 @@ export default function BookPage() {
       setErrorMessage("Network error. Please check your connection and try again.");
       setStatus("error");
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Order matches the page, so the first entry still invalid is the
+    // first one the user actually sees.
+    const requiredFields: [boolean, React.RefObject<HTMLDivElement | null>][] = [
+      [nameInvalid, nameRef],
+      [dobInvalid, dobRef],
+      [genderInvalid, genderRef],
+      [phoneInvalid, phoneRef],
+      [emailInvalid, emailRef],
+      [heightInvalid, heightRef],
+      [weightInvalid, weightRef],
+      [smokingInvalid, smokingRef],
+      [drinkingInvalid, drinkingRef],
+      [pregnantInvalid, pregnantRef],
+    ];
+    const firstInvalid = requiredFields.find(([invalid]) => invalid);
+    if (firstInvalid) {
+      setSubmitAttempted(true);
+      firstInvalid[1].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    // Surgeries/Medications/Allergies are optional, but a blank-and-
+    // undecided one (never toggled to None, nothing typed) gets a single
+    // combined confirmation instead of silently submitting as empty.
+    const blankOptionalFields: { key: "surgeries" | "medications" | "allergies"; label: string; ref: React.RefObject<HTMLDivElement | null> }[] = [];
+    if (!noSurgeries && surgeries.every((s) => s.name.trim() === "")) {
+      blankOptionalFields.push({ key: "surgeries", label: "Major Surgeries", ref: surgeriesRef });
+    }
+    if (!noMedications && medications.every((m) => m.name.trim() === "")) {
+      blankOptionalFields.push({ key: "medications", label: "Current Medications", ref: medicationsRef });
+    }
+    if (!noAllergies && allergyChips.length === 0 && allergyInput.trim() === "") {
+      blankOptionalFields.push({ key: "allergies", label: "Known Allergies", ref: allergiesRef });
+    }
+    if (blankOptionalFields.length > 0) {
+      setConfirmNoneFields(blankOptionalFields);
+      return;
+    }
+
+    await submitForm();
+  };
+
+  const confirmNoneYes = () => {
+    if (!confirmNoneFields) return;
+    const fields = confirmNoneFields;
+    setConfirmNoneFields(null);
+    setConfirmingSubmit(true);
+
+    // Flip one toggle at a time rather than all at once, so each slide is
+    // actually watchable — matches the toggle's own slowed-down transition
+    // (see NoneToggle) instead of racing past it.
+    const STAGGER_MS = 500;
+    fields.forEach(({ key }, i) => {
+      setTimeout(() => {
+        if (key === "surgeries") setNoSurgeries(true);
+        if (key === "medications") setNoMedications(true);
+        if (key === "allergies") setNoAllergies(true);
+      }, i * STAGGER_MS);
+    });
+
+    // Waits for every toggle to have started (and finished sliding) before
+    // moving on, plus a short beat to actually register the last one.
+    setTimeout(() => {
+      setConfirmingSubmit(false);
+      submitForm();
+    }, fields.length * STAGGER_MS + 700);
+  };
+
+  const confirmNoneNo = () => {
+    if (!confirmNoneFields) return;
+    confirmNoneFields[0].ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setConfirmNoneFields(null);
   };
 
   return (
@@ -623,6 +698,47 @@ export default function BookPage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {confirmNoneFields && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[999] flex items-center justify-center p-6"
+          style={{ background: "rgba(15,74,60,0.75)", backdropFilter: "blur(3px)" }}
+        >
+          <div
+            className="flex flex-col items-center gap-4 text-center rounded-[14px]"
+            style={{ background: "#ffffff", padding: "2.5rem 2rem", width: 380, maxWidth: "100%" }}
+          >
+            <div className="font-display font-light text-[20px]" style={{ color: "var(--ink)" }}>
+              Before we submit…
+            </div>
+            <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
+              You left <strong style={{ color: "var(--ink)" }}>{joinWithAnd(confirmNoneFields.map((f) => f.label))}</strong> blank.
+              Should we record {confirmNoneFields.length > 1 ? "these" : "this"}{" "}
+              as &quot;None&quot;?
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={confirmNoneNo}
+                className="flex-1 text-[12px] font-medium tracking-[0.06em] uppercase px-4 py-[12px] rounded-[3px]"
+                style={{ background: "var(--cream)", color: "var(--ink-muted)", border: "1px solid rgba(0,0,0,0.1)" }}
+              >
+                No, let me fill in
+              </button>
+              <button
+                type="button"
+                onClick={confirmNoneYes}
+                className="flex-1 text-[12px] font-medium tracking-[0.06em] uppercase px-4 py-[12px] rounded-[3px] text-white"
+                style={{ background: "var(--teal)" }}
+              >
+                Yes, none
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1291,7 +1407,7 @@ export default function BookPage() {
                     <Toggle label="Do you have a history of severe gastrointestinal disease?" value={form.gi} onChange={(opt) => set("gi", opt)} />
                     <Toggle label="Do you have type 2 diabetes?" value={form.diabetes} onChange={(opt) => set("diabetes", opt)} />
 
-                    <div>
+                    <div ref={surgeriesRef}>
                       <div className="flex items-center gap-3 mb-2">
                         <label style={{ ...labelStyle, marginBottom: 0 }}>Major Surgeries</label>
                         <NoneToggle checked={noSurgeries} onChange={setNoSurgeries} />
@@ -1341,7 +1457,7 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <div>
+                    <div ref={medicationsRef}>
                       <div className="flex items-center gap-3 mb-2">
                         <label style={{ ...labelStyle, marginBottom: 0 }}>Current Medications</label>
                         <NoneToggle checked={noMedications} onChange={setNoMedications} />
@@ -1391,7 +1507,7 @@ export default function BookPage() {
                       )}
                     </div>
 
-                    <div>
+                    <div ref={allergiesRef}>
                       <div className="flex items-center gap-3 mb-2">
                         <label style={{ ...labelStyle, marginBottom: 0 }}>Known Allergies</label>
                         <NoneToggle checked={noAllergies} onChange={setNoAllergies} />
@@ -1470,10 +1586,13 @@ export default function BookPage() {
                   </p>
                 </div>
 
-                <button type="submit" disabled={status === "loading"}
+                <button type="submit" disabled={status === "loading" || confirmingSubmit}
                   className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[14px] rounded-[3px] text-white transition-all duration-200 self-start"
-                  style={{ background: status === "loading" ? "var(--teal-light)" : "var(--teal)", cursor: status === "loading" ? "not-allowed" : "pointer" }}>
-                  {status === "loading" ? "Submitting..." : "Submit Form →"}
+                  style={{
+                    background: (status === "loading" || confirmingSubmit) ? "var(--teal-light)" : "var(--teal)",
+                    cursor: (status === "loading" || confirmingSubmit) ? "not-allowed" : "pointer",
+                  }}>
+                  {confirmingSubmit ? "Confirming…" : status === "loading" ? "Submitting..." : "Submit Form →"}
                 </button>
 
                 <p className="text-[11px]" style={{ color: "var(--ink-faint)" }}>
