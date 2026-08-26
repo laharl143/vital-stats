@@ -103,20 +103,27 @@ const labelStyle = {
   marginBottom: 8,
 };
 
-// A segmented pill group for categorical fields (2-4 named options). Below
-// the `sm` breakpoint each option is its own independently-rounded chip —
-// a shared capsule background looks fine as a single row but turns into a
-// lopsided blob once options wrap to 2-3 rows on a narrow phone. At `sm`
-// and up there's room for groups to stay on one row, so the original
-// shared-capsule design with a sliding selection indicator takes over
-// instead. Keeps a real (visually hidden) radio input per option for
-// native keyboard nav and required-field validation — only the visuals
-// change from circles to pills.
-function PillGroup({ field, label, required, invalid, options, value, onChange }: {
+// A segmented pill group for categorical fields (2-4 named options). By
+// default, below the `sm` breakpoint each option is its own independently-
+// rounded chip — a shared capsule background looks fine as a single row but
+// turns into a lopsided blob once options wrap to 2-3 rows on a narrow
+// phone. At `sm` and up there's room for groups to stay on one row, so the
+// original shared-capsule design with a sliding selection indicator takes
+// over instead. Pass `capsuleOnMobile` to use that same capsule/indicator
+// look at every width — only safe for a group that never wraps on mobile.
+// Keeps a real (visually hidden) radio input per option for native keyboard
+// nav and required-field validation — only the visuals change from circles
+// to pills.
+function PillGroup({ field, label, required, invalid, capsuleOnMobile, options, value, onChange }: {
   field: string;
   label: string;
   required?: boolean;
   invalid?: boolean;
+  // Skips the mobile per-chip fallback — only safe for groups that never
+  // wrap to a second row on a narrow phone (e.g. two short options like
+  // Gender). A group that *can* wrap must keep the default, or it
+  // reintroduces the lopsided-blob bug this component was built to avoid.
+  capsuleOnMobile?: boolean;
   options: string[];
   value: string;
   onChange: (opt: string) => void;
@@ -137,9 +144,9 @@ function PillGroup({ field, label, required, invalid, options, value, onChange }
   return (
     <div>
       <label style={labelStyle}>{label} {required && <RequiredMark invalid={invalid} />}</label>
-      <div className="relative inline-flex flex-wrap gap-1.5 mt-2 sm:bg-[var(--cream)] sm:rounded-full sm:p-1"
+      <div className={`relative inline-flex flex-wrap gap-1.5 mt-2 ${capsuleOnMobile ? "bg-[var(--cream)] rounded-full p-1" : "sm:bg-[var(--cream)] sm:rounded-full sm:p-1"}`}
         style={{ boxShadow: invalid ? "0 0 0 1.5px #DC2626" : undefined }}>
-        <span aria-hidden="true" className="hidden sm:block" style={{
+        <span aria-hidden="true" className={capsuleOnMobile ? "block" : "hidden sm:block"} style={{
           position: "absolute",
           top: indicator.top, left: indicator.left, width: indicator.width, height: indicator.height,
           background: "var(--teal)", borderRadius: 999,
@@ -147,10 +154,12 @@ function PillGroup({ field, label, required, invalid, options, value, onChange }
         }} />
         {options.map((opt) => {
           const selected = value === opt;
+          const textColor = selected ? "text-white" : "text-[var(--ink-muted)]";
+          const chipBg = capsuleOnMobile ? "" : `sm:bg-transparent ${selected ? "bg-[var(--teal)]" : "bg-[var(--cream)]"}`;
           return (
             <label key={opt}
               ref={(el) => { optionRefs.current[opt] = el; }}
-              className={`relative cursor-pointer text-[13px] font-medium transition-colors duration-150 sm:bg-transparent ${selected ? "bg-[var(--teal)] text-white" : "bg-[var(--cream)] text-[var(--ink-muted)]"}`}
+              className={`relative cursor-pointer text-[13px] font-medium transition-colors duration-150 ${textColor} ${chipBg}`}
               style={{ zIndex: 1, padding: "9px 18px", borderRadius: 999 }}>
               <input type="radio" name={field} value={opt} required={required}
                 checked={selected}
@@ -796,7 +805,7 @@ export default function BookPage() {
                     </div>
 
                     <div ref={genderRef}>
-                      <PillGroup field="gender" label="Gender" required invalid={submitAttempted && genderInvalid}
+                      <PillGroup field="gender" label="Gender" required invalid={submitAttempted && genderInvalid} capsuleOnMobile
                         options={["Female", "Male"]} value={form.gender}
                         onChange={(opt) => set("gender", opt)} />
                     </div>
@@ -867,7 +876,13 @@ export default function BookPage() {
                             <div style={{ padding: "0 2px", fontWeight: 700, color: "var(--ink-faint)", fontSize: 14 }}>@</div>
                             <div className="flex-1 min-w-0 relative">
                               <input type="text" required ref={emailDomainRef} value={emailDomain}
-                                onChange={(e) => setEmailDomain(e.target.value.replace(/\.com$/i, "").replace(/\.+$/, ""))}
+                                // Only strips a fully-typed, redundant ".com"
+                                // (the fixed suffix already shown after this
+                                // box) — an internal or momentarily-trailing
+                                // dot is otherwise left alone, so domains
+                                // like "gmail.ph" (-> gmail.ph.com) can still
+                                // be typed one character at a time.
+                                onChange={(e) => setEmailDomain(e.target.value.replace(/\.com$/i, ""))}
                                 placeholder="gmail"
                                 style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && emailInvalid) }}
                                 onFocus={(e) => { e.target.style.borderColor = "var(--teal)"; setDomainFocused(true); }}
