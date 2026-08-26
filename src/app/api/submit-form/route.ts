@@ -19,6 +19,9 @@ const REQUIRED_FIELDS = [
   "gi",
   "diabetes",
   "pregnant",
+  "consent1",
+  "consent2",
+  "consent3",
 ] as const;
 
 const MAX_LENGTHS: Record<string, number> = {
