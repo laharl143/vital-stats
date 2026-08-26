@@ -181,7 +181,7 @@ export default function Hero() {
                   flexShrink: 0,
                 }}
               />
-              Stocks Currently Available
+              Stocks Available
             </div>
             <div
               style={{
