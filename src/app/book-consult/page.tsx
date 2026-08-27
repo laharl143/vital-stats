@@ -350,6 +350,10 @@ export default function BookPage() {
   const medicationsRef = useRef<HTMLDivElement>(null);
   const allergiesRef = useRef<HTMLDivElement>(null);
   const consentRef = useRef<HTMLDivElement>(null);
+  // The "Your consult request" receipt card that replaces the form once
+  // status is "success" — used to bring it into view on mobile once the
+  // confirmation modal is dismissed (see the Continue button below).
+  const successRef = useRef<HTMLDivElement>(null);
 
   // Structured entry for Surgeries/Medications/Allergies — each serializes
   // down to the same flat string the API and admin view already expect
@@ -692,7 +696,14 @@ export default function BookPage() {
                   type="button"
                   onClick={() => {
                     setModalDismissed(true);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    // On mobile the receipt card sits below the hero/intro,
+                    // so scrolling to the page top (as on desktop) leaves it
+                    // just out of view — bring it into frame directly instead.
+                    if (window.innerWidth < 768) {
+                      successRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    } else {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
                   }}
                   className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[12px] rounded-[3px] text-white"
                   style={{ background: "var(--teal)" }}
@@ -776,7 +787,7 @@ export default function BookPage() {
           {/* Form */}
           <div className="md:col-span-2">
             {status === "success" ? (
-              <div className="flex flex-col rounded-[6px] overflow-hidden"
+              <div ref={successRef} className="flex flex-col rounded-[6px] overflow-hidden"
                 style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
                 {/* Top accent bar */}
                 <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--teal-deep), var(--teal-light))" }} />
