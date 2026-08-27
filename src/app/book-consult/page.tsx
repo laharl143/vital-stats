@@ -226,13 +226,6 @@ function NoneToggle({ checked, onChange }: { checked: boolean; onChange: (next: 
       className="flex-shrink-0 flex items-center gap-2"
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
       <span style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
-        color: checked ? "var(--teal-dark)" : "var(--ink-faint)",
-        transition: "color 0.4s cubic-bezier(0.4,0,0.2,1)",
-      }}>
-        None
-      </span>
-      <span style={{
         width: 30, height: 17, borderRadius: 999, display: "inline-block", position: "relative",
         background: checked ? "var(--teal)" : "#E1E6E4", transition: "background 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}>
@@ -241,6 +234,13 @@ function NoneToggle({ checked, onChange }: { checked: boolean; onChange: (next: 
           width: 13, height: 13, borderRadius: "50%", background: "#fff",
           boxShadow: "0 1px 2px rgba(0,0,0,0.2)", transition: "left 0.4s cubic-bezier(0.4,0,0.2,1)",
         }} />
+      </span>
+      <span style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+        color: checked ? "var(--teal-dark)" : "var(--ink-faint)",
+        transition: "color 0.4s cubic-bezier(0.4,0,0.2,1)",
+      }}>
+        None
       </span>
     </button>
   );
