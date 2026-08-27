@@ -52,6 +52,16 @@ const formatDob = (monthStr: string, dayStr: string, yearStr: string) => {
   });
 };
 
+// Real last day of the given month/year, e.g. 29 for Feb 2000 — falls back
+// to 31 (the widest possible bound) while month or year is still blank, so
+// the Day field isn't artificially restricted before both are known.
+const daysInMonth = (monthStr: string, yearStr: string) => {
+  const month = Number(monthStr);
+  const year = Number(yearStr);
+  if (!month || !year) return 31;
+  return new Date(year, month, 0).getDate();
+};
+
 // Simple shape check (local@domain.tld) — good enough to gate the
 // confirmed-pill merge without rejecting anything a real mail server would
 // accept; full deliverability isn't checkable client-side anyway.
@@ -951,7 +961,7 @@ export default function BookPage() {
                           }}>
                           {[
                             { label: "Month", field: "dobMonth", placeholder: "MM", min: 1, max: 12, digits: 2, ref: undefined, advanceTo: dobDayRef },
-                            { label: "Day", field: "dobDay", placeholder: "DD", min: 1, max: 31, digits: 2, ref: dobDayRef, advanceTo: dobYearRef },
+                            { label: "Day", field: "dobDay", placeholder: "DD", min: 1, max: daysInMonth(form.dobMonth, form.dobYear), digits: 2, ref: dobDayRef, advanceTo: dobYearRef },
                             { label: "Year", field: "dobYear", placeholder: "YYYY", min: 1950, max: new Date().getFullYear(), digits: 4, ref: dobYearRef, advanceTo: null },
                           ].map(({ label, field, placeholder, min, max, digits, ref, advanceTo }) => (
                             <div key={field}>
@@ -970,7 +980,19 @@ export default function BookPage() {
                                   // merge on every single click instead of
                                   // letting the user keep adjusting it.
                                   if (raw.length >= digits && previous.length < digits) {
-                                    set(field, clampToRange(raw, min, max));
+                                    const clamped = clampToRange(raw, min, max);
+                                    set(field, clamped);
+                                    // Month/Year just finished changing — the
+                                    // Day the user already entered may now
+                                    // exceed the new month's real length
+                                    // (e.g. Day=30 with Month now Feb).
+                                    if (field === "dobMonth" || field === "dobYear") {
+                                      const newMonth = field === "dobMonth" ? clamped : form.dobMonth;
+                                      const newYear = field === "dobYear" ? clamped : form.dobYear;
+                                      if (form.dobDay !== "") {
+                                        set("dobDay", clampToRange(form.dobDay, 1, daysInMonth(newMonth, newYear)));
+                                      }
+                                    }
                                     if (advanceTo) advanceTo.current?.focus();
                                     else setIsEditingDob(false);
                                   } else {
@@ -993,7 +1015,15 @@ export default function BookPage() {
                                 }}
                                 onBlur={(e) => {
                                   e.target.style.borderColor = restingBorderColor(submitAttempted && dobInvalid);
-                                  set(field, clampToRange(e.target.value, min, max));
+                                  const clamped = clampToRange(e.target.value, min, max);
+                                  set(field, clamped);
+                                  if (field === "dobMonth" || field === "dobYear") {
+                                    const newMonth = field === "dobMonth" ? clamped : form.dobMonth;
+                                    const newYear = field === "dobYear" ? clamped : form.dobYear;
+                                    if (form.dobDay !== "") {
+                                      set("dobDay", clampToRange(form.dobDay, 1, daysInMonth(newMonth, newYear)));
+                                    }
+                                  }
                                 }} />
                             </div>
                           ))}
