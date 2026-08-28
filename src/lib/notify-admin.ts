@@ -94,7 +94,10 @@ export async function notifyAdmin(notification: ConsultNotification | InquiryNot
           }),
         };
 
-  await resend.emails.send({ from, to: recipients, subject, html });
+  const { error } = await resend.emails.send({ from, to: recipients, subject, html });
+  if (error) {
+    throw new Error(`Resend API error: ${error.name} - ${error.message}`);
+  }
 }
 
 function escapeHtml(value: string): string {
