@@ -28,6 +28,7 @@ const CATEGORIES = [
   { value: "WEIGHT_MANAGEMENT", label: "Weight Management" },
   { value: "RECOVERY_ANTI_AGING", label: "Recovery & Anti-Aging" },
   { value: "SKIN_CARE", label: "Skin Care" },
+  { value: "MEDICAL_CONSULTATION", label: "Medical Consultation" },
 ];
 
 export default function ProductsPage() {
@@ -52,10 +53,7 @@ function ProductsPageContent() {
     fetch("/api/products?active=true")
       .then((r) => r.json())
       .then((json) => {
-        const purchasable = (json.data as Product[]).filter(
-          (p) => p.category !== "MEDICAL_CONSULTATION"
-        );
-        setProducts(purchasable);
+        setProducts(json.data as Product[]);
         setLoading(false);
       })
       .catch(() => setLoading(false));
