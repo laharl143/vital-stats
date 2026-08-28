@@ -71,11 +71,16 @@ function AdminInquiriesPageContent() {
     setUpdating(true);
     setActionError(null);
     try {
-      await fetch("/api/inquiries", {
+      const res = await fetch("/api/inquiries", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id], status }),
       });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setActionError(json?.error ?? "Couldn't update the status. Please try again.");
+        return;
+      }
       if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null);
       fetchInquiries();
     } catch {
