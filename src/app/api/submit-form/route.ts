@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { formatReferenceNumber } from "@/lib/reference-number";
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxi56o7zn0-HIygaDaXNgJ7cMB_bmznow78a78mEYhco6s3Jb0N66HB9OF8fKSGYnLr/exec";
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_FORM_URL;
 
 const REQUIRED_FIELDS = [
   "fullName",
@@ -23,6 +23,11 @@ const REQUIRED_FIELDS = [
   "consent2",
   "consent3",
 ] as const;
+
+// Every field the app itself knows about, across REQUIRED_FIELDS and
+// MAX_LENGTHS — the whitelist used to sanitize the copy forwarded to the
+// external Apps Script so it can never carry more than the app validated.
+const ALLOWED_FIELDS = new Set<string>(REQUIRED_FIELDS);
 
 const MAX_LENGTHS: Record<string, number> = {
   fullName: 100,
@@ -46,6 +51,10 @@ const MAX_LENGTHS: Record<string, number> = {
   medications: 2000,
   allergies: 2000,
 };
+
+for (const field of Object.keys(MAX_LENGTHS)) {
+  ALLOWED_FIELDS.add(field);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -88,6 +97,14 @@ export async function POST(req: NextRequest) {
         { success: false, error: "Invalid date of birth" },
         { status: 400 }
       );
+    }
+
+    // Only whitelisted, already-validated fields make it into this object —
+    // used for the external forward below so that copy can never carry more
+    // than what REQUIRED_FIELDS/MAX_LENGTHS already checked on `data`.
+    const sanitizedData: Record<string, unknown> = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (field in data) sanitizedData[field] = data[field];
     }
 
     const ipAddress =
@@ -149,26 +166,30 @@ export async function POST(req: NextRequest) {
       console.error("[notifyAdmin]", err);
     }
 
-    // Also send to Google Sheets
-    try {
-      const response = await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSfG9v4F_HcDG-ilpXhsjR3myFdBgpvNGfk45DFeB2tMVxZnIg/viewform",
-          "Origin": "https://docs.google.com",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-        body: JSON.stringify(data),
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000),
-      });
+    // Also send to Google Sheets — skipped entirely when unconfigured, and
+    // forwards only sanitizedData (never the raw request body) so an
+    // unvalidated/unbounded key can't reach the external sheet.
+    if (APPS_SCRIPT_URL) {
+      try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSfG9v4F_HcDG-ilpXhsjR3myFdBgpvNGfk45DFeB2tMVxZnIg/viewform",
+            "Origin": "https://docs.google.com",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+          body: JSON.stringify(sanitizedData),
+          redirect: "follow",
+          signal: AbortSignal.timeout(5000),
+        });
 
-      const responseText = await response.text();
-      console.log("Apps Script response status:", response.status);
-      console.log("Apps Script response body:", responseText);
-    } catch (err) {
-      console.error("[appsScriptForward]", err);
+        const responseText = await response.text();
+        console.log("Apps Script response status:", response.status);
+        console.log("Apps Script response body:", responseText);
+      } catch (err) {
+        console.error("[appsScriptForward]", err);
+      }
     }
 
     return NextResponse.json({
