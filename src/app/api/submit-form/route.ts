@@ -75,11 +75,15 @@ export async function POST(req: NextRequest) {
     const dobYear = Number(data.dobYear);
     const currentYear = new Date().getFullYear();
 
-    if (
-      !Number.isInteger(dobMonth) || dobMonth < 1 || dobMonth > 12 ||
-      !Number.isInteger(dobDay) || dobDay < 1 || dobDay > 31 ||
-      !Number.isInteger(dobYear) || dobYear < 1900 || dobYear > currentYear
-    ) {
+    // Day is checked against the real length of dobMonth/dobYear (e.g. 29 for
+    // Feb 2000), not a flat 1-31 bound — otherwise calendar-impossible dates
+    // like Feb 30 pass validation and get stored verbatim.
+    const isValidCalendarDob =
+      Number.isInteger(dobMonth) && dobMonth >= 1 && dobMonth <= 12 &&
+      Number.isInteger(dobYear) && dobYear >= 1900 && dobYear <= currentYear &&
+      Number.isInteger(dobDay) && dobDay >= 1 && dobDay <= new Date(dobYear, dobMonth, 0).getDate();
+
+    if (!isValidCalendarDob) {
       return NextResponse.json(
         { success: false, error: "Invalid date of birth" },
         { status: 400 }
