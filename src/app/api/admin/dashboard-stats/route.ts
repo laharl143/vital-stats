@@ -85,6 +85,9 @@ export async function GET(req: NextRequest) {
       inquiriesSince,
       consultsSince,
       ordersSince,
+      inquiriesThisWeek,
+      consultsThisWeek,
+      ordersThisWeek,
       recentInquiries,
       recentConsults,
       recentOrders,
@@ -97,6 +100,9 @@ export async function GET(req: NextRequest) {
       prisma.inquiry.findMany({ where: { createdAt: { gte: seriesStart } }, select: { createdAt: true } }),
       prisma.medicalHistory.findMany({ where: { createdAt: { gte: seriesStart } }, select: { createdAt: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: seriesStart } }, select: { createdAt: true } }),
+      prisma.inquiry.count({ where: { createdAt: { gte: oneWeekAgo } } }),
+      prisma.medicalHistory.count({ where: { createdAt: { gte: oneWeekAgo } } }),
+      prisma.order.count({ where: { createdAt: { gte: oneWeekAgo } } }),
       prisma.inquiry.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
       prisma.medicalHistory.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
       prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
@@ -116,11 +122,7 @@ export async function GET(req: NextRequest) {
       orders: buildSeries(days, ordersSince.map((r) => r.createdAt)),
     };
 
-    const deltas = {
-      inquiriesThisWeek: inquiriesSince.filter((r) => r.createdAt >= oneWeekAgo).length,
-      consultsThisWeek: consultsSince.filter((r) => r.createdAt >= oneWeekAgo).length,
-      ordersThisWeek: ordersSince.filter((r) => r.createdAt >= oneWeekAgo).length,
-    };
+    const deltas = { inquiriesThisWeek, consultsThisWeek, ordersThisWeek };
 
     const activity: ActivityItem[] = [
       ...recentInquiries.map((r) => ({
