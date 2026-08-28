@@ -24,6 +24,26 @@ const clampToRange = (value: string, min: number, max: number) => {
   return String(Math.min(Math.max(num, min), max));
 };
 
+// Same idea as clampToRange, but preserves decimals — unlike DOB's whole-
+// number fields, height (cm) and weight are commonly entered with one.
+const clampFloatToRange = (value: string, min: number, max: number) => {
+  if (value === "") return value;
+  const num = parseFloat(value);
+  if (Number.isNaN(num)) return value;
+  return String(Math.min(Math.max(num, min), max));
+};
+
+// Plausible human height/weight bounds — wide enough to never reject a real
+// patient, tight enough to block negative, zero, or wildly mistyped values.
+const HEIGHT_CM_MIN = 50;
+const HEIGHT_CM_MAX = 250;
+const HEIGHT_FT_MIN = 1;
+const HEIGHT_FT_MAX = 8;
+const WEIGHT_KG_MIN = 20;
+const WEIGHT_KG_MAX = 300;
+const WEIGHT_LBS_MIN = 44;
+const WEIGHT_LBS_MAX = 660;
+
 // Restores a PH mobile number's leading 0 if it's missing (e.g. "9171234567"
 // typed or pasted without it, the most common way people write/copy their
 // number). Runs on blur, not on every keystroke — prepending a character
@@ -1193,13 +1213,16 @@ export default function BookPage() {
                           </div>
                         ) : heightUnit === "cm" ? (
                           <div className="relative">
-                            <input type="number" required value={form.height}
+                            <input type="number" required min={HEIGHT_CM_MIN} max={HEIGHT_CM_MAX} value={form.height}
                               onChange={(e) => set("height", e.target.value)}
                               style={{ ...inputStyle, paddingRight: 48, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
                               onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                               onBlur={(e) => {
                                 e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid);
-                                if (form.height !== "") setIsEditingHeight(false);
+                                if (form.height !== "") {
+                                  set("height", clampFloatToRange(form.height, HEIGHT_CM_MIN, HEIGHT_CM_MAX));
+                                  setIsEditingHeight(false);
+                                }
                               }} />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
                               style={{ color: "var(--ink-faint)", pointerEvents: "none" }}>
@@ -1218,19 +1241,25 @@ export default function BookPage() {
                               if (heightFeet !== "" && heightInches !== "") setIsEditingHeight(false);
                             }}>
                             <div className="flex-1">
-                              <input type="number" required value={heightFeet}
+                              <input type="number" required min={HEIGHT_FT_MIN} max={HEIGHT_FT_MAX} value={heightFeet}
                                 onChange={(e) => setHeightFeet(e.target.value)}
                                 placeholder="ft" style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                                onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid))} />
+                                onBlur={(e) => {
+                                  e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid);
+                                  setHeightFeet((prev) => clampToRange(prev, HEIGHT_FT_MIN, HEIGHT_FT_MAX));
+                                }} />
                               <div className="text-[10px] mt-1 text-center" style={{ color: "var(--ink-faint)" }}>feet</div>
                             </div>
                             <div className="flex-1">
                               <input type="number" required value={heightInches}
                                 onChange={(e) => setHeightInches(e.target.value)}
-                                placeholder="in" min="0" max="11" style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
+                                placeholder="in" min={0} max={11} style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && heightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-                                onBlur={(e) => (e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid))} />
+                                onBlur={(e) => {
+                                  e.target.style.borderColor = restingBorderColor(submitAttempted && heightInvalid);
+                                  setHeightInches((prev) => clampToRange(prev, 0, 11));
+                                }} />
                               <div className="text-[10px] mt-1 text-center" style={{ color: "var(--ink-faint)" }}>inches</div>
                             </div>
                           </div>
@@ -1300,22 +1329,28 @@ export default function BookPage() {
                         ) : (
                           <div className="relative">
                             {weightUnit === "kg" ? (
-                              <input type="number" required value={form.weight}
+                              <input type="number" required min={WEIGHT_KG_MIN} max={WEIGHT_KG_MAX} value={form.weight}
                                 onChange={(e) => set("weight", e.target.value)}
                                 style={{ ...inputStyle, paddingRight: 48, borderColor: restingBorderColor(submitAttempted && weightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onBlur={(e) => {
                                   e.target.style.borderColor = restingBorderColor(submitAttempted && weightInvalid);
-                                  if (form.weight !== "") setIsEditingWeight(false);
+                                  if (form.weight !== "") {
+                                    set("weight", clampFloatToRange(form.weight, WEIGHT_KG_MIN, WEIGHT_KG_MAX));
+                                    setIsEditingWeight(false);
+                                  }
                                 }} />
                             ) : (
-                              <input type="number" required value={weightLbs}
+                              <input type="number" required min={WEIGHT_LBS_MIN} max={WEIGHT_LBS_MAX} value={weightLbs}
                                 onChange={(e) => setWeightLbs(e.target.value)}
                                 style={{ ...inputStyle, paddingRight: 48, borderColor: restingBorderColor(submitAttempted && weightInvalid) }}
                                 onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
                                 onBlur={(e) => {
                                   e.target.style.borderColor = restingBorderColor(submitAttempted && weightInvalid);
-                                  if (weightLbs !== "") setIsEditingWeight(false);
+                                  if (weightLbs !== "") {
+                                    setWeightLbs(clampFloatToRange(weightLbs, WEIGHT_LBS_MIN, WEIGHT_LBS_MAX));
+                                    setIsEditingWeight(false);
+                                  }
                                 }} />
                             )}
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px]"
