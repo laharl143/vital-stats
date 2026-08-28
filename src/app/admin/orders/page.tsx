@@ -77,11 +77,16 @@ function AdminOrdersPageContent() {
     setUpdating(true);
     setActionError(null);
     try {
-      await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setActionError(json?.error ?? "Couldn't update the status. Please try again.");
+        return;
+      }
       if (selected?.id === id) setSelected((prev) => prev ? { ...prev, status } : null);
       fetchOrders();
     } catch {

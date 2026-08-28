@@ -284,7 +284,12 @@ function AdminMedicalHistoryPageContent() {
     setDeletingNoteId(noteId);
     setActionError(null);
     try {
-      await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, { method: "DELETE" });
+      const res = await fetch(`/api/medical-history/${selected.id}/notes/${noteId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setActionError(json?.error ?? "Couldn't delete the note. Please try again.");
+        return;
+      }
       setSelected((prev) => (prev ? { ...prev, doctorNotes: prev.doctorNotes.filter((n) => n.id !== noteId) } : null));
     } catch {
       setActionError("Couldn't delete the note. Please try again.");
@@ -332,11 +337,16 @@ function AdminMedicalHistoryPageContent() {
     setUpdating(true);
     setActionError(null);
     try {
-      await fetch("/api/medical-history", {
+      const res = await fetch("/api/medical-history", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id], status }),
       });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setActionError(json?.error ?? "Couldn't update the status. Please try again.");
+        return;
+      }
       if (selected?.id === id) setSelected((prev) => (prev ? { ...prev, status } : null));
       fetchRecords();
     } catch {
@@ -350,7 +360,12 @@ function AdminMedicalHistoryPageContent() {
     setDeleting(true);
     setActionError(null);
     try {
-      await fetch(`/api/medical-history?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/medical-history?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setActionError(json?.error ?? "Couldn't delete the request. Please try again.");
+        return;
+      }
       setConfirmingDelete(false);
       if (selected?.id === id) setSelected(null);
       fetchRecords();
