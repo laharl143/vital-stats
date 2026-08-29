@@ -4,6 +4,7 @@ import { InquiryType, InquiryStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { paginate } from "@/lib/paginate";
+import { attachProductNames } from "@/lib/inquiries";
 
 // GET /api/inquiries  (admin only)
 export async function GET(req: NextRequest) {
@@ -29,7 +30,12 @@ export async function GET(req: NextRequest) {
       count: prisma.inquiry.count({ where }),
     }));
 
-    return NextResponse.json({ data: inquiries, meta });
+    const productIds = [...new Set(inquiries.map((i) => i.productId).filter((id): id is string => !!id))];
+    const products = productIds.length
+      ? await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } })
+      : [];
+
+    return NextResponse.json({ data: attachProductNames(inquiries, products), meta });
   } catch (error) {
     console.error("[GET /api/inquiries]", error);
     return NextResponse.json({ error: "Failed to fetch inquiries" }, { status: 500 });

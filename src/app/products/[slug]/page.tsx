@@ -584,7 +584,7 @@ export default function ProductDetailPage() {
               )}
 
               <Link
-                href="/contact"
+                href={`/contact?productId=${encodeURIComponent(product.id)}&productName=${encodeURIComponent(product.name)}`}
                 className="block text-center text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] text-white"
                 style={{ background: "var(--teal)" }}
               >

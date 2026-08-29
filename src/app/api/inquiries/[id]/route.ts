@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
+import { attachProductNames } from "@/lib/inquiries";
 
 // GET /api/inquiries/[id]  (admin only)
 export async function GET(
@@ -19,7 +20,11 @@ export async function GET(
       return NextResponse.json({ error: "Inquiry not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ data: inquiry });
+    const product = inquiry.productId
+      ? await prisma.product.findUnique({ where: { id: inquiry.productId }, select: { id: true, name: true } })
+      : null;
+
+    return NextResponse.json({ data: attachProductNames([inquiry], product ? [product] : [])[0] });
   } catch (error) {
     console.error("[GET /api/inquiries/[id]]", error);
     return NextResponse.json({ error: "Failed to fetch inquiry" }, { status: 500 });
