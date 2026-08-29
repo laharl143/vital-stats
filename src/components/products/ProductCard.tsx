@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Syringe, Sparkles, Leaf, Stethoscope, CircleCheck, type LucideIcon } from "lucide-react";
+import { CATEGORY_LABELS, formatPrice } from "@/lib/product-labels";
 
 interface Product {
   id: string;
@@ -18,13 +19,6 @@ interface Product {
   images: { url: string; alt: string | null }[];
   benefits: { benefit: string }[];
 }
-
-const categoryLabel: Record<string, string> = {
-  WEIGHT_MANAGEMENT: "Weight Management",
-  RECOVERY_ANTI_AGING: "Recovery & Anti-Aging",
-  SKIN_CARE: "Skin Care",
-  MEDICAL_CONSULTATION: "Medical Consultation",
-};
 
 const gradients: Record<string, string> = {
   WEIGHT_MANAGEMENT: "linear-gradient(135deg, #EAF5F2, #9FE1CB)",
@@ -108,7 +102,7 @@ export default function ProductCard({ product }: { product: Product }) {
           className="text-[10px] tracking-[0.12em] uppercase mb-2"
           style={{ color: "var(--teal)" }}
         >
-          {categoryLabel[product.category]}
+          {CATEGORY_LABELS[product.category as keyof typeof CATEGORY_LABELS]}
         </div>
 
         {/* Name */}
@@ -150,7 +144,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {/* Price */}
           <div className="font-display text-[20px]" style={{ color: "var(--ink)" }}>
             {product.price ? (
-              <>₱{parseFloat(product.price).toLocaleString()}</>
+              <>{formatPrice(product.price)}</>
             ) : (
               <>
                 <span className="text-[11px] font-sans" style={{ color: "var(--ink-faint)" }}>

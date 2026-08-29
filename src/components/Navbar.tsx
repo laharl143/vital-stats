@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Construction } from "lucide-react";
 import SearchBackdrop from "@/components/SearchBackdrop";
 import { useProductSearch } from "@/lib/useProductSearch";
+import { CATEGORY_LABELS } from "@/lib/product-labels";
 
 const navLinks: { label: string; href: string; matchPrefix?: boolean; comingSoon?: boolean }[] = [
   { label: "Home", href: "/" },
@@ -22,13 +23,6 @@ const tickerItems = [
   "Licensed Professionals",
   "Verified Suppliers",
 ];
-
-const searchCategoryLabel: Record<string, string> = {
-  WEIGHT_MANAGEMENT: "Weight Management",
-  RECOVERY_ANTI_AGING: "Recovery & Anti-Aging",
-  SKIN_CARE: "Skin Care",
-  MEDICAL_CONSULTATION: "Medical Consultation",
-};
 
 const searchCategoryEmoji: Record<string, string> = {
   WEIGHT_MANAGEMENT: "💉",
@@ -521,7 +515,7 @@ export default function Navbar() {
                       {p.name}
                     </span>
                     <span className="block truncate" style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
-                      {searchCategoryLabel[p.category] ?? p.category}
+                      {CATEGORY_LABELS[p.category as keyof typeof CATEGORY_LABELS] ?? p.category}
                     </span>
                   </span>
                   <span className="flex-shrink-0" style={{ fontSize: 13, color: "var(--ink-muted)" }}>

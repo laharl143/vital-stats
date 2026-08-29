@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { CATEGORY_LABELS, formatPrice } from "@/lib/product-labels";
 
 interface Product {
   id: string;
@@ -16,22 +17,11 @@ interface Product {
   benefits: { benefit: string }[];
 }
 
-const categoryLabel: Record<string, string> = {
-  WEIGHT_MANAGEMENT: "Weight Management",
-  RECOVERY_ANTI_AGING: "Recovery & Anti-Aging",
-  SKIN_CARE: "Skin Care",
-  MEDICAL_CONSULTATION: "Medical Consultation",
-};
-
 const gradients = [
   "linear-gradient(150deg, var(--mint), var(--teal))",
   "var(--teal-deep)",
   "linear-gradient(150deg, #e8c9a0, #c9986b)",
 ];
-
-function formatPrice(price: string | null) {
-  return price ? `₱${parseFloat(price).toLocaleString()}` : null;
-}
 
 // Fades + slides each card in as it scrolls into view the first time,
 // staggered by index. Each card is unobserved right after it reveals, so it
@@ -275,7 +265,7 @@ export default function FeaturedProducts() {
                           marginBottom: 6,
                         }}
                       >
-                        {categoryLabel[p.category]}
+                        {CATEGORY_LABELS[p.category as keyof typeof CATEGORY_LABELS]}
                       </div>
                       <div
                         className="font-display"
@@ -363,7 +353,7 @@ export default function FeaturedProducts() {
                               marginBottom: 4,
                             }}
                           >
-                            {categoryLabel[p.category]}
+                            {CATEGORY_LABELS[p.category as keyof typeof CATEGORY_LABELS]}
                           </div>
                           <div
                             className="font-display"

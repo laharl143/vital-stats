@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CATEGORY_LABELS, formatPrice } from "@/lib/product-labels";
 
 interface Product {
   id: string;
@@ -13,13 +14,6 @@ interface Product {
   isBestSeller: boolean;
   sortOrder: number;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  WEIGHT_MANAGEMENT: "Weight Management",
-  RECOVERY_ANTI_AGING: "Recovery & Anti-Aging",
-  SKIN_CARE: "Skin Care",
-  MEDICAL_CONSULTATION: "Consultation",
-};
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -122,12 +116,12 @@ export default function AdminProductsPage() {
 
                 {/* Category */}
                 <div className="text-[12px]" style={{ color: "var(--ink-muted)" }}>
-                  {CATEGORY_LABELS[product.category]}
+                  {CATEGORY_LABELS[product.category as keyof typeof CATEGORY_LABELS]}
                 </div>
 
                 {/* Price */}
                 <div className="text-[13px]" style={{ color: "var(--ink)" }}>
-                  {product.price ? `₱${parseFloat(product.price).toLocaleString()}` : "On inquiry"}
+                  {formatPrice(product.price) ?? "On inquiry"}
                 </div>
 
                 {/* Best seller toggle */}
