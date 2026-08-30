@@ -156,6 +156,7 @@ model Inquiry {
 
   @@index([status])
   @@index([createdAt])
+  @@index([ipAddress, createdAt])
 }
 
 // ─────────────────────────────────────────
@@ -311,6 +312,7 @@ model MedicalHistory {
 
   @@index([status])
   @@index([createdAt])
+  @@index([ipAddress, createdAt])
 }
 
 enum MedicalHistoryStatus {
