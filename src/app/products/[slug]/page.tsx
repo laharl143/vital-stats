@@ -7,6 +7,7 @@ import { CldVideoPlayer } from "next-cloudinary";
 import "next-cloudinary/dist/cld-video-player.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { CATEGORY_LABELS } from "@/lib/product-labels";
 
 interface ProductImage {
   url: string;
@@ -54,13 +55,6 @@ interface Product {
   ingredients: ProductIngredient[];
   benefits: ProductBenefit[];
 }
-
-const categoryLabel: Record<string, string> = {
-  WEIGHT_MANAGEMENT: "Weight Management",
-  RECOVERY_ANTI_AGING: "Recovery & Anti-Aging",
-  SKIN_CARE: "Skin Care",
-  MEDICAL_CONSULTATION: "Medical Consultation",
-};
 
 const deliveryMethodLabel: Record<string, string> = {
   INJECTION: "Injection",
@@ -234,7 +228,7 @@ export default function ProductDetailPage() {
               className="text-[11px] font-medium tracking-[0.2em] uppercase mb-3"
               style={{ color: "rgba(255,255,255,0.6)" }}
             >
-              {categoryLabel[product.category] ?? product.category}
+              {CATEGORY_LABELS[product.category as keyof typeof CATEGORY_LABELS] ?? product.category}
             </div>
             <h1
               className="font-display font-light text-white leading-[1.1] mb-4"
