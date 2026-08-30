@@ -151,6 +151,7 @@ function AdminOrdersPageContent() {
                     </span>
                   </div>
                   <div className="text-[11px] mb-1" style={{ color: "var(--teal)" }}>{order.customerContact}</div>
+                  <div className="text-[10px] font-mono mb-1" style={{ color: "var(--ink-faint)" }}>{order.orderNumber}</div>
                   <div className="flex items-center justify-between">
                     <div className="text-[12px]" style={{ color: "var(--ink-faint)" }}>
                       {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}
@@ -171,6 +172,7 @@ function AdminOrdersPageContent() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.customerName}</h2>
+                <div className="text-[11px] font-mono mb-1" style={{ color: "var(--ink-faint)" }}>{selected.orderNumber}</div>
                 <div className="text-[13px]" style={{ color: "var(--teal)" }}>{selected.customerContact}</div>
               </div>
               <span
