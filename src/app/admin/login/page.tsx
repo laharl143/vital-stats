@@ -4,11 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 const CODE_LENGTH = 6;
 const SYMBOL_KEYS = "!@#$%";
 const ALLOWED_CHARS = "0123456789" + SYMBOL_KEYS;
 const KEYS = ["1", "2", "3", "!", "4", "5", "6", "@", "7", "8", "9", "#", "$", "0", "%", "⌫"];
+// Midpoint of the "10 to 20 seconds" window before we tell the user to reload.
+const STUCK_LOGIN_MS = 15000;
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,10 +19,18 @@ export default function AdminLoginPage() {
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [shake, setShake] = useState(false);
+  const [stuck, setStuck] = useState(false);
+
+  useEffect(() => {
+    if (status !== "submitting") return;
+    const timer = setTimeout(() => setStuck(true), STUCK_LOGIN_MS);
+    return () => clearTimeout(timer);
+  }, [status]);
 
   const submit = useCallback(
     async (fullCode: string) => {
       setStatus("submitting");
+      setStuck(false);
       const result = await signIn("credentials", { code: fullCode, redirect: false });
 
       if (result?.error) {
@@ -249,6 +260,44 @@ export default function AdminLoginPage() {
         </p>
         </div>
       </div>
+
+      {status === "submitting" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 flex items-center justify-center px-4"
+          style={{ background: "rgba(0,0,0,0.55)", zIndex: 50 }}
+        >
+          <div
+            className="flex flex-col items-center text-center rounded-[16px] font-secure"
+            style={{
+              background: "var(--teal-deep)",
+              padding: "clamp(28px, 4vw, 40px)",
+              maxWidth: "clamp(260px, 26vw, 340px)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+            }}
+          >
+            <Loader2
+              className="animate-spin"
+              style={{ width: "clamp(28px, 3vw, 36px)", height: "clamp(28px, 3vw, 36px)", color: "var(--teal-light)" }}
+            />
+            <p
+              className="text-white font-bold mt-4"
+              style={{ fontSize: "clamp(13px, 1.4vw, 15px)" }}
+            >
+              Signing in&hellip;
+            </p>
+            {stuck && (
+              <p
+                className="mt-3"
+                style={{ fontSize: "clamp(11px, 1.1vw, 13px)", color: "#FF8A80" }}
+              >
+                This is taking longer than usual. Please reload the screen and log in again.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
