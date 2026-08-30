@@ -7,7 +7,6 @@ import TrustBar from "@/components/home/TrustBar";
 import Categories from "@/components/home/Categories";
 import HowItWorks from "@/components/home/HowItWorks";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
-import BeforeAfter from "@/components/home/BeforeAfter";
 import Testimonials from "@/components/home/Testimonials";
 import Team from "@/components/home/Team";
 import FAQ from "@/components/home/FAQ";
@@ -28,7 +27,6 @@ export default function HomePage() {
           <Categories />
           <HowItWorks />
           <FeaturedProducts />
-          {/* <BeforeAfter /> */}
           <Testimonials />
           <Team />
           <FAQ />
