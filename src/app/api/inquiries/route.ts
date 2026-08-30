@@ -5,6 +5,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { paginate } from "@/lib/paginate";
 import { attachProductNames } from "@/lib/inquiries";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 
 // GET /api/inquiries  (admin only)
 export async function GET(req: NextRequest) {
@@ -62,17 +63,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0] ??
-      req.headers.get("x-real-ip") ??
-      "unknown";
+    const ipAddress = getClientIp(req);
 
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await prisma.inquiry.count({
-      where: { ipAddress, createdAt: { gte: oneHourAgo } },
-    });
-
-    if (recentCount >= 3) {
+    if (await isRateLimited((args) => prisma.inquiry.count(args), ipAddress)) {
       return NextResponse.json(
         { error: "Too many submissions. Please try again later." },
         { status: 429 }
