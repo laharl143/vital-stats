@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { formatReferenceNumber } from "@/lib/reference-number";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_FORM_URL;
 
@@ -107,17 +108,9 @@ export async function POST(req: NextRequest) {
       if (field in data) sanitizedData[field] = data[field];
     }
 
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0] ??
-      req.headers.get("x-real-ip") ??
-      "unknown";
+    const ipAddress = getClientIp(req);
 
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await prisma.medicalHistory.count({
-      where: { ipAddress, createdAt: { gte: oneHourAgo } },
-    });
-
-    if (recentCount >= 3) {
+    if (await isRateLimited((args) => prisma.medicalHistory.count(args), ipAddress)) {
       return NextResponse.json(
         { success: false, error: "Too many submissions. Please try again later." },
         { status: 429 }
