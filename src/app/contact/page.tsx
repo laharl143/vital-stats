@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -55,7 +56,17 @@ const labelStyle = {
 };
 
 function InquiryForm() {
-  const [form, setForm] = useState({ name: "", contactInfo: "", message: "", type: "GENERAL" as InquiryType });
+  const searchParams = useSearchParams();
+  const productId = searchParams.get("productId");
+  const productName = searchParams.get("productName");
+
+  const [form, setForm] = useState({
+    name: "",
+    contactInfo: "",
+    message: "",
+    type: (productId ? "PRODUCT_AVAILABILITY" : "GENERAL") as InquiryType,
+    productId,
+  });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -75,7 +86,7 @@ function InquiryForm() {
       const json = await res.json();
       if (!res.ok) { setErrorMsg(json.error ?? "Something went wrong."); setStatus("error"); return; }
       setStatus("success");
-      setForm({ name: "", contactInfo: "", message: "", type: "GENERAL" });
+      setForm({ name: "", contactInfo: "", message: "", type: "GENERAL", productId: null });
     } catch {
       setErrorMsg("Network error. Please check your connection.");
       setStatus("error");
@@ -107,6 +118,11 @@ function InquiryForm() {
         <div className="text-[11px] font-medium tracking-[0.18em] uppercase mb-1" style={{ color: "var(--teal)" }}>Contact form</div>
         <h2 className="font-display font-light text-[28px]" style={{ color: "var(--ink)" }}>Send us a message</h2>
       </div>
+      {productName && (
+        <div className="text-[12px] px-4 py-3 rounded-[4px]" style={{ background: "var(--teal-pale)", color: "var(--teal-deep)" }}>
+          Inquiring about: <strong>{productName}</strong>
+        </div>
+      )}
       <div>
         <label style={labelStyle}>Your name *</label>
         <input type="text" name="name" value={form.name} onChange={handleChange} required
@@ -189,7 +205,9 @@ export default function ContactPage() {
 
           {/* Form — spans 2 cols */}
           <div className="md:col-span-2 flex flex-col gap-6">
-            <InquiryForm />
+            <Suspense fallback={null}>
+              <InquiryForm />
+            </Suspense>
 
             {/* Book a Consult CTA */}
             <div className="p-6 rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"

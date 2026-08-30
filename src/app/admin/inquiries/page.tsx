@@ -11,6 +11,8 @@ interface Inquiry {
   type: string;
   status: string;
   adminNotes: string | null;
+  productId: string | null;
+  productName: string | null;
   createdAt: string;
 }
 
@@ -147,6 +149,11 @@ function AdminInquiriesPageContent() {
                     </span>
                   </div>
                   <div className="text-[11px] mb-1" style={{ color: "var(--teal)" }}>{inq.contactInfo}</div>
+                  {inq.productName && (
+                    <div className="text-[10px] mb-1" style={{ color: "var(--ink-muted)" }}>
+                      Re: {inq.productName}
+                    </div>
+                  )}
                   <div className="text-[12px] truncate" style={{ color: "var(--ink-faint)" }}>{inq.message}</div>
                   <div className="text-[10px] mt-1" style={{ color: "var(--ink-faint)" }}>
                     {new Date(inq.createdAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
@@ -179,6 +186,13 @@ function AdminInquiriesPageContent() {
               <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Type</div>
               <div className="text-[13px]" style={{ color: "var(--ink)" }}>{TYPE_LABELS[selected.type] ?? selected.type}</div>
             </div>
+
+            {selected.productName && (
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Product</div>
+                <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.productName}</div>
+              </div>
+            )}
 
             <div>
               <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Message</div>
