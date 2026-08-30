@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { formatReferenceNumber } from "@/lib/reference-number";
+import { computeBmi } from "@/lib/bmi";
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_FORM_URL;
 
@@ -19,6 +20,8 @@ const REQUIRED_FIELDS = [
   "gi",
   "diabetes",
   "pregnant",
+  "height",
+  "weight",
   "consent1",
   "consent2",
   "consent3",
@@ -99,6 +102,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Recomputed server-side from validated height/weight rather than
+    // trusting data.bmi/data.bmiCategory — a direct POST could otherwise
+    // carry a bmi/bmiCategory that's inconsistent with its own height/weight.
+    const bmiResult = computeBmi(data.height, data.weight);
+    if (!bmiResult) {
+      return NextResponse.json(
+        { success: false, error: "Invalid height or weight" },
+        { status: 400 }
+      );
+    }
+
     // Only whitelisted, already-validated fields make it into this object —
     // used for the external forward below so that copy can never carry more
     // than what REQUIRED_FIELDS/MAX_LENGTHS already checked on `data`.
@@ -134,8 +148,8 @@ export async function POST(req: NextRequest) {
         email: data.email ?? "",
         height: data.height ?? "",
         weight: data.weight ?? "",
-        bmi: data.bmi || null,
-        bmiCategory: data.bmiCategory || null,
+        bmi: bmiResult.bmi,
+        bmiCategory: bmiResult.bmiCategory,
         waistCircumference: data.waistCircumference ?? "",
         smokingStatus: data.smokingStatus ?? "",
         drinkingFrequency: data.drinkingFrequency ?? "",
