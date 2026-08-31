@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
+import { destroyCloudinaryAsset } from "@/lib/cloudinary";
 
 // PATCH /api/medical-history/[id]/notes/[noteId]  (admin — edit a text Doctor's Note)
 export async function PATCH(
@@ -55,6 +56,10 @@ export async function DELETE(
     }
 
     await prisma.doctorNote.delete({ where: { id: noteId } });
+
+    if (note.type === "PHOTO" && note.publicId) {
+      await destroyCloudinaryAsset(note.publicId);
+    }
 
     return NextResponse.json({ message: "Note deleted" });
   } catch (error) {
