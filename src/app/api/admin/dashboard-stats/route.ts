@@ -71,8 +71,8 @@ export async function GET(req: NextRequest) {
     }
 
     const seriesStart = new Date(now);
-    seriesStart.setDate(seriesStart.getDate() - (seriesDays - 1));
-    seriesStart.setHours(0, 0, 0, 0);
+    seriesStart.setUTCDate(seriesStart.getUTCDate() - (seriesDays - 1));
+    seriesStart.setUTCHours(0, 0, 0, 0);
 
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
     const days: string[] = [];
     for (let i = 0; i < seriesDays; i++) {
       const d = new Date(seriesStart);
-      d.setDate(d.getDate() + i);
+      d.setUTCDate(d.getUTCDate() + i);
       days.push(dayKey(d));
     }
 
