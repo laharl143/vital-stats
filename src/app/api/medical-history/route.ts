@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { MedicalHistoryStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 import { paginate } from "@/lib/paginate";
+import { destroyCloudinaryAsset } from "@/lib/cloudinary";
 
 // GET /api/medical-history  (admin only)
 export async function GET(req: NextRequest) {
@@ -45,7 +46,22 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
+    const record = await prisma.medicalHistory.findUnique({
+      where: { id },
+      include: { doctorNotes: { where: { type: "PHOTO" } } },
+    });
+
+    if (!record) {
+      return NextResponse.json({ error: "Record not found" }, { status: 404 });
+    }
+
     await prisma.medicalHistory.delete({ where: { id } });
+
+    await Promise.all(
+      record.doctorNotes
+        .filter((note) => note.publicId)
+        .map((note) => destroyCloudinaryAsset(note.publicId as string))
+    );
 
     return NextResponse.json({ message: "Record deleted" });
   } catch (error) {
