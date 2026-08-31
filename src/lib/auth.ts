@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import { clearLoginAttempts, isLoginRateLimited, recordFailedLogin } from "@/lib/login-rate-limit";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as never,
@@ -23,9 +24,20 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         code: { label: "Passcode", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.code) {
           throw new Error("Passcode is required");
+        }
+
+        // Same x-forwarded-for/x-real-ip fallback chain as the submit-form
+        // and inquiries endpoints' IP-based throttling.
+        const ipAddress =
+          (req.headers?.["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
+          (req.headers?.["x-real-ip"] as string | undefined) ||
+          "unknown";
+
+        if (isLoginRateLimited(ipAddress)) {
+          throw new Error("Too many attempts. Please try again later.");
         }
 
         // No email is collected — match the passcode against each admin's
@@ -39,6 +51,7 @@ export const authOptions: NextAuthOptions = {
         for (const user of users) {
           const isValid = await bcrypt.compare(credentials.code, user.hashedPassword ?? "");
           if (isValid) {
+            clearLoginAttempts(ipAddress);
             return {
               id: user.id,
               email: user.email,
@@ -48,6 +61,7 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
+        recordFailedLogin(ipAddress);
         throw new Error("Invalid passcode");
       },
     }),
