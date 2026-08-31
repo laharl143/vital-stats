@@ -31,11 +31,22 @@ export function useLiquidWaveBackground(
       canvas!.style.height = `${height}px`;
     }
 
+    // The frequencies below (0.006/0.008/0.01) were tuned by eye against a
+    // ~1440px-wide desktop canvas, where they complete 1.4–2.3 full cycles —
+    // enough to read as a proper multi-crest wave. On a ~390px mobile canvas
+    // the same frequencies complete under one cycle each, so the "wave"
+    // degenerates into a single flat-looking curve instead of a shoreline.
+    // Scaling frequency up for canvases narrower than the reference width
+    // keeps the same visual cycle count at any width; wider-than-reference
+    // canvases (desktop) are unaffected (scale floors at 1).
+    const REFERENCE_WIDTH = 1440;
+
     function wave(yBase: number, amp: number, freq: number, phase: number, color: string) {
+      const freqScale = Math.max(1, REFERENCE_WIDTH / canvas!.width);
       ctx!.beginPath();
       ctx!.moveTo(0, flip ? 0 : canvas!.height);
       for (let x = 0; x <= canvas!.width; x += 8) {
-        const y = yBase + Math.sin(x * freq + phase) * amp;
+        const y = yBase + Math.sin(x * freq * freqScale + phase) * amp;
         ctx!.lineTo(x, y);
       }
       ctx!.lineTo(canvas!.width, flip ? 0 : canvas!.height);
