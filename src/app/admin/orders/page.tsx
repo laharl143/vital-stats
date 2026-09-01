@@ -50,6 +50,20 @@ function AdminOrdersPageContent() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+  const [notesSaved, setNotesSaved] = useState(false);
+  // Tracks which order the notes draft was last synced from, so switching
+  // the selected order resets the draft during render rather than via a
+  // setState-in-effect cascade (see https://react.dev/learn/you-might-not-need-an-effect).
+  const [notesSyncedId, setNotesSyncedId] = useState<string | null>(null);
+  if (selected?.id !== notesSyncedId) {
+    setNotesSyncedId(selected?.id ?? null);
+    setNotesDraft(selected?.adminNotes ?? "");
+    setNotesError(null);
+    setNotesSaved(false);
+  }
 
   const fetchOrders = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
@@ -93,6 +107,30 @@ function AdminOrdersPageContent() {
       setActionError("Couldn't update the status. Please try again.");
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const saveNotes = async (id: string) => {
+    setSavingNotes(true);
+    setNotesError(null);
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminNotes: notesDraft }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        setNotesError(json?.error ?? "Couldn't save the note. Please try again.");
+        return;
+      }
+      if (selected?.id === id) setSelected((prev) => prev ? { ...prev, adminNotes: notesDraft } : null);
+      setNotesSaved(true);
+      fetchOrders();
+    } catch {
+      setNotesError("Couldn't save the note. Please try again.");
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -225,6 +263,42 @@ function AdminOrdersPageContent() {
                 <p className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{selected.notes}</p>
               </div>
             )}
+
+            {/* Internal notes */}
+            <div>
+              <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>Internal Notes</div>
+              {notesError && (
+                <p className="text-[12px] mb-2" style={{ color: "#C62828" }}>{notesError}</p>
+              )}
+              <textarea
+                value={notesDraft}
+                onChange={(e) => { setNotesDraft(e.target.value); setNotesSaved(false); }}
+                placeholder="Staff-only notes, not visible to the customer…"
+                rows={3}
+                className="w-full text-[13px] rounded-[3px] px-3 py-2"
+                style={{ border: "1px solid rgba(0,0,0,0.15)", color: "var(--ink)", resize: "vertical" }}
+              />
+              <div className="flex items-center gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => saveNotes(selected.id)}
+                  disabled={savingNotes || notesDraft === (selected.adminNotes ?? "")}
+                  className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border transition-all duration-200"
+                  style={{
+                    background: "var(--teal)",
+                    color: "white",
+                    borderColor: "var(--teal)",
+                    opacity: savingNotes || notesDraft === (selected.adminNotes ?? "") ? 0.6 : 1,
+                    cursor: savingNotes || notesDraft === (selected.adminNotes ?? "") ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {savingNotes ? "Saving…" : "Save Note"}
+                </button>
+                {notesSaved && !savingNotes && (
+                  <span className="text-[11px]" style={{ color: "var(--teal)" }}>Saved</span>
+                )}
+              </div>
+            </div>
 
             {/* Update status */}
             <div>
