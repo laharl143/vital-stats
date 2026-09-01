@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Gift, Mail, PhoneCall } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 import { formatReferenceNumber } from "@/lib/reference-number";
+import { formatPatientName } from "@/lib/format-name";
 import { useAdminTheme, type AdminTheme } from "@/contexts/AdminThemeContext";
 
 interface DoctorNote {
@@ -457,7 +458,7 @@ function AdminMedicalHistoryPageContent() {
                   style={{ background: selected?.id === rec.id ? "var(--mh-teal-pale)" : "transparent" }}
                 >
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <div className="font-display text-[15px]" style={{ color: "var(--mh-ink)" }}>{rec.fullName}</div>
+                    <div className="font-display text-[15px]" style={{ color: "var(--mh-ink)" }}>{formatPatientName(rec.fullName)}</div>
                     <span
                       className="text-[9px] tracking-[0.08em] uppercase px-2.5 py-1 rounded-full flex-shrink-0"
                       style={STATUS_COLORS[rec.status] ?? STATUS_COLORS.CLOSED}
@@ -528,7 +529,7 @@ function AdminMedicalHistoryPageContent() {
               )}
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="font-display font-light text-[24px]" style={{ color: "var(--mh-ink)" }}>{selected.fullName}</h2>
+                  <h2 className="font-display font-light text-[24px]" style={{ color: "var(--mh-ink)" }}>{formatPatientName(selected.fullName)}</h2>
                   <div className="text-[11px] mb-3" style={{ color: "var(--mh-ink-faint)" }}>
                     {formatReferenceNumber(selected.sequence, new Date(selected.createdAt))}
                   </div>
