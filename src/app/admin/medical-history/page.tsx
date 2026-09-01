@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
-import { Gift, Mail, PhoneCall } from "lucide-react";
+import { Check, Gift, Mail, PhoneCall } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 import { formatReferenceNumber } from "@/lib/reference-number";
 import { useAdminTheme, type AdminTheme } from "@/contexts/AdminThemeContext";
@@ -185,7 +185,15 @@ function AdminMedicalHistoryPageContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const PAGE_SIZE = 10;
+
+  const copyToClipboard = useCallback((text: string, field: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField((current) => (current === field ? null : current)), 1500);
+    });
+  }, []);
 
   const fetchRecords = useCallback(() => {
     const url =
@@ -534,20 +542,26 @@ function AdminMedicalHistoryPageContent() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {selected.email && (
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(selected.email!, "email")}
+                        title="Click to copy"
                         className="text-[11.5px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
-                        style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)" }}
+                        style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)", border: "none", cursor: "pointer" }}
                       >
-                        <Mail size={13} /> {selected.email}
-                      </span>
+                        {copiedField === "email" ? (<><Check size={13} /> Copied!</>) : (<><Mail size={13} /> {selected.email}</>)}
+                      </button>
                     )}
                     {selected.phone && (
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(formatPhone(selected.phone)!, "phone")}
+                        title="Click to copy"
                         className="text-[11.5px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
-                        style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)" }}
+                        style={{ background: "var(--mh-teal-pale)", color: "var(--mh-teal-dark)", border: "none", cursor: "pointer" }}
                       >
-                        <PhoneCall size={13} /> {formatPhone(selected.phone)}
-                      </span>
+                        {copiedField === "phone" ? (<><Check size={13} /> Copied!</>) : (<><PhoneCall size={13} /> {formatPhone(selected.phone)}</>)}
+                      </button>
                     )}
                     <span
                       className="text-[11.5px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
