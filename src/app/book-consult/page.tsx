@@ -87,9 +87,9 @@ const daysInMonth = (monthStr: string, yearStr: string) => {
 // accept; full deliverability isn't checkable client-side anyway.
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-// Unqualified — the .com suffix is fixed in the UI, so only the domain
-// word itself needs suggesting.
-const EMAIL_DOMAIN_SUGGESTIONS = ["gmail", "yahoo", "outlook", "icloud"];
+// Full domains, including TLD — there's no fixed ".com" suffix in the UI,
+// so a suggestion has to supply the whole thing.
+const EMAIL_DOMAIN_SUGGESTIONS = ["gmail.com", "yahoo.com", "outlook.com", "icloud.com"];
 
 // "a", "a and b", "a, b, and c" — used to name the blank fields in the
 // confirm-none modal, since all three being blank at once is common enough
@@ -457,7 +457,7 @@ export default function BookPage() {
 
   const dobMerged = form.dobMonth !== "" && form.dobDay !== "" && form.dobYear !== "" && !isEditingDob;
 
-  const emailValue = emailLocal !== "" && emailDomain !== "" ? `${emailLocal}@${emailDomain}.com` : "";
+  const emailValue = emailLocal !== "" && emailDomain !== "" ? `${emailLocal}@${emailDomain}` : "";
   const emailMerged = isValidEmail(emailValue) && !isEditingEmail;
 
   const heightInCm = heightUnit === "ftIn"
@@ -1118,7 +1118,7 @@ export default function BookPage() {
                                   if (raw.includes("@")) {
                                     const [local, domainPart] = raw.split("@");
                                     setEmailLocal(local);
-                                    if (domainPart) setEmailDomain(domainPart.replace(/\.com$/i, "").replace(/\.+$/, ""));
+                                    if (domainPart) setEmailDomain(domainPart.replace(/\.+$/, ""));
                                     emailDomainRef.current?.focus();
                                   } else {
                                     setEmailLocal(raw);
@@ -1134,14 +1134,8 @@ export default function BookPage() {
                             <div style={{ padding: "0 2px", fontWeight: 700, color: "var(--ink-faint)", fontSize: 14 }}>@</div>
                             <div className="flex-1 min-w-0 relative">
                               <input type="text" required ref={emailDomainRef} value={emailDomain}
-                                // Only strips a fully-typed, redundant ".com"
-                                // (the fixed suffix already shown after this
-                                // box) — an internal or momentarily-trailing
-                                // dot is otherwise left alone, so domains
-                                // like "gmail.ph" (-> gmail.ph.com) can still
-                                // be typed one character at a time.
-                                onChange={(e) => setEmailDomain(e.target.value.replace(/\.com$/i, ""))}
-                                placeholder="gmail"
+                                onChange={(e) => setEmailDomain(e.target.value)}
+                                placeholder="gmail.com"
                                 style={{ ...inputStyle, borderColor: restingBorderColor(submitAttempted && emailInvalid) }}
                                 onFocus={(e) => { e.target.style.borderColor = "var(--teal)"; setDomainFocused(true); }}
                                 onKeyDown={(e) => {
@@ -1180,7 +1174,6 @@ export default function BookPage() {
                                 );
                               })()}
                             </div>
-                            <div style={{ paddingLeft: 2, fontWeight: 600, color: "var(--ink-muted)", fontSize: 13, whiteSpace: "nowrap" }}>.com</div>
                           </div>
                         )}
                       </div>

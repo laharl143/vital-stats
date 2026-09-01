@@ -5,6 +5,11 @@ import { formatReferenceNumber } from "@/lib/reference-number";
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_FORM_URL;
 
+// Same shape check as the client's isValidEmail (book-consult/page.tsx) —
+// kept in sync so a request that bypasses the client (or a client bug like
+// VS-229) can't persist a malformed address.
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const REQUIRED_FIELDS = [
   "fullName",
   "dobMonth",
@@ -77,6 +82,13 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    if (!EMAIL_FORMAT.test(data.email)) {
+      return NextResponse.json(
+        { success: false, error: "email is invalid" },
+        { status: 400 }
+      );
     }
 
     const dobMonth = Number(data.dobMonth);
