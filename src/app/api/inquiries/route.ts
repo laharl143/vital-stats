@@ -68,27 +68,42 @@ export async function POST(req: NextRequest) {
       "unknown";
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await prisma.inquiry.count({
-      where: { ipAddress, createdAt: { gte: oneHourAgo } },
+
+    // The count-then-create rate-limit check races under concurrent
+    // requests from the same IP (both read the same pre-insert count under
+    // READ COMMITTED). A transaction-scoped advisory lock keyed on the IP
+    // serializes concurrent requests from that IP so the count each one
+    // sees reflects every prior request's insert — safe under pooled
+    // connections since the lock is released when the transaction ends.
+    const inquiry = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('inquiry:' || ${ipAddress}, 0))`;
+
+      const recentCount = await tx.inquiry.count({
+        where: { ipAddress, createdAt: { gte: oneHourAgo } },
+      });
+
+      if (recentCount >= 3) {
+        return null;
+      }
+
+      return tx.inquiry.create({
+        data: {
+          name: name.trim(),
+          contactInfo: contactInfo.trim(),
+          message: message.trim(),
+          type: type ?? InquiryType.GENERAL,
+          productId: productId ?? null,
+          ipAddress,
+        },
+      });
     });
 
-    if (recentCount >= 3) {
+    if (!inquiry) {
       return NextResponse.json(
         { error: "Too many submissions. Please try again later." },
         { status: 429 }
       );
     }
-
-    const inquiry = await prisma.inquiry.create({
-      data: {
-        name: name.trim(),
-        contactInfo: contactInfo.trim(),
-        message: message.trim(),
-        type: type ?? InquiryType.GENERAL,
-        productId: productId ?? null,
-        ipAddress,
-      },
-    });
 
     try {
       await notifyAdmin({
