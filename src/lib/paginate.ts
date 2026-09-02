@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
 
 // Parses page/limit query params, rejecting non-numeric or non-positive
 // values by falling back to the default rather than letting NaN reach
@@ -16,7 +17,7 @@ export function parsePaginationParams(searchParams: URLSearchParams) {
 
   return {
     page: Number.isInteger(page) && page > 0 ? page : 1,
-    limit: Number.isInteger(limit) && limit > 0 ? limit : DEFAULT_LIMIT,
+    limit: Math.min(Number.isInteger(limit) && limit > 0 ? limit : DEFAULT_LIMIT, MAX_LIMIT),
   };
 }
 
