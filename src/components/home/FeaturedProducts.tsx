@@ -202,9 +202,17 @@ export default function FeaturedProducts() {
                     }}
                   >
                     <div
-                      className="relative flex items-center justify-center"
+                      className="relative flex items-center justify-center overflow-hidden"
                       style={{ height: 320, background: gradients[i % gradients.length] }}
                     >
+                      {p.images[0] && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.images[0].url}
+                          alt={p.images[0].alt ?? p.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
                       {p.isBestSeller && (
                         <span
                           className="absolute top-4 left-4"
@@ -222,15 +230,17 @@ export default function FeaturedProducts() {
                           Best Seller
                         </span>
                       )}
-                      <div
-                        style={{
-                          width: 60,
-                          height: 80,
-                          background: "rgba(255,255,255,0.5)",
-                          borderRadius: 4,
-                          border: "1px solid rgba(0,0,0,0.08)",
-                        }}
-                      />
+                      {!p.images[0] && (
+                        <div
+                          style={{
+                            width: 60,
+                            height: 80,
+                            background: "rgba(255,255,255,0.5)",
+                            borderRadius: 4,
+                            border: "1px solid rgba(0,0,0,0.08)",
+                          }}
+                        />
+                      )}
                       {products.length > 1 && (
                         <div
                           className="absolute flex gap-1.5"
@@ -339,9 +349,18 @@ export default function FeaturedProducts() {
                         }}
                       >
                         <div
-                          className="shrink-0"
+                          className="shrink-0 relative overflow-hidden"
                           style={{ width: 120, background: gradients[i + 1] }}
-                        />
+                        >
+                          {p.images[0] && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={p.images[0].url}
+                              alt={p.images[0].alt ?? p.name}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
                         <div style={{ padding: 16 }}>
                           <div
                             style={{

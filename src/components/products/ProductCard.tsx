@@ -36,6 +36,7 @@ const categoryIcon: Record<string, LucideIcon> = {
 
 export default function ProductCard({ product }: { product: Product }) {
   const CategoryIcon = categoryIcon[product.category] ?? Leaf;
+  const primaryImage = product.images[0];
   const badge = product.isBestSeller
     ? "Best Seller ✨"
     : product.deliveryMethod === "INJECTION"
@@ -63,12 +64,21 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       {/* Image / placeholder */}
       <div
-        className="relative flex items-center justify-center"
+        className="relative flex items-center justify-center overflow-hidden"
         style={{
           height: 200,
           background: gradients[product.category] ?? gradients.SKIN_CARE,
         }}
       >
+        {primaryImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={primaryImage.url}
+            alt={primaryImage.alt ?? product.name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+
         {/* Badge */}
         <span
           className="absolute top-3 left-3 text-[9px] tracking-[0.1em] uppercase text-white px-[10px] py-1 rounded-[2px]"
@@ -92,7 +102,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </span>
         )}
 
-        <CategoryIcon size={40} strokeWidth={1.5} color="var(--teal-dark)" />
+        {!primaryImage && <CategoryIcon size={40} strokeWidth={1.5} color="var(--teal-dark)" />}
       </div>
 
       {/* Body */}
