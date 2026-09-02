@@ -37,8 +37,8 @@ PostgreSQL via Prisma.
   - Public marketing pages: `/`, `/products`, `/products/[slug]`, `/contact`, `/book-consult`.
     The homepage is composed from section components in `src/components/home/`.
   - `/admin/*` — backoffice UI (`inquiries`, `orders`, `products`, `login`), gated by
-    `src/middleware.ts` (matches everything under `/admin/` except `/admin/login`) using
-    `next-auth`'s `withAuth`.
+    `src/proxy.ts` (Next.js 16's `proxy.ts` convention; matches everything under `/admin/` except
+    `/admin/login`) using `next-auth`'s `withAuth`.
   - `src/app/api/*` — route handlers for `products`, `orders`, `inquiries`, `medical-history`,
     `submit-form`, and NextAuth (`api/auth/[...nextauth]`). Handlers follow a consistent shape:
     parse `NextRequest`, hit Prisma, return `NextResponse.json({ data | error }, { status })`,
@@ -46,8 +46,8 @@ PostgreSQL via Prisma.
 - **`src/lib/prisma.ts`** — singleton `PrismaClient`, cached on `globalThis` to survive dev
   hot-reload. Always import `prisma` from here rather than instantiating a new client.
 - **`src/lib/auth.ts`** — NextAuth config (`authOptions`): JWT sessions, Prisma adapter,
-  credentials provider. **Known wart:** password hashes are stored in `User.image` (not a
-  dedicated field) — see the `TODO` in `authorize()` before changing auth-related schema/logic.
+  credentials provider. `authorize()` matches passcodes against the dedicated
+  `User.hashedPassword` column via `bcrypt.compare`.
 - **`prisma/schema.prisma`** — single source of truth for the data model. Key domains:
   - `Product` (+ `ProductImage`, `ProductIngredient`, `ProductBenefit`) — catalog entries with
     `Category` / `DeliveryMethod` enums; images are stored in Cloudinary (`next-cloudinary`),
