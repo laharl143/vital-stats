@@ -113,47 +113,61 @@ export async function POST(req: NextRequest) {
       "unknown";
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await prisma.medicalHistory.count({
-      where: { ipAddress, createdAt: { gte: oneHourAgo } },
+
+    // The count-then-create rate-limit check races under concurrent
+    // requests from the same IP (both read the same pre-insert count under
+    // READ COMMITTED). A transaction-scoped advisory lock keyed on the IP
+    // serializes concurrent requests from that IP so the count each one
+    // sees reflects every prior request's insert — safe under pooled
+    // connections since the lock is released when the transaction ends.
+    const record = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('medicalHistory:' || ${ipAddress}, 0))`;
+
+      const recentCount = await tx.medicalHistory.count({
+        where: { ipAddress, createdAt: { gte: oneHourAgo } },
+      });
+
+      if (recentCount >= 3) {
+        return null;
+      }
+
+      return tx.medicalHistory.create({
+        data: {
+          fullName: data.fullName ?? "",
+          dateOfBirth: `${data.dobMonth}/${data.dobDay}/${data.dobYear}`,
+          gender: data.gender ?? "",
+          phone: data.phone ?? "",
+          email: data.email ?? "",
+          height: data.height ?? "",
+          weight: data.weight ?? "",
+          bmi: data.bmi || null,
+          bmiCategory: data.bmiCategory || null,
+          waistCircumference: data.waistCircumference ?? "",
+          smokingStatus: data.smokingStatus ?? "",
+          drinkingFrequency: data.drinkingFrequency ?? "",
+          mtc: data.mtc ?? "",
+          pancreatitis: data.pancreatitis ?? "",
+          gallbladder: data.gallbladder ?? "",
+          gi: data.gi ?? "",
+          diabetes: data.diabetes ?? "",
+          pregnant: data.pregnant ?? "",
+          surgeries: data.surgeries ?? "",
+          medications: data.medications ?? "",
+          allergies: data.allergies ?? "",
+          consent1: data.consent1 ?? false,
+          consent2: data.consent2 ?? false,
+          consent3: data.consent3 ?? false,
+          ipAddress,
+        },
+      });
     });
 
-    if (recentCount >= 3) {
+    if (!record) {
       return NextResponse.json(
         { success: false, error: "Too many submissions. Please try again later." },
         { status: 429 }
       );
     }
-
-    // Save to DB
-    const record = await prisma.medicalHistory.create({
-      data: {
-        fullName: data.fullName ?? "",
-        dateOfBirth: `${data.dobMonth}/${data.dobDay}/${data.dobYear}`,
-        gender: data.gender ?? "",
-        phone: data.phone ?? "",
-        email: data.email ?? "",
-        height: data.height ?? "",
-        weight: data.weight ?? "",
-        bmi: data.bmi || null,
-        bmiCategory: data.bmiCategory || null,
-        waistCircumference: data.waistCircumference ?? "",
-        smokingStatus: data.smokingStatus ?? "",
-        drinkingFrequency: data.drinkingFrequency ?? "",
-        mtc: data.mtc ?? "",
-        pancreatitis: data.pancreatitis ?? "",
-        gallbladder: data.gallbladder ?? "",
-        gi: data.gi ?? "",
-        diabetes: data.diabetes ?? "",
-        pregnant: data.pregnant ?? "",
-        surgeries: data.surgeries ?? "",
-        medications: data.medications ?? "",
-        allergies: data.allergies ?? "",
-        consent1: data.consent1 ?? false,
-        consent2: data.consent2 ?? false,
-        consent3: data.consent3 ?? false,
-        ipAddress,
-      },
-    });
 
     try {
       await notifyAdmin({
