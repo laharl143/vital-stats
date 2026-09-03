@@ -75,6 +75,9 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — product image uploads/delivery
 - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` — same cloud name, exposed to the browser for `next-cloudinary`'s
   client components (`CldImage`/`CldVideoPlayer`); not a secret
+- `NEXT_PUBLIC_CLOUDINARY_API_KEY` — same API key, exposed to the browser so `CldUploadWidget` can run
+  signed uploads (Doctor's Notes photos); not a secret — signing itself happens server-side in
+  `/api/admin/cloudinary-sign` using `CLOUDINARY_API_SECRET`
 
 ## Verification workflow
 
