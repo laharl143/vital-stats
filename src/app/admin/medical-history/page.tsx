@@ -897,7 +897,7 @@ function AdminMedicalHistoryPageContent() {
               Snap or select a photo of the physical note — it uploads directly and attaches to this record.
             </p>
             <CldUploadWidget
-              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+              signatureEndpoint="/api/admin/cloudinary-sign"
               options={{ folder: "doctor-notes", sources: ["local", "camera"], multiple: false }}
               onSuccess={(result) => {
                 const info = typeof result.info === "object" ? result.info : undefined;
