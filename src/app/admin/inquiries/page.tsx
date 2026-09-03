@@ -30,6 +30,11 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   CLOSED:    { bg: "#F5F5F5", color: "#616161" },
 };
 
+function isPhoneNumber(value: string): boolean {
+  const digitsOnly = value.replace(/[\s()-]/g, "");
+  return /^\+?\d{7,15}$/.test(digitsOnly);
+}
+
 export default function AdminInquiriesPage() {
   return (
     <Suspense fallback={null}>
@@ -170,9 +175,13 @@ function AdminInquiriesPageContent() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.name}</h2>
-                <a href={`https://facebook.com/${selected.contactInfo}`} className="text-[13px]" style={{ color: "var(--teal)" }}>
-                  {selected.contactInfo}
-                </a>
+                {isPhoneNumber(selected.contactInfo) ? (
+                  <a href={`tel:${selected.contactInfo.replace(/[\s()-]/g, "")}`} className="text-[13px]" style={{ color: "var(--teal)" }}>
+                    {selected.contactInfo}
+                  </a>
+                ) : (
+                  <span className="text-[13px]" style={{ color: "var(--teal)" }}>{selected.contactInfo}</span>
+                )}
               </div>
               <span
                 className="text-[10px] tracking-[0.08em] uppercase px-3 py-1 rounded-[2px]"
