@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import { Construction } from "lucide-react";
 
 const productLinks = [
   { label: "Weight Management", href: "/products?category=WEIGHT_MANAGEMENT" },
@@ -10,20 +12,68 @@ const productLinks = [
   { label: "Consultation", href: "/products?category=MEDICAL_CONSULTATION" },
 ];
 
-const companyLinks = [
-  { label: "About Us", href: "/about" },
-  { label: "Legitimacy", href: "/about#legitimacy" },
+// About Us / Legitimacy / Medical Disclaimer / Privacy Policy / Terms of Use
+// have no page yet — comingSoon mirrors the guard Navbar already uses for
+// its own /about link (see Navbar.tsx) instead of hard-404ing.
+const companyLinks: { label: string; href: string; comingSoon?: boolean }[] = [
+  { label: "About Us", href: "/about", comingSoon: true },
+  { label: "Legitimacy", href: "/about#legitimacy", comingSoon: true },
   { label: "Contact", href: "/contact" },
 ];
 
-const legalLinks = [
-  { label: "Medical Disclaimer", href: "/disclaimer" },
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Terms of Use", href: "/terms" },
+const legalLinks: { label: string; href: string; comingSoon?: boolean }[] = [
+  { label: "Medical Disclaimer", href: "/disclaimer", comingSoon: true },
+  { label: "Privacy Policy", href: "/privacy", comingSoon: true },
+  { label: "Terms of Use", href: "/terms", comingSoon: true },
 ];
 
-export default function Footer() {
+// A footer nav link that swaps to a "Coming Soon" trigger button when the
+// target page doesn't exist yet — same comingSoon guard Navbar uses.
+function FooterLink({ label, href, comingSoon, onComingSoon }: {
+  label: string;
+  href: string;
+  comingSoon?: boolean;
+  onComingSoon: (label: string) => void;
+}) {
+  const style = {
+    color: "var(--ink-mid)",
+    textDecoration: "none",
+  };
+  const onMouseEnter = (e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.color = "var(--teal-deep)");
+  const onMouseLeave = (e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.color = "var(--ink-mid)");
+
+  if (comingSoon) {
+    return (
+      <button
+        type="button"
+        onClick={() => onComingSoon(label)}
+        className="text-[12px] font-light transition-colors duration-200"
+        style={{ ...style, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit" }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {label}
+      </button>
+    );
+  }
+
   return (
+    <Link
+      href={href}
+      className="text-[12px] font-light transition-colors duration-200"
+      style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {label}
+    </Link>
+  );
+}
+
+export default function Footer() {
+  const [comingSoonLabel, setComingSoonLabel] = useState<string | null>(null);
+  return (
+    <>
     <footer
       style={{
         background: "linear-gradient(180deg, #cdf2e2 0%, var(--mint) 62.5%, var(--mint) 100%)",
@@ -139,22 +189,7 @@ export default function Footer() {
           <ul className="flex flex-col gap-3 list-none">
             {companyLinks.map((l) => (
               <li key={l.label}>
-                <Link
-                  href={l.href}
-                  className="text-[12px] font-light transition-colors duration-200"
-                  style={{
-                    color: "var(--ink-mid)",
-                    textDecoration: "none",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--teal-deep)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "var(--ink-mid)")
-                  }
-                >
-                  {l.label}
-                </Link>
+                <FooterLink label={l.label} href={l.href} comingSoon={l.comingSoon} onComingSoon={setComingSoonLabel} />
               </li>
             ))}
           </ul>
@@ -177,22 +212,7 @@ export default function Footer() {
           <ul className="flex flex-col gap-3 list-none">
             {legalLinks.map((l) => (
               <li key={l.label}>
-                <Link
-                  href={l.href}
-                  className="text-[12px] font-light transition-colors duration-200"
-                  style={{
-                    color: "var(--ink-mid)",
-                    textDecoration: "none",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--teal-deep)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "var(--ink-mid)")
-                  }
-                >
-                  {l.label}
-                </Link>
+                <FooterLink label={l.label} href={l.href} comingSoon={l.comingSoon} onComingSoon={setComingSoonLabel} />
               </li>
             ))}
           </ul>
@@ -232,5 +252,44 @@ export default function Footer() {
       </div>
       </div>
     </footer>
+
+    {comingSoonLabel && (
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-[999] flex items-center justify-center p-6"
+        style={{ background: "rgba(15,74,60,0.75)", backdropFilter: "blur(3px)" }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setComingSoonLabel(null);
+        }}
+      >
+        <div
+          className="flex flex-col items-center gap-4 text-center rounded-[14px]"
+          style={{ background: "#ffffff", padding: "3rem 2.5rem", width: 380, maxWidth: "100%" }}
+        >
+          <div
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 60, height: 60, background: "var(--teal-deep)" }}
+          >
+            <Construction size={26} color="#ffffff" strokeWidth={2} />
+          </div>
+          <div className="font-display font-bold text-[19px]" style={{ color: "var(--ink)" }}>
+            {comingSoonLabel} Page Coming Soon
+          </div>
+          <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
+            We&apos;re still building this page, wait for announcement.
+          </p>
+          <button
+            type="button"
+            onClick={() => setComingSoonLabel(null)}
+            className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[12px] rounded-[3px] text-white"
+            style={{ background: "var(--teal)" }}
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
