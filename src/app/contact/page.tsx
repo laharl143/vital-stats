@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SuccessModal from "@/components/SuccessModal";
 
 type InquiryType = "GENERAL" | "PRODUCT_AVAILABILITY" | "PROGRAM_GUIDANCE" | "ORDER_INQUIRY";
 
@@ -93,82 +94,73 @@ function InquiryForm() {
     }
   };
 
-  if (status === "success") {
-    return (
-      <div className="flex flex-col items-center justify-center gap-5 py-20 px-10 rounded-[6px] text-center"
-        style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
-        <div className="text-[48px]">🎉</div>
-        <h2 className="font-display font-light text-[32px]" style={{ color: "var(--ink)" }}>Inquiry received!</h2>
-        <p className="text-[14px] leading-[1.75] font-light max-w-[380px]" style={{ color: "var(--ink-muted)" }}>
-          Thank you for reaching out. We will review your message and contact you shortly.
-        </p>
-        <button onClick={() => setStatus("idle")}
-          className="text-[12px] font-medium tracking-[0.06em] uppercase px-8 py-[13px] rounded-[3px] text-white mt-2"
-          style={{ background: "var(--teal)" }}>
-          Send another inquiry
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-8 rounded-[6px]"
-      style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
-      <div>
-        <div className="text-[11px] font-medium tracking-[0.18em] uppercase mb-1" style={{ color: "var(--teal)" }}>Contact form</div>
-        <h2 className="font-display font-light text-[28px]" style={{ color: "var(--ink)" }}>Send us a message</h2>
-      </div>
-      {productName && (
-        <div className="text-[12px] px-4 py-3 rounded-[4px]" style={{ background: "var(--teal-pale)", color: "var(--teal-deep)" }}>
-          Inquiring about: <strong>{productName}</strong>
+    <>
+      <SuccessModal
+        open={status === "success"}
+        title="Inquiry received!"
+        message="Thank you for reaching out. We will review your message and contact you shortly."
+        buttonLabel="Send another inquiry"
+        onContinue={() => setStatus("idle")}
+      />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-8 rounded-[6px]"
+        style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
+        <div>
+          <div className="text-[11px] font-medium tracking-[0.18em] uppercase mb-1" style={{ color: "var(--teal)" }}>Contact form</div>
+          <h2 className="font-display font-light text-[28px]" style={{ color: "var(--ink)" }}>Send us a message</h2>
         </div>
-      )}
-      <div>
-        <label style={labelStyle}>Your name *</label>
-        <input type="text" name="name" value={form.name} onChange={handleChange} required
-          placeholder="e.g. Maria Santos" style={inputStyle}
-          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-      </div>
-      <div>
-        <label style={labelStyle}>Facebook name or phone number *</label>
-        <input type="text" name="contactInfo" value={form.contactInfo} onChange={handleChange} required
-          placeholder="e.g. Maria Santos or 09171234567" style={inputStyle}
-          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-        <p className="text-[11px] mt-2" style={{ color: "var(--ink-faint)" }}>We&apos;ll use this to get back to you.</p>
-      </div>
-      <div>
-        <label style={labelStyle}>What is your inquiry about? *</label>
-        <select name="type" value={form.type} onChange={handleChange}
-          style={{ ...inputStyle, cursor: "pointer" }}
-          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")}>
-          {INQUIRY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>Message *</label>
-        <textarea name="message" value={form.message} onChange={handleChange} required rows={5}
-          placeholder="Tell us what you need — product, program, or anything else."
-          style={{ ...inputStyle, resize: "vertical" }}
-          onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
-      </div>
-      {status === "error" && (
-        <div className="flex items-start gap-3 p-4 rounded-[4px]"
-          style={{ background: "#FFEBEE", border: "1px solid rgba(211,47,47,0.2)" }}>
-          <span>⚠️</span>
-          <p className="text-[13px]" style={{ color: "#C62828" }}>{errorMsg}</p>
+        {productName && (
+          <div className="text-[12px] px-4 py-3 rounded-[4px]" style={{ background: "var(--teal-pale)", color: "var(--teal-deep)" }}>
+            Inquiring about: <strong>{productName}</strong>
+          </div>
+        )}
+        <div>
+          <label style={labelStyle}>Your name *</label>
+          <input type="text" name="name" value={form.name} onChange={handleChange} required
+            placeholder="e.g. Maria Santos" style={inputStyle}
+            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
         </div>
-      )}
-      <button type="submit" disabled={status === "loading"}
-        className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[14px] rounded-[3px] text-white transition-all duration-200 self-start"
-        style={{ background: status === "loading" ? "var(--teal-light)" : "var(--teal)", cursor: status === "loading" ? "not-allowed" : "pointer" }}>
-        {status === "loading" ? "Sending..." : "Send Inquiry →"}
-      </button>
-      <p className="text-[11px]" style={{ color: "var(--ink-faint)" }}>We typically respond within 24 hours on business days.</p>
-    </form>
+        <div>
+          <label style={labelStyle}>Facebook name or phone number *</label>
+          <input type="text" name="contactInfo" value={form.contactInfo} onChange={handleChange} required
+            placeholder="e.g. Maria Santos or 09171234567" style={inputStyle}
+            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+          <p className="text-[11px] mt-2" style={{ color: "var(--ink-faint)" }}>We&apos;ll use this to get back to you.</p>
+        </div>
+        <div>
+          <label style={labelStyle}>What is your inquiry about? *</label>
+          <select name="type" value={form.type} onChange={handleChange}
+            style={{ ...inputStyle, cursor: "pointer" }}
+            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")}>
+            {INQUIRY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Message *</label>
+          <textarea name="message" value={form.message} onChange={handleChange} required rows={5}
+            placeholder="Tell us what you need — product, program, or anything else."
+            style={{ ...inputStyle, resize: "vertical" }}
+            onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
+        </div>
+        {status === "error" && (
+          <div className="flex items-start gap-3 p-4 rounded-[4px]"
+            style={{ background: "#FFEBEE", border: "1px solid rgba(211,47,47,0.2)" }}>
+            <span>⚠️</span>
+            <p className="text-[13px]" style={{ color: "#C62828" }}>{errorMsg}</p>
+          </div>
+        )}
+        <button type="submit" disabled={status === "loading"}
+          className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[14px] rounded-[3px] text-white transition-all duration-200 self-start"
+          style={{ background: status === "loading" ? "var(--teal-light)" : "var(--teal)", cursor: status === "loading" ? "not-allowed" : "pointer" }}>
+          {status === "loading" ? "Sending..." : "Send Inquiry →"}
+        </button>
+        <p className="text-[11px]" style={{ color: "var(--ink-faint)" }}>We typically respond within 24 hours on business days.</p>
+      </form>
+    </>
   );
 }
 

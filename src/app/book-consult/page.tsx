@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SuccessModal from "@/components/SuccessModal";
 
 // Lowercases everything, then capitalizes the first letter of each word.
 // Deterministic on every keystroke regardless of typing order, so it also
@@ -651,7 +652,7 @@ export default function BookPage() {
     <div className="xl:[zoom:1.1]">
       <Navbar />
 
-      {modalOpen && (
+      {modalOpen && (status === "loading" || status === "error") && (
         <div
           role="dialog"
           aria-modal="true"
@@ -676,7 +677,7 @@ export default function BookPage() {
                   Hang tight, this only takes a moment.
                 </p>
               </>
-            ) : status === "error" ? (
+            ) : (
               <>
                 <div
                   className="flex items-center justify-center rounded-full"
@@ -699,52 +700,28 @@ export default function BookPage() {
                   Try again
                 </button>
               </>
-            ) : (
-              <>
-                <div
-                  className="flex items-center justify-center rounded-full animate-modal-check-pop"
-                  style={{ width: 52, height: 52, background: "var(--teal-pale)" }}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M4 12l6 6L20 6"
-                      stroke="var(--teal-dark)"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="animate-modal-check-draw"
-                    />
-                  </svg>
-                </div>
-                <div className="font-display font-light text-[22px]" style={{ color: "var(--ink)" }}>
-                  Submission confirmed
-                </div>
-                <p className="text-[14px]" style={{ color: "var(--ink-muted)" }}>
-                  Our clinical team will review your information and reach out within 24 hours.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalDismissed(true);
-                    // On mobile the receipt card sits below the hero/intro,
-                    // so scrolling to the page top (as on desktop) leaves it
-                    // just out of view — bring it into frame directly instead.
-                    if (window.innerWidth < 768) {
-                      successRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    } else {
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }
-                  }}
-                  className="text-[12px] font-medium tracking-[0.08em] uppercase px-8 py-[12px] rounded-[3px] text-white"
-                  style={{ background: "var(--teal)" }}
-                >
-                  Continue
-                </button>
-              </>
             )}
           </div>
         </div>
       )}
+
+      <SuccessModal
+        open={modalOpen && status === "success"}
+        title="Submission confirmed"
+        message="Our clinical team will review your information and reach out within 24 hours."
+        buttonLabel="Continue"
+        onContinue={() => {
+          setModalDismissed(true);
+          // On mobile the receipt card sits below the hero/intro,
+          // so scrolling to the page top (as on desktop) leaves it
+          // just out of view — bring it into frame directly instead.
+          if (window.innerWidth < 768) {
+            successRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }}
+      />
 
       {confirmNoneFields && (
         <div
