@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { Cormorant_Garamond, DM_Sans, Plus_Jakarta_Sans, IBM_Plex_Sans } from "next/font/google";
+import ZoomControls from "@/components/ZoomControls";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -62,6 +63,7 @@ export default function RootLayout({
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable} ${jakarta.variable} ${plexSans.variable}`}>
       <body className="antialiased">
         {children}
+        <ZoomControls />
         <Analytics />
       </body>
     </html>
