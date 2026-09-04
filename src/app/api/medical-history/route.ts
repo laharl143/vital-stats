@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MedicalHistoryStatus } from "@prisma/client";
-import { requireAdminSession } from "@/lib/require-admin";
+import { requireAdminSession, requireSuperAdminSession } from "@/lib/require-admin";
 import { paginate } from "@/lib/paginate";
 
 // GET /api/medical-history  (admin only)
@@ -32,9 +32,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// DELETE /api/medical-history?id=xxx  (admin only)
+// DELETE /api/medical-history?id=xxx  (SUPER_ADMIN only — permanently
+// destroys the record and, via cascade, all of its Doctor's Notes)
 export async function DELETE(req: NextRequest) {
-  const unauthorized = await requireAdminSession();
+  const unauthorized = await requireSuperAdminSession();
   if (unauthorized) return unauthorized;
 
   try {

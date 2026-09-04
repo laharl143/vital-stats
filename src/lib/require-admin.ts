@@ -13,3 +13,18 @@ export async function requireAdminSession() {
   }
   return null;
 }
+
+// Call at the top of route handlers that perform a destructive or highly
+// sensitive action (e.g. permanently deleting patient data) and must be
+// restricted to SUPER_ADMIN accounts (VS-240 — role was stored on the
+// session but never enforced by any authorization check).
+export async function requireSuperAdminSession() {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.user.role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return null;
+}
