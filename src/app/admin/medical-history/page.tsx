@@ -98,6 +98,13 @@ const MH_TOKENS: Record<AdminTheme, Record<string, string>> = {
   },
 };
 
+// Clamps a user-typed page number into the valid [1, totalPages] range,
+// falling back to the current page for non-numeric input.
+function clampPage(value: number, totalPages: number, currentPage: number): number {
+  if (!Number.isInteger(value)) return currentPage;
+  return Math.min(Math.max(value, 1), totalPages);
+}
+
 function calculateAge(dob: string): number | null {
   const [month, day, year] = dob.split("/").map(Number);
   if (!month || !day || !year) return null;
@@ -183,6 +190,8 @@ function AdminMedicalHistoryPageContent() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pageInput, setPageInput] = useState("1");
+  const [prevPage, setPrevPage] = useState(1);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const PAGE_SIZE = 10;
@@ -204,6 +213,23 @@ function AdminMedicalHistoryPageContent() {
   }, [filterStatus, page]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
+
+  // Resets the page-jump input when navigation moves the page elsewhere
+  // (Prev/Next, filter change) — an in-render adjustment rather than an
+  // effect, per https://react.dev/learn/you-might-not-need-an-effect.
+  if (page !== prevPage) {
+    setPrevPage(page);
+    setPageInput(String(page));
+  }
+
+  const goToPage = () => {
+    const trimmed = pageInput.trim();
+    if (trimmed === "") {
+      setPageInput(String(page));
+      return;
+    }
+    setPage(clampPage(Number(trimmed), totalPages, page));
+  };
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -495,8 +521,27 @@ function AdminMedicalHistoryPageContent() {
               >
                 ← Prev
               </button>
-              <div className="text-[11px]" style={{ color: "var(--mh-ink-faint)" }}>
-                Page {page} of {totalPages}
+              <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--mh-ink-faint)" }}>
+                Page{" "}
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={totalPages}
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onBlur={goToPage}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      goToPage();
+                    }
+                  }}
+                  aria-label="Go to page"
+                  className="w-10 text-center rounded-[4px] border"
+                  style={{ borderColor: "var(--mh-border)", color: "var(--mh-ink)", background: "var(--mh-surface)" }}
+                />{" "}
+                of {totalPages}
               </div>
               <button
                 type="button"
