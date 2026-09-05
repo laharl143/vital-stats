@@ -42,6 +42,8 @@ export default function AdminOrdersPage() {
   );
 }
 
+const PAGE_SIZE = 10;
+
 function AdminOrdersPageContent() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -50,15 +52,24 @@ function AdminOrdersPageContent() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchOrders = useCallback(() => {
-    const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
+    const url =
+      filterStatus === "ALL"
+        ? `/api/orders?limit=${PAGE_SIZE}&page=${page}`
+        : `/api/orders?status=${filterStatus}&limit=${PAGE_SIZE}&page=${page}`;
     Promise.resolve()
       .then(() => setLoading(true))
       .then(() => fetch(url))
       .then((r) => r.json())
-      .then((json) => { setOrders(json.data ?? []); setLoading(false); });
-  }, [filterStatus]);
+      .then((json) => {
+        setOrders(json.data ?? []);
+        setTotalPages(json.meta?.totalPages ?? 1);
+        setLoading(false);
+      });
+  }, [filterStatus, page]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
@@ -108,7 +119,7 @@ function AdminOrdersPageContent() {
         {["ALL", ...STATUS_OPTIONS].map((s) => (
           <button
             key={s}
-            onClick={() => setFilterStatus(s)}
+            onClick={() => { setFilterStatus(s); setPage(1); }}
             className="text-[11px] tracking-[0.06em] uppercase px-4 py-2 rounded-[3px] border transition-all duration-200"
             style={{
               background: filterStatus === s ? "var(--teal)" : "transparent",
@@ -161,6 +172,34 @@ function AdminOrdersPageContent() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {!loading && totalPages > 1 && (
+            <div
+              className="flex items-center justify-between px-5 py-3 border-t"
+              style={{ borderColor: "rgba(0,0,0,0.05)" }}
+            >
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="text-[11px] font-medium"
+                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: page <= 1 ? "not-allowed" : "pointer", opacity: page <= 1 ? 0.4 : 1 }}
+              >
+                ← Prev
+              </button>
+              <div className="text-[11px]" style={{ color: "var(--ink-faint)" }}>
+                Page {page} of {totalPages}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="text-[11px] font-medium"
+                style={{ background: "none", border: "none", padding: 0, color: "var(--teal)", cursor: page >= totalPages ? "not-allowed" : "pointer", opacity: page >= totalPages ? 0.4 : 1 }}
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>
