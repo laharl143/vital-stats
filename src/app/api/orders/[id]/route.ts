@@ -42,6 +42,11 @@ export async function PATCH(
     const body = await req.json();
     const { status, customerAddress, notes, adminNotes } = body;
 
+    // Confirming hands the order to the OMS, so it only happens via POST /api/orders/[id]/confirm.
+    if (status === "CONFIRMED") {
+      return NextResponse.json({ error: "Use the Confirm action to confirm an order" }, { status: 400 });
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: {

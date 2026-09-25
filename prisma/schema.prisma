@@ -175,6 +175,11 @@ model Order {
   totalAmount     Decimal?    @db.Decimal(10, 2)
   currency        String      @default("PHP")
 
+  // Set together, only after both OMS calls succeed (VS-243).
+  omsCustomerId String?
+  omsOrderId    String?
+  sentToOmsAt   DateTime?
+
   items OrderItem[]
 
   createdAt DateTime @default(now())
