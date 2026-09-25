@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
-import { OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
+import { OMS_ADDRESS_LOCK_MESSAGE, OMS_LOCK_MESSAGE, isAddressChange, isLockedByOms } from "@/lib/order-lock";
 
 // GET /api/orders/[id]  (admin only)
 export async function GET(
@@ -43,12 +43,22 @@ export async function PATCH(
     const body = await req.json();
     const { status, customerAddress, notes, adminNotes } = body;
 
-    // A sent order's status belongs to the OMS (the webhook writes it, not this route). Refuse before
-    // writing anything; notes-only changes still go through. A missing order falls through to the 404.
-    if (status !== undefined) {
-      const existing = await prisma.order.findUnique({ where: { id }, select: { omsOrderId: true } });
-      if (existing && isLockedByOms(existing)) {
+    // A sent order's status belongs to the OMS (the webhook writes it, not this route), and the OMS
+    // keeps the address it was given at Confirm. Refuse the WHOLE request before writing anything if
+    // it changes either; notes-only changes (or the same address again) still go through. A missing
+    // order falls through to the 404.
+    let sent = false;
+    if (status !== undefined || customerAddress !== undefined) {
+      const existing = await prisma.order.findUnique({
+        where: { id },
+        select: { omsOrderId: true, customerAddress: true },
+      });
+      sent = !!existing && isLockedByOms(existing);
+      if (sent && status !== undefined) {
         return NextResponse.json({ error: OMS_LOCK_MESSAGE }, { status: 409 });
+      }
+      if (sent && customerAddress !== undefined && isAddressChange(existing?.customerAddress, customerAddress)) {
+        return NextResponse.json({ error: OMS_ADDRESS_LOCK_MESSAGE }, { status: 409 });
       }
     }
 
@@ -61,7 +71,8 @@ export async function PATCH(
       where: { id },
       data: {
         ...(status !== undefined && { status }),
-        ...(customerAddress !== undefined && { customerAddress }),
+        // On a sent order the same address again is a no-op: don't rewrite it (e.g. with stray spaces).
+        ...(customerAddress !== undefined && !sent && { customerAddress }),
         ...(notes !== undefined && { notes }),
         ...(adminNotes !== undefined && { adminNotes }),
       },
