@@ -217,6 +217,9 @@ function AdminOrdersPageContent() {
               <div>
                 <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Address</div>
                 <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.customerAddress}</div>
+                {locked && (
+                  <div className="text-[11px] mt-1" style={{ color: "var(--ink-faint)" }}>Sent to the OMS. The address can&apos;t be changed here.</div>
+                )}
               </div>
             )}
 
@@ -292,6 +295,15 @@ function AdminOrdersPageContent() {
                   <div className="text-[12px]" style={{ color: "var(--ink-muted)" }}>
                     Confirming sends this order to the OMS. It stays pending if that fails.
                   </div>
+                  {selected.customerAddress?.trim() && (
+                    <div>
+                      <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Shipping address</div>
+                      <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.customerAddress}</div>
+                    </div>
+                  )}
+                  <p className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>
+                    After you send this order, the shipping address cannot be changed here. Check it now.
+                  </p>
                   {!selected.customerAddress?.trim() && (
                     <p className="text-[12px]" style={{ color: "#C62828" }}>Add a shipping address before confirming this order.</p>
                   )}

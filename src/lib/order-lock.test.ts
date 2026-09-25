@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
 import { NextRequest } from "next/server";
-import { OMS_LOCK_MESSAGE, isLockedByOms } from "./order-lock";
+import { OMS_ADDRESS_LOCK_MESSAGE, OMS_LOCK_MESSAGE, isAddressChange, isLockedByOms } from "./order-lock";
 
 // The admin page's "disabled" state is decided by isLockedByOms (tested directly, since this repo
 // has no component rendering set up). PATCH /api/orders/[id] is tested as the real route against an
@@ -106,4 +106,69 @@ test("existing rules are unchanged: CONFIRMED via PATCH is still 400 for an unse
   assert.equal(res.status, 400);
   assert.deepEqual(writes, []);
   assert.equal((await patch("nope", { status: "CANCELLED" })).status, 404);
+});
+
+// ---- VS-248: the shipping address of a sent order can't drift from the OMS's copy ----
+
+test("isAddressChange: compares after trimming; missing counts as empty", () => {
+  assert.equal(isAddressChange("1 Test St", "1 Test St"), false);
+  assert.equal(isAddressChange("1 Test St", "  1 Test St \n"), false);
+  assert.equal(isAddressChange("  1 Test St ", "1 Test St"), false);
+  assert.equal(isAddressChange("1 Test St", "2 Test St"), true);
+  assert.equal(isAddressChange("1 Test St", ""), true);
+  assert.equal(isAddressChange("1 Test St", null), true);
+  assert.equal(isAddressChange("1 Test St", 123), true);
+  assert.equal(isAddressChange(null, ""), false);
+  assert.equal(isAddressChange(null, "1 Test St"), true);
+});
+
+test("a sent order refuses a changed address with 409 and writes nothing", async () => {
+  for (const customerAddress of ["2 New Ave", "", null]) {
+    const res = await patch("sent", { customerAddress });
+    assert.equal(res.status, 409, String(customerAddress));
+    assert.deepEqual(await res.json(), { error: "This order is in the OMS. The shipping address can't be changed here." });
+  }
+  assert.equal(OMS_ADDRESS_LOCK_MESSAGE, "This order is in the OMS. The shipping address can't be changed here.");
+  assert.deepEqual(writes, []);
+  assert.equal(orders[0].customerAddress, "1 Test St");
+});
+
+test("a sent order refuses status plus address in one request and writes nothing", async () => {
+  const res = await patch("sent", { status: "CANCELLED", customerAddress: "2 New Ave" });
+  assert.equal(res.status, 409);
+  assert.deepEqual(writes, []);
+  assert.equal(orders[0].status, "CONFIRMED");
+  assert.equal(orders[0].customerAddress, "1 Test St");
+});
+
+test("a sent order refuses a changed address together with a notes change, and writes nothing", async () => {
+  const res = await patch("sent", { customerAddress: "2 New Ave", adminNotes: "sneaky" });
+  assert.equal(res.status, 409);
+  assert.deepEqual(writes, []);
+  assert.equal(orders[0].adminNotes, null);
+});
+
+test("a sent order accepts the same address again (even with stray spaces) and never rewrites it", async () => {
+  assert.equal((await patch("sent", { customerAddress: "1 Test St" })).status, 200);
+  const res = await patch("sent", { customerAddress: "  1 Test St  ", adminNotes: "checked address" });
+  assert.equal(res.status, 200);
+  assert.deepEqual(writes, [{}, { adminNotes: "checked address" }]);
+  assert.equal(orders[0].customerAddress, "1 Test St");
+});
+
+test("a sent order still accepts notes-only changes", async () => {
+  assert.equal((await patch("sent", { notes: "n", adminNotes: "a" })).status, 200);
+  assert.deepEqual(writes, [{ notes: "n", adminNotes: "a" }]);
+});
+
+test("an unsent order still accepts an address change (also together with a status change)", async () => {
+  assert.equal((await patch("unsent", { customerAddress: "2 New Ave" })).status, 200);
+  assert.equal(orders[1].customerAddress, "2 New Ave");
+  assert.equal((await patch("unsent", { customerAddress: "3 Other Rd", status: "CANCELLED" })).status, 200);
+  assert.deepEqual(writes, [{ customerAddress: "2 New Ave" }, { status: "CANCELLED", customerAddress: "3 Other Rd" }]);
+  assert.equal(orders[1].customerAddress, "3 Other Rd");
+});
+
+test("an address change on a missing order is still a 404", async () => {
+  assert.equal((await patch("nope", { customerAddress: "2 New Ave" })).status, 404);
 });
