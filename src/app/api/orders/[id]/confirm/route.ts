@@ -47,18 +47,23 @@ export async function POST(
       return NextResponse.json({ error: result.message }, { status: 422 });
     }
 
-    const updated = await prisma.order.update({
-      where: { id },
+    // Conditional write: a double click can run the (idempotent) OMS calls twice, but only one
+    // request may flip PENDING to CONFIRMED.
+    const { count } = await prisma.order.updateMany({
+      where: { id, status: "PENDING" },
       data: {
         omsCustomerId: result.customerId,
         omsOrderId: result.orderId,
         sentToOmsAt: new Date(),
         status: "CONFIRMED",
       },
-      include: { items: true },
     });
+    if (count === 0) {
+      return NextResponse.json({ error: "This order was already confirmed" }, { status: 409 });
+    }
     console.info(JSON.stringify({ event: "oms_send", orderNumber: order.orderNumber, outcome: "sent" }));
 
+    const updated = await prisma.order.findUnique({ where: { id }, include: { items: true } });
     return NextResponse.json({ data: updated });
   } catch (error: unknown) {
     console.error("[POST /api/orders/[id]/confirm]", error);

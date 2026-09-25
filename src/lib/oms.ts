@@ -74,7 +74,7 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
         signal: AbortSignal.timeout(10_000),
       });
     } catch {
-      return { message: "Couldn't reach the OMS. Nothing was changed, so please try again." };
+      return { message: "Couldn't reach the OMS. Please try again." };
     }
     const json = (await res.json().catch(() => null)) as Record<string, unknown> | null;
     // Any 2xx: a replayed idempotent call may answer 200 with the original result instead of 201.
