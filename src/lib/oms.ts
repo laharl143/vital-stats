@@ -77,7 +77,8 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
       return { message: "Couldn't reach the OMS. Nothing was changed, so please try again." };
     }
     const json = (await res.json().catch(() => null)) as Record<string, unknown> | null;
-    if (res.status !== 201 || !json) {
+    // Any 2xx: a replayed idempotent call may answer 200 with the original result instead of 201.
+    if (!res.ok || !json) {
       return { message: errorMessage(res.status, typeof json?.error === "string" ? json.error : undefined) };
     }
     return { json };

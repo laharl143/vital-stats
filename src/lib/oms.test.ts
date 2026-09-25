@@ -123,7 +123,7 @@ test("retry after intake succeeded but orders failed: same payloads, same custom
 
   // Retry: same order, but the DB returns the item rows in a different order this time.
   const b = fakeFetch([
-    { status: 201, json: { customerId: "cus_1" } },
+    { status: 200, json: { customerId: "cus_1" } }, // idempotent replay of intake
     { status: 201, json: { orderId: "ord_1" } },
   ]);
   const ok = await sendOrderToOms(order({ items: [...twoItems].reverse() }), opts(b.fetchFn));
