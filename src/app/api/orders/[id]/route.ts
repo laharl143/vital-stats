@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
+import { OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
 
 // GET /api/orders/[id]  (admin only)
 export async function GET(
@@ -41,6 +42,15 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
     const { status, customerAddress, notes, adminNotes } = body;
+
+    // A sent order's status belongs to the OMS (the webhook writes it, not this route). Refuse before
+    // writing anything; notes-only changes still go through. A missing order falls through to the 404.
+    if (status !== undefined) {
+      const existing = await prisma.order.findUnique({ where: { id }, select: { omsOrderId: true } });
+      if (existing && isLockedByOms(existing)) {
+        return NextResponse.json({ error: OMS_LOCK_MESSAGE }, { status: 409 });
+      }
+    }
 
     // Confirming hands the order to the OMS, so it only happens via POST /api/orders/[id]/confirm.
     if (status === "CONFIRMED") {

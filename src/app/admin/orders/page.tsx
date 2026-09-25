@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
 
 interface OrderItem {
   id: string;
@@ -20,6 +21,7 @@ interface Order {
   notes: string | null;
   adminNotes: string | null;
   totalAmount: string | null;
+  omsOrderId: string | null;
   items: OrderItem[];
   createdAt: string;
 }
@@ -122,6 +124,9 @@ function AdminOrdersPageContent() {
       setUpdating(false);
     }
   };
+
+  // A sent order's status belongs to the OMS: every manual status button is disabled for it.
+  const locked = selected ? isLockedByOms(selected) : false;
 
   return (
     <div className="p-8">
@@ -259,19 +264,22 @@ function AdminOrdersPageContent() {
               {actionError && (
                 <p className="text-[12px] mb-2" style={{ color: "#C62828" }}>{actionError}</p>
               )}
+              {locked && (
+                <p className="text-[12px] mb-2" style={{ color: "var(--ink-muted)" }}>{OMS_LOCK_MESSAGE}</p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {STATUS_OPTIONS.map((s) => (
                   <button
                     key={s}
                     onClick={() => (s === "CONFIRMED" ? setConfirmingId(selected.id) : updateStatus(selected.id, s))}
-                    disabled={updating || selected.status === s || (s === "CONFIRMED" && selected.status !== "PENDING")}
+                    disabled={updating || locked || selected.status === s || (s === "CONFIRMED" && selected.status !== "PENDING")}
                     className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border transition-all duration-200"
                     style={{
                       background: selected.status === s ? "var(--teal)" : "transparent",
                       color: selected.status === s ? "white" : "var(--ink-muted)",
                       borderColor: selected.status === s ? "var(--teal)" : "rgba(0,0,0,0.15)",
-                      opacity: updating ? 0.6 : 1,
-                      cursor: updating || selected.status === s ? "not-allowed" : "pointer",
+                      opacity: updating || locked ? 0.6 : 1,
+                      cursor: updating || locked || selected.status === s ? "not-allowed" : "pointer",
                     }}
                   >
                     {s.replace("_", " ")}
