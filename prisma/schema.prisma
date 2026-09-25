@@ -179,6 +179,8 @@ model Order {
   omsCustomerId String?
   omsOrderId    String?
   sentToOmsAt   DateTime?
+  // occurredAt of the last OMS status event applied (VS-242); older events are ignored.
+  omsLastEventAt DateTime?
 
   items OrderItem[]
 
@@ -201,6 +203,15 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
+}
+
+// One row per OMS webhook event already handled (VS-242). The unique eventId
+// is what makes a redelivered event a no-op.
+model OmsWebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  type      String // "order.status_changed" | "shipment.updated"
+  handledAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────
