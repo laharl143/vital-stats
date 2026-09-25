@@ -50,6 +50,8 @@ function AdminOrdersPageContent() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "prepaid">("cod");
 
   const fetchOrders = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
@@ -91,6 +93,31 @@ function AdminOrdersPageContent() {
       fetchOrders();
     } catch {
       setActionError("Couldn't update the status. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Confirming hands the order to the OMS on the server; the order only becomes CONFIRMED if that works.
+  const confirmOrder = async (id: string) => {
+    setUpdating(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/orders/${id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentMethod }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setActionError(json?.error ?? "Couldn't confirm the order. Please try again.");
+        return;
+      }
+      setConfirmingId(null);
+      if (selected?.id === id) setSelected(json.data);
+      fetchOrders();
+    } catch {
+      setActionError("Couldn't confirm the order. Please try again.");
     } finally {
       setUpdating(false);
     }
@@ -236,8 +263,8 @@ function AdminOrdersPageContent() {
                 {STATUS_OPTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => updateStatus(selected.id, s)}
-                    disabled={updating || selected.status === s}
+                    onClick={() => (s === "CONFIRMED" ? setConfirmingId(selected.id) : updateStatus(selected.id, s))}
+                    disabled={updating || selected.status === s || (s === "CONFIRMED" && selected.status !== "PENDING")}
                     className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border transition-all duration-200"
                     style={{
                       background: selected.status === s ? "var(--teal)" : "transparent",
@@ -251,6 +278,47 @@ function AdminOrdersPageContent() {
                   </button>
                 ))}
               </div>
+
+              {confirmingId === selected.id && selected.status === "PENDING" && (
+                <div className="mt-3 p-4 rounded-[4px] flex flex-col gap-3" style={{ background: "var(--cream)" }}>
+                  <div className="text-[12px]" style={{ color: "var(--ink-muted)" }}>
+                    Confirming sends this order to the OMS. It stays pending if that fails.
+                  </div>
+                  {!selected.customerAddress?.trim() && (
+                    <p className="text-[12px]" style={{ color: "#C62828" }}>Add a shipping address before confirming this order.</p>
+                  )}
+                  <label className="text-[12px] flex items-center gap-2" style={{ color: "var(--ink)" }}>
+                    Payment method
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as "cod" | "prepaid")}
+                      className="px-2 py-1 rounded-[3px] border"
+                      style={{ borderColor: "rgba(0,0,0,0.15)" }}
+                    >
+                      <option value="cod">Cash on delivery</option>
+                      <option value="prepaid">Prepaid</option>
+                    </select>
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => confirmOrder(selected.id)}
+                      disabled={updating || !selected.customerAddress?.trim()}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px]"
+                      style={{ background: "var(--teal)", color: "white", opacity: updating || !selected.customerAddress?.trim() ? 0.6 : 1 }}
+                    >
+                      Send to OMS &amp; confirm
+                    </button>
+                    <button
+                      onClick={() => setConfirmingId(null)}
+                      disabled={updating}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border"
+                      style={{ color: "var(--ink-muted)", borderColor: "rgba(0,0,0,0.15)" }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="text-[11px]" style={{ color: "var(--ink-faint)" }}>

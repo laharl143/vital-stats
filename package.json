@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --require ./scripts/ts-register.cjs --test src/lib/oms.test.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
