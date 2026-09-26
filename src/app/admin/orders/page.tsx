@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
+import NewOrderForm from "@/components/admin/NewOrderForm";
 
 interface OrderItem {
   id: string;
@@ -54,6 +55,8 @@ function AdminOrdersPageContent() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "prepaid">("cod");
+  const [showNewOrder, setShowNewOrder] = useState(false);
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
@@ -80,6 +83,7 @@ function AdminOrdersPageContent() {
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
     setActionError(null);
+    setCreatedId(null);
     try {
       const res = await fetch(`/api/orders/${id}`, {
         method: "PATCH",
@@ -104,6 +108,7 @@ function AdminOrdersPageContent() {
   const confirmOrder = async (id: string) => {
     setUpdating(true);
     setActionError(null);
+    setCreatedId(null);
     try {
       const res = await fetch(`/api/orders/${id}/confirm`, {
         method: "POST",
@@ -153,6 +158,30 @@ function AdminOrdersPageContent() {
         ))}
       </div>
 
+      {/* New order */}
+      <div className="mb-6">
+        {showNewOrder ? (
+          <NewOrderForm
+            onCancel={() => setShowNewOrder(false)}
+            onCreated={(order) => {
+              setShowNewOrder(false);
+              setSelected(order as Order);
+              setCreatedId(order.id);
+              setActionError(null);
+              fetchOrders();
+            }}
+          />
+        ) : (
+          <button
+            onClick={() => setShowNewOrder(true)}
+            className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px]"
+            style={{ background: "var(--teal)", color: "white" }}
+          >
+            New order
+          </button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* List */}
         <div className="rounded-[8px] overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
@@ -200,6 +229,9 @@ function AdminOrdersPageContent() {
         {/* Detail */}
         {selected ? (
           <div className="rounded-[8px] p-6 flex flex-col gap-5" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.06)" }}>
+            {createdId === selected.id && (
+              <p className="text-[12px]" style={{ color: "#2E7D32" }}>Order created.</p>
+            )}
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.customerName}</h2>

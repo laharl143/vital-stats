@@ -2,6 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import NewOrderForm from "@/components/admin/NewOrderForm";
 
 interface Inquiry {
   id: string;
@@ -46,6 +48,9 @@ function AdminInquiriesPageContent() {
   const [selected, setSelected] = useState<Inquiry | null>(null);
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Which inquiry the New order form is open for, and the order last created from one (VS-245).
+  const [orderFormFor, setOrderFormFor] = useState<string | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<{ inquiryId: string; orderId: string } | null>(null);
 
   const fetchInquiries = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/inquiries?limit=50" : `/api/inquiries?status=${filterStatus}&limit=50`;
@@ -206,6 +211,35 @@ function AdminInquiriesPageContent() {
               <div className="text-[13px]" style={{ color: "var(--ink)" }}>
                 {new Date(selected.createdAt).toLocaleString("en-PH")}
               </div>
+            </div>
+
+            {/* Create an order from this inquiry. It does not change the inquiry's status. */}
+            <div>
+              {orderFormFor === selected.id ? (
+                <NewOrderForm
+                  key={selected.id}
+                  prefill={{ customerName: selected.name, customerContact: selected.contactInfo, productId: selected.productId }}
+                  onCancel={() => setOrderFormFor(null)}
+                  onCreated={(order) => {
+                    setOrderFormFor(null);
+                    setCreatedOrder({ inquiryId: selected.id, orderId: order.id });
+                  }}
+                />
+              ) : (
+                <button
+                  onClick={() => setOrderFormFor(selected.id)}
+                  className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border"
+                  style={{ color: "var(--ink-muted)", borderColor: "rgba(0,0,0,0.15)" }}
+                >
+                  Create order
+                </button>
+              )}
+              {createdOrder?.inquiryId === selected.id && (
+                <p className="text-[12px] mt-2" style={{ color: "#2E7D32" }}>
+                  Order created.{" "}
+                  <Link href={`/admin/orders?id=${createdOrder.orderId}`} style={{ color: "var(--teal)" }}>Open it</Link>
+                </p>
+              )}
             </div>
 
             {/* Update status */}
