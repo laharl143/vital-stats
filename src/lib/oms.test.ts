@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { sendOrderToOms, type OmsOrderInput } from "./oms";
+import { getOmsOrder, sendOrderToOms, type OmsOrderInput } from "./oms";
 
 // Every test uses a fake fetch. Nothing here may ever reach the live OMS.
 
@@ -134,4 +134,37 @@ test("retry after intake succeeded but orders failed: same payloads, same custom
   assert.equal(b.calls[0].headers["Idempotency-Key"], "cust-VS-1001");
   assert.equal(b.calls[1].body, a.calls[1].body);
   assert.equal(b.calls[1].headers["Idempotency-Key"], "VS-1001");
+});
+
+const readOpts = (fetchFn: typeof fetch) => ({ baseUrl: "https://oms.test/api/v1/", apiKey: "test-key", fetchFn });
+
+test("getOmsOrder: GETs the order with the Bearer key and returns its shippingAddress", async () => {
+  const { fetchFn, calls } = fakeFetch([{ status: 200, json: { status: "APPROVED", shippingAddress: "2 New St, Taguig", tracking: null } }]);
+  const result = await getOmsOrder("ord_1", readOpts(fetchFn));
+  assert.deepEqual(result, { ok: true, shippingAddress: "2 New St, Taguig" });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://oms.test/api/v1/orders/ord_1");
+  assert.equal(calls[0].headers.Authorization, "Bearer test-key");
+  assert.equal(calls[0].body, undefined);
+});
+
+test("getOmsOrder: maps 404, 401, 5xx, network errors and odd replies to typed failures", async () => {
+  const cases: [Reply, string][] = [
+    [{ status: 404, json: { error: "order_not_found" } }, "not_found"],
+    [{ status: 401, json: { error: "unauthorized" } }, "auth"],
+    [{ status: 500, json: { error: "internal_error" } }, "server"],
+    [{ status: 503, json: {} }, "server"],
+    ["network-error", "network"],
+    [{ status: 200, json: { status: "APPROVED" } }, "bad_reply"],
+  ];
+  for (const [reply, reason] of cases) {
+    const { fetchFn } = fakeFetch([reply]);
+    assert.deepEqual(await getOmsOrder("ord_1", readOpts(fetchFn)), { ok: false, reason }, reason);
+  }
+});
+
+test("getOmsOrder: not configured means no call at all", async () => {
+  const { fetchFn, calls } = fakeFetch([]);
+  assert.deepEqual(await getOmsOrder("ord_1", { baseUrl: undefined, apiKey: "k", fetchFn }), { ok: false, reason: "not_configured" });
+  assert.equal(calls.length, 0);
 });
