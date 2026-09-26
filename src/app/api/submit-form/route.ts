@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { formatReferenceNumber } from "@/lib/reference-number";
+import { CONSENT_REQUIRED_MESSAGE, readConsent } from "@/lib/legal";
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_FORM_URL;
 
@@ -99,6 +100,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Checked here, never via REQUIRED_FIELDS: that truthy check would accept the string "true".
+    const consent = readConsent(data.privacyConsent);
+    if (!consent) {
+      return NextResponse.json(
+        { success: false, error: CONSENT_REQUIRED_MESSAGE },
+        { status: 400 }
+      );
+    }
+
     // Only whitelisted, already-validated fields make it into this object —
     // used for the external forward below so that copy can never carry more
     // than what REQUIRED_FIELDS/MAX_LENGTHS already checked on `data`.
@@ -152,6 +162,7 @@ export async function POST(req: NextRequest) {
         consent2: data.consent2 ?? false,
         consent3: data.consent3 ?? false,
         ipAddress,
+        ...consent,
       },
     });
 

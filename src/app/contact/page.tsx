@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ConsentCheckbox, { LegalLink } from "@/components/ConsentCheckbox";
 
 type InquiryType = "GENERAL" | "PRODUCT_AVAILABILITY" | "PROGRAM_GUIDANCE" | "ORDER_INQUIRY";
 
@@ -66,6 +67,7 @@ function InquiryForm() {
     message: "",
     type: (productId ? "PRODUCT_AVAILABILITY" : "GENERAL") as InquiryType,
     productId,
+    privacyConsent: false,
   });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -86,7 +88,7 @@ function InquiryForm() {
       const json = await res.json();
       if (!res.ok) { setErrorMsg(json.error ?? "Something went wrong."); setStatus("error"); return; }
       setStatus("success");
-      setForm({ name: "", contactInfo: "", message: "", type: "GENERAL", productId: null });
+      setForm({ name: "", contactInfo: "", message: "", type: "GENERAL", productId: null, privacyConsent: false });
     } catch {
       setErrorMsg("Network error. Please check your connection.");
       setStatus("error");
@@ -155,6 +157,11 @@ function InquiryForm() {
           onFocus={(e) => (e.target.style.borderColor = "var(--teal)")}
           onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.15)")} />
       </div>
+      <ConsentCheckbox checked={form.privacyConsent}
+        onChange={(checked) => setForm((prev) => ({ ...prev, privacyConsent: checked }))}>
+        I have read the <LegalLink href="/privacy">Privacy Notice</LegalLink> and agree to VitalStats using my
+        details to reply to this inquiry. *
+      </ConsentCheckbox>
       {status === "error" && (
         <div className="flex items-start gap-3 p-4 rounded-[4px]"
           style={{ background: "#FFEBEE", border: "1px solid rgba(211,47,47,0.2)" }}>

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --require ./scripts/ts-register.cjs --test src/lib/oms.test.ts src/lib/oms-webhook.test.ts src/lib/order-lock.test.ts src/lib/new-order.test.ts",
+    "test": "node --require ./scripts/ts-register.cjs --test src/lib/oms.test.ts src/lib/oms-webhook.test.ts src/lib/order-lock.test.ts src/lib/new-order.test.ts src/lib/legal.test.ts src/lib/consent-routes.test.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

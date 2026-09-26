@@ -6,6 +6,7 @@ import { Gift, Mail, PhoneCall } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 import { formatReferenceNumber } from "@/lib/reference-number";
 import { useAdminTheme, type AdminTheme } from "@/contexts/AdminThemeContext";
+import { formatConsentLine } from "@/lib/legal";
 
 interface DoctorNote {
   id: string;
@@ -43,6 +44,8 @@ interface MedicalHistory {
   consent1: boolean;
   consent2: boolean;
   consent3: boolean;
+  privacyVersion: string | null;
+  consentedAt: string | null;
   status: string;
   adminNotes: string | null;
   createdAt: string;
@@ -692,6 +695,11 @@ function AdminMedicalHistoryPageContent() {
               <div>
                 <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--mh-ink-faint)" }}>Received</div>
                 <div className="text-[13px]" style={{ color: "var(--mh-ink)" }}>{new Date(selected.createdAt).toLocaleString("en-PH")}</div>
+              </div>
+
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--mh-ink-faint)" }}>Consent</div>
+                <div className="text-[13px]" style={{ color: "var(--mh-ink)" }}>{formatConsentLine(selected.privacyVersion, selected.consentedAt)}</div>
               </div>
 
               {/* Doctor's Notes */}
