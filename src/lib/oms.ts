@@ -109,3 +109,31 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
 
   return { ok: true, customerId, orderId };
 }
+
+// Reads the order as the OMS holds it now (VS-250). Used by the webhook, which must answer the OMS
+// within its 10 second wait, hence the shorter timeout. The reason is a code, safe to log.
+export type OmsOrderRead =
+  | { ok: true; shippingAddress: string }
+  | { ok: false; reason: "not_configured" | "network" | "not_found" | "auth" | "server" | "bad_reply" };
+
+export async function getOmsOrder(
+  orderId: string,
+  opts: { baseUrl: string | undefined; apiKey: string | undefined; fetchFn?: typeof fetch },
+): Promise<OmsOrderRead> {
+  if (!opts.baseUrl || !opts.apiKey) return { ok: false, reason: "not_configured" };
+  let res: Response;
+  try {
+    res = await (opts.fetchFn ?? fetch)(`${opts.baseUrl.replace(/\/+$/, "")}/orders/${encodeURIComponent(orderId)}`, {
+      headers: { Authorization: `Bearer ${opts.apiKey}` },
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch {
+    return { ok: false, reason: "network" }; // includes the timeout
+  }
+  if (res.status === 404) return { ok: false, reason: "not_found" };
+  if (res.status === 401) return { ok: false, reason: "auth" };
+  if (!res.ok) return { ok: false, reason: "server" };
+  const json = (await res.json().catch(() => null)) as { shippingAddress?: unknown } | null;
+  if (typeof json?.shippingAddress !== "string") return { ok: false, reason: "bad_reply" };
+  return { ok: true, shippingAddress: json.shippingAddress };
+}

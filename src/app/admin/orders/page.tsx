@@ -218,7 +218,10 @@ function AdminOrdersPageContent() {
                 <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Address</div>
                 <div className="text-[13px]" style={{ color: "var(--ink)" }}>{selected.customerAddress}</div>
                 {locked && (
-                  <div className="text-[11px] mt-1" style={{ color: "var(--ink-faint)" }}>Sent to the OMS. The address can&apos;t be changed here.</div>
+                  <>
+                    <div className="text-[11px] mt-1" style={{ color: "var(--ink-faint)" }}>Sent to the OMS. The address can&apos;t be changed here.</div>
+                    <div className="text-[11px]" style={{ color: "var(--ink-faint)" }}>Changes made in the OMS show here automatically.</div>
+                  </>
                 )}
               </div>
             )}
