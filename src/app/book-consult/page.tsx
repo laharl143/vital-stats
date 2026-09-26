@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ConsentCheckbox, { LegalLink } from "@/components/ConsentCheckbox";
 
 // Lowercases everything, then capitalizes the first letter of each word.
 // Deterministic on every keystroke regardless of typing order, so it also
@@ -433,6 +434,7 @@ export default function BookPage() {
     consent1: false,
     consent2: false,
     consent3: false,
+    privacyConsent: false,
   });
 
   const set = (field: string, value: string | boolean) =>
@@ -503,7 +505,7 @@ export default function BookPage() {
   const smokingInvalid = form.smokingStatus === "";
   const drinkingInvalid = form.drinkingFrequency === "";
   const pregnantInvalid = form.gender === "Female" && form.pregnant === "";
-  const consentInvalid = !(form.consent1 && form.consent2 && form.consent3);
+  const consentInvalid = !(form.consent1 && form.consent2 && form.consent3 && form.privacyConsent);
 
   // Flattened for submission — same "name - year" / "name dosage" shape the
   // freeform textareas used to produce, so the API and admin view keep
@@ -901,7 +903,7 @@ export default function BookPage() {
                     style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
                     <span>🔒</span>
                     <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
-                      Your information is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality — accessible only to our licensed clinical team, never shared with third parties.
+                      Your information is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality — accessible only to our licensed clinical team and the few services that help us run your consult, never sold or used for advertising. See our <LegalLink href="/privacy">Privacy Notice</LegalLink>.
                     </p>
                   </div>
                 </div>
@@ -1654,6 +1656,10 @@ export default function BookPage() {
                         <span className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>{text}</span>
                       </label>
                     ))}
+                    <ConsentCheckbox checked={form.privacyConsent} onChange={(checked) => set("privacyConsent", checked)}>
+                      I consent to VitalStats collecting and using my health information to assess my consult, as
+                      described in the <LegalLink href="/privacy">Privacy Notice</LegalLink>
+                    </ConsentCheckbox>
                   </div>
                 </div>
 
@@ -1661,7 +1667,7 @@ export default function BookPage() {
                   style={{ background: "var(--teal-pale)", border: "1px solid rgba(46,139,114,0.15)" }}>
                   <span>🔒</span>
                   <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
-                    Your information is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality — accessible only to our licensed clinical team, never shared with third parties.
+                    Your information is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality — accessible only to our licensed clinical team and the few services that help us run your consult, never sold or used for advertising. See our <LegalLink href="/privacy">Privacy Notice</LegalLink>.
                   </p>
                 </div>
 
@@ -1720,7 +1726,7 @@ export default function BookPage() {
                 </div>
               </div>
               <p className="text-[11px] leading-[1.7]" style={{ color: "var(--ink-muted)" }}>
-                All information submitted through this form is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality. Your data is securely stored and accessible only to our licensed clinical team — never shared with third parties.
+                All information submitted through this form is treated as <strong>Protected Health Information (PHI)</strong> and handled with strict confidentiality. Your data is securely stored and accessible only to our licensed clinical team and the few services that help us run your consult — never sold or used for advertising. See our <LegalLink href="/privacy">Privacy Notice</LegalLink>.
               </p>
             </div>
           </div>

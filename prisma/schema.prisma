@@ -151,6 +151,10 @@ model Inquiry {
   productId   String? // optional: which product they're asking about
   ipAddress   String? // for spam detection
 
+  // Privacy consent (spec 0001), stamped by the server; null on rows saved before it.
+  privacyVersion String?
+  consentedAt    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -314,6 +318,9 @@ model MedicalHistory {
   consent1 Boolean @default(false)
   consent2 Boolean @default(false)
   consent3 Boolean @default(false)
+  // Privacy and health data consent (spec 0001), stamped by the server; null on rows saved before it.
+  privacyVersion String?
+  consentedAt    DateTime?
 
   // Meta
   status     MedicalHistoryStatus @default(NEW)

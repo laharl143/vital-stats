@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import NewOrderForm from "@/components/admin/NewOrderForm";
+import { formatConsentLine } from "@/lib/legal";
 
 interface Inquiry {
   id: string;
@@ -15,6 +16,8 @@ interface Inquiry {
   adminNotes: string | null;
   productId: string | null;
   productName: string | null;
+  privacyVersion: string | null;
+  consentedAt: string | null;
   createdAt: string;
 }
 
@@ -210,6 +213,15 @@ function AdminInquiriesPageContent() {
               </div>
               <div className="text-[13px]" style={{ color: "var(--ink)" }}>
                 {new Date(selected.createdAt).toLocaleString("en-PH")}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] tracking-[0.1em] uppercase mb-2" style={{ color: "var(--ink-faint)" }}>
+                Consent
+              </div>
+              <div className="text-[13px]" style={{ color: "var(--ink)" }}>
+                {formatConsentLine(selected.privacyVersion, selected.consentedAt)}
               </div>
             </div>
 

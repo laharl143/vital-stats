@@ -5,6 +5,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { notifyAdmin } from "@/lib/notify-admin";
 import { paginate } from "@/lib/paginate";
 import { attachProductNames } from "@/lib/inquiries";
+import { CONSENT_REQUIRED_MESSAGE, readConsent } from "@/lib/legal";
 
 // GET /api/inquiries  (admin only)
 export async function GET(req: NextRequest) {
@@ -62,6 +63,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const consent = readConsent(body.privacyConsent);
+    if (!consent) {
+      return NextResponse.json({ error: CONSENT_REQUIRED_MESSAGE }, { status: 400 });
+    }
+
     const ipAddress =
       req.headers.get("x-forwarded-for")?.split(",")[0] ??
       req.headers.get("x-real-ip") ??
@@ -87,6 +93,7 @@ export async function POST(req: NextRequest) {
         type: type ?? InquiryType.GENERAL,
         productId: productId ?? null,
         ipAddress,
+        ...consent,
       },
     });
 
