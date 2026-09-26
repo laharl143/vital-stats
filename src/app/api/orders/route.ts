@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 import { paginate } from "@/lib/paginate";
+import { orderTotal, parseNewOrder, toPrice } from "@/lib/new-order";
 
 // GET /api/orders  (admin only)
 // Query params: ?status=PENDING&page=1&limit=20
@@ -39,46 +40,35 @@ export async function POST(req: NextRequest) {
   if (unauthorized) return unauthorized;
 
   try {
-    const body = await req.json();
-    const { customerName, customerContact, customerAddress, notes, items } = body;
+    // Trimming, quantity, duplicate and required-field rules live in new-order.ts (shared with the form).
+    const parsed = parseNewOrder(await req.json().catch(() => null));
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { customerName, customerContact, customerAddress, notes, items } = parsed.value;
 
-    if (!customerName || !customerContact || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: "customerName, customerContact, and at least one item are required" },
-        { status: 400 }
-      );
-    }
-
-    const products = await prisma.product.findMany({
-      where: { id: { in: items.map((i: { productId: string }) => i.productId) } },
-    });
+    const products = await prisma.product.findMany({ where: { id: { in: items.map((i) => i.productId) } } });
     const productById = new Map(products.map((p) => [p.id, p]));
 
-    let totalAmount = 0;
-    const orderItems = items.map((item: { productId: string; quantity?: number; unitPrice?: number }) => {
+    const orderItems = [];
+    for (const item of items) {
       const product = productById.get(item.productId);
       if (!product) {
-        throw new Error(`Product not found: ${item.productId}`);
+        return NextResponse.json({ error: "One of the products in this order no longer exists. Pick it again from the list." }, { status: 400 });
       }
-      const quantity = item.quantity ?? 1;
-      const unitPrice = item.unitPrice ?? (product.price ? parseFloat(product.price.toString()) : null);
-      if (unitPrice !== null) totalAmount += unitPrice * quantity;
-
-      return {
-        productId: item.productId,
-        productName: product.name,
-        quantity,
-        unitPrice,
-      };
-    });
+      if (!product.isActive) {
+        return NextResponse.json({ error: `${product.name} is inactive, so it can't be ordered.` }, { status: 400 });
+      }
+      // Always the product's own price; a client-sent unitPrice was already dropped by parseNewOrder.
+      orderItems.push({ productId: product.id, productName: product.name, quantity: item.quantity, unitPrice: toPrice(product.price) });
+    }
+    const { total } = orderTotal(orderItems.map((i) => ({ quantity: i.quantity, price: i.unitPrice })));
 
     const order = await prisma.order.create({
       data: {
         customerName,
         customerContact,
-        customerAddress: customerAddress ?? null,
-        notes: notes ?? null,
-        totalAmount: totalAmount || null,
+        customerAddress,
+        notes,
+        totalAmount: total || null,
         items: { create: orderItems },
       },
       include: { items: true },
