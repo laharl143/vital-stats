@@ -134,8 +134,8 @@ tasks" philosophy above rather than replacing it, and never overrides the workfl
 in this file (commit/push, Playwright, Jira) — those are a separate axis.
 
 - `/ponytail-review` — fast, diff-level "what can be cut" check. Use it as a quick
-  self-check during active dev; it does **not** replace `/review-pr`, which stays the
-  required production-safety + structural gate before merging.
+  self-check during active dev; it does **not** replace `/check review`, the fresh model
+  review in the pipeline workflow.
 - `/ponytail-audit` — same scan across the whole repo. Use occasionally (e.g. before a
   larger refactor), not as a per-PR step.
 - `/ponytail-debt` — harvests inline `ponytail: <what was cut>, <upgrade path>` comments
