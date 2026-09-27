@@ -78,15 +78,19 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 
 ## Verification workflow
 
-**Never run Playwright (or any other automated browser check) without asking first — every
-single time, no exceptions.** This means literally stopping after the code change and asking a
-real question (via the question/options UI, not just proposing it in a text message and
-proceeding), before invoking Playwright at all — not just before reporting results. Do not treat
-an earlier "let the current agent run Playwright end-to-end" answer as blanket permission for
-later changes in the same session; each change gets its own ask. Options to present:
+**Interactive sessions verify in the in-app browser, not Playwright.** Drive the Claude desktop
+app's built-in browser (the Browser pane, `mcp__Claude_Browser__*` tools) pointed at the running
+dev server. Do not use Playwright in interactive sessions (VS-265).
 
-- "Let the current agent run Playwright end-to-end to double-check functionality" — you drive it
-  end-to-end and report results
+**Never run a browser check (in-app browser, Playwright, or any other automated check) without
+asking first — every single time, no exceptions.** This means literally stopping after the code
+change and asking a real question (via the question/options UI, not just proposing it in a text
+message and proceeding), before opening the browser at all — not just before reporting results.
+Do not treat an earlier "let the current agent verify it in the in-app browser" answer as blanket
+permission for later changes in the same session; each change gets its own ask. Options to present:
+
+- "Let the current agent verify it end-to-end in the in-app browser" — you drive it end-to-end
+  and report results
 - "I'll test it manually" — you stop and let them click through it themselves
 - "Skip verification for now"
 
@@ -95,7 +99,7 @@ verification method is a separate decision from whether the fix is confirmed goo
 
 **Exception — unattended/automated sessions:** the ask-first rule above applies to
 interactive sessions with Ed. A non-interactive/automated agent run (e.g. a scheduled
-routine with no one to ask) may use Playwright without asking, but only during these
+routine with no one to ask, which has no in-app browser) may use Playwright without asking, but only during these
 windows, Philippines time (UTC+8): 7:00-10:00 AM, 12:00-1:00 PM, 12:30-1:30 AM, and
 5:00-6:00 PM. Outside these
 windows, automated sessions must skip Playwright verification rather than ask — there's

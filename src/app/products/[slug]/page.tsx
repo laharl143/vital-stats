@@ -8,6 +8,7 @@ import "next-cloudinary/dist/cld-video-player.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CATEGORY_LABELS } from "@/lib/product-labels";
+import AddToCart from "@/components/products/AddToCart";
 
 interface ProductImage {
   url: string;
@@ -186,6 +187,7 @@ export default function ProductDetailPage() {
   }
 
   const primaryImage = product.images.find((img) => img.isPrimary) ?? product.images[0];
+  const inquireHref = `/contact?productId=${encodeURIComponent(product.id)}&productName=${encodeURIComponent(product.name)}`;
   const administrationVideo =
     product.videos.find((v) => v.title?.toLowerCase().includes("self administration")) ??
     product.videos[0];
@@ -577,13 +579,17 @@ export default function ProductDetailPage() {
                 </ul>
               )}
 
-              <Link
-                href={`/contact?productId=${encodeURIComponent(product.id)}&productName=${encodeURIComponent(product.name)}`}
-                className="block text-center text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] text-white"
-                style={{ background: "var(--teal)" }}
-              >
-                {product.price ? "Order Now" : "Inquire Now"}
-              </Link>
+              {product.price ? (
+                <AddToCart slug={product.slug} inquireHref={inquireHref} />
+              ) : (
+                <Link
+                  href={inquireHref}
+                  className="block text-center text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] text-white"
+                  style={{ background: "var(--teal)" }}
+                >
+                  Inquire Now
+                </Link>
+              )}
 
               {product.requiresPrescription && (
                 <p className="text-[11px] mt-3 text-center" style={{ color: "var(--ink-faint)" }}>
