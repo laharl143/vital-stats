@@ -87,6 +87,11 @@ Required in `.env` (see `.env.example` for a template — values are not committ
   prices for the cart and checkout, and sending confirmed orders. Without them the cart and
   checkout run in estimate mode and Confirm refuses to send
 - `OMS_WEBHOOK_SIGNING_SECRET` — verifies the OMS status webhook (`/api/oms/webhook`)
+- `PAYMONGO_SECRET_KEY`: PayMongo secret key (`sk_test_…` locally, `sk_live_…` in production) for
+  checkout sessions, the payment check and refunds; it also picks which webhook signature is checked.
+  Without it (or without the OMS variables) "Card or e wallet" shows as unavailable at checkout
+- `PAYMONGO_WEBHOOK_SECRET`: signing secret of the PayMongo webhook registered for
+  `/api/paymongo/webhook` (event `checkout_session.payment.paid`)
 
 ## Verification workflow
 
