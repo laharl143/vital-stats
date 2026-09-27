@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
 import { sendOrderToOms } from "@/lib/oms";
+import { sendPaidOrder } from "@/lib/paid-order";
 
 // POST /api/orders/[id]/confirm  (admin — hand the order to the OMS, then mark it CONFIRMED)
 // Body: { paymentMethod?: "cod" | "prepaid" }  (default "cod"). A storefront order keeps the payment
@@ -30,6 +31,18 @@ export async function POST(
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
+    // An online order (spec 0004): only a PAID one may be sent, and always with the payment record
+    // built from its stored columns, so this button retries with the same bytes as the webhook's send.
+    if (order.paymentMethod === "PREPAID" && order.paymentStatus) {
+      if (order.paymentStatus !== "PAID") {
+        return NextResponse.json({ error: "This order hasn't been paid yet." }, { status: 409 });
+      }
+      const sent = await sendPaidOrder(id);
+      if (!sent.ok) return NextResponse.json({ error: sent.message }, { status: sent.status });
+      const updated = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      return NextResponse.json({ data: updated });
+    }
+
     if (order.status !== "PENDING") {
       return NextResponse.json({ error: "Only pending orders can be confirmed" }, { status: 409 });
     }

@@ -3,6 +3,7 @@ import type { OrderStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getOmsOrder } from "@/lib/oms";
 import { prisma } from "@/lib/prisma";
+import { emailRefundNeeded } from "@/lib/paid-order";
 
 // POST /api/oms/webhook  (called by the OMS, not by a browser)
 //
@@ -145,6 +146,7 @@ export async function POST(req: NextRequest) {
     // shipment.updated carries the courier's own status: recorded, never mapped to an order status.
     const newStatus = isOrderEvent ? STATUS_MAP.get(status ?? "") : null;
 
+    let refundNeeded = false;
     const outcome = await prisma.$transaction(async (tx) => {
       if (newStatus) {
         // Compare-and-set on omsLastEventAt, so an older event can't overwrite a newer one even when
@@ -154,10 +156,19 @@ export async function POST(req: NextRequest) {
           data: { status: newStatus, omsLastEventAt: at },
         });
         if (count === 0) return "stale";
+        // A paid online order the OMS cancelled or rejected: the money must go back (spec 0004, AC-11b).
+        if (newStatus === "CANCELLED") {
+          const flagged = await tx.order.updateMany({
+            where: { id: order.id, paymentMethod: "PREPAID", paymentStatus: "PAID" },
+            data: { paymentStatus: "REFUND_NEEDED", omsSendError: "The OMS cancelled this paid order. Refund the customer." },
+          });
+          refundNeeded = flagged.count > 0;
+        }
       }
       await tx.omsWebhookEvent.create({ data: { eventId, type } });
       return newStatus ? "applied" : "recorded";
     });
+    if (refundNeeded) await emailRefundNeeded(order.id, "The OMS cancelled this paid order."); // never throws
     return respond(outcome);
   } catch (error: unknown) {
     // Same eventId committed by a concurrent delivery between our check and our insert.

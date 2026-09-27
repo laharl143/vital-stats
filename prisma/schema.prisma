@@ -53,6 +53,16 @@ enum OrderStatus {
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  AWAITING_PAYMENT // online order saved, customer sent to PayMongo, not paid yet (spec 0004)
+}
+
+// The money side of an online order (spec 0004). Null for COD and admin orders.
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUND_NEEDED // paid, but the OMS refused or cancelled the order
+  REFUNDED
+  EXPIRED // abandoned, cancelled by the customer, or the session could not be created
 }
 
 enum OrderSource {
@@ -208,6 +218,19 @@ model Order {
   termsVersion   String?
   consentedAt    DateTime?
 
+  // Online payment through PayMongo (VS-255, spec 0004). Only the signed webhook sets PAID.
+  paymentStatus       PaymentStatus?
+  paymentExpiresAt    DateTime?
+  paymongoCheckoutId  String?        @unique // cs_…, the webhook finds the order by this
+  paymongoCheckoutUrl String? // replayed on a repeat submit
+  paymongoPaymentId   String?        @unique // pay_…, sent to the OMS as payment.reference
+  paymentChannel      String? // card, gcash, maya, grab_pay, qrph, dob, unknown
+  paidAt              DateTime?
+  paidAmount          Decimal?       @db.Decimal(10, 2)
+  omsSendError        String? // last plain OMS send failure, cleared on success
+  refundId            String? // ref_…, null after a manual refund
+  refundedAt          DateTime?
+
   items OrderItem[]
 
   createdAt DateTime @default(now())
@@ -216,6 +239,7 @@ model Order {
   @@index([status])
   @@index([createdAt])
   @@index([ipAddress, createdAt])
+  @@index([status, paymentExpiresAt])
 }
 
 model OrderItem {

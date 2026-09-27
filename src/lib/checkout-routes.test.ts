@@ -41,6 +41,8 @@ const fakePrisma = {
       const row = orders.find((o) => o.checkoutKey === where.checkoutKey);
       return row ? { orderNumber: row.orderNumber, totalAmount: decimal(String(row.totalAmount)) } : null;
     },
+    // Lazy expiry of abandoned online payments (spec 0004); COD tests never have one.
+    findMany: async () => [],
     count: async ({ where }: { where: { source: string; ipAddress: string; createdAt: { gte: Date } } }) =>
       orders.filter((o) => o.source === where.source && o.ipAddress === where.ipAddress && (o.createdAt as Date) >= where.createdAt.gte).length,
     create: async ({ data }: { data: Row }) => {
@@ -49,7 +51,7 @@ const fakePrisma = {
       if (numberAlwaysClashes) throw p2002();
       if (orders.some((o) => o.checkoutKey === data.checkoutKey || o.orderNumber === data.orderNumber)) throw p2002();
       orders.push({ ...data, createdAt: new Date() });
-      return { orderNumber: data.orderNumber };
+      return { id: `ord-${orders.length}`, orderNumber: data.orderNumber };
     },
   },
 };

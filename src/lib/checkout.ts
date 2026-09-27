@@ -91,6 +91,7 @@ export interface CheckoutInput {
   postalCode: string;
   notes: string | null;
   expectedTotalCentavos: number;
+  paymentMethod: "cod" | "online"; // online: PayMongo hosted checkout (spec 0004)
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -115,7 +116,9 @@ export function parseCheckout(body: unknown): { ok: true; value: CheckoutInput }
   const errors = Object.values(validateCheckoutFields(fields));
   if (errors.length > 0) return { ok: false, error: errors[0]! };
 
-  if (b.paymentMethod !== "cod") return { ok: false, error: "Only cash on delivery is available right now." };
+  if (b.paymentMethod !== "cod" && b.paymentMethod !== "online") {
+    return { ok: false, error: "Choose cash on delivery or card or e wallet." };
+  }
   const expected = typeof b.expectedTotal === "string" ? toCentavos(b.expectedTotal) : null;
   if (expected === null || !/^\d+(\.\d{1,2})?$/.test(b.expectedTotal as string)) {
     return { ok: false, error: "Missing or invalid expected total." };
@@ -136,6 +139,7 @@ export function parseCheckout(body: unknown): { ok: true; value: CheckoutInput }
       postalCode: fields.postalCode.trim(),
       notes: fields.notes.trim() || null,
       expectedTotalCentavos: expected,
+      paymentMethod: b.paymentMethod,
     },
   };
 }

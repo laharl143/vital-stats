@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
+import { AWAITING_PAYMENT_LOCK_MESSAGE, OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
 import { formatConsentLine } from "@/lib/legal";
 import NewOrderForm from "@/components/admin/NewOrderForm";
 
@@ -32,11 +32,30 @@ interface Order {
   stockUnchecked?: boolean;
   privacyVersion?: string | null;
   consentedAt?: string | null;
+  // Online payment (spec 0004); null for COD and admin orders.
+  paymentStatus?: PaymentStatus | null;
+  paymentChannel?: string | null;
+  paymongoPaymentId?: string | null;
+  paidAt?: string | null;
+  paidAmount?: string | null;
+  omsSendError?: string | null;
+  refundId?: string | null;
+  refundedAt?: string | null;
   items: OrderItem[];
   createdAt: string;
 }
 
+type PaymentStatus = "UNPAID" | "PAID" | "REFUND_NEEDED" | "REFUNDED" | "EXPIRED";
+
 const PAYMENT_LABELS = { COD: "Cash on delivery", PREPAID: "Prepaid" } as const;
+const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  UNPAID: "Awaiting payment",
+  PAID: "Paid",
+  REFUND_NEEDED: "Refund needed",
+  REFUNDED: "Refunded",
+  EXPIRED: "Payment expired",
+};
+const peso = (amount: string | null | undefined) => `₱${parseFloat(amount ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 const hasFee = (fee: string | null | undefined) => !!fee && parseFloat(fee) > 0;
 
 function OnlineBadge() {
@@ -48,7 +67,10 @@ function OnlineBadge() {
 }
 
 const STATUS_OPTIONS = ["PENDING","CONFIRMED","PROCESSING","OUT_FOR_DELIVERY","DELIVERED","CANCELLED"];
+// AWAITING_PAYMENT is a filter and a badge only: nobody sets it by hand (spec 0004, AC-17).
+const FILTER_OPTIONS = ["AWAITING_PAYMENT", ...STATUS_OPTIONS];
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  AWAITING_PAYMENT: { bg: "#ECEFF1", color: "#455A64" },
   PENDING:          { bg: "#FFF8E1", color: "#F57F17" },
   CONFIRMED:        { bg: "#E8F5E9", color: "#2E7D32" },
   PROCESSING:       { bg: "#E3F2FD", color: "#1565C0" },
@@ -77,6 +99,8 @@ function AdminOrdersPageContent() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "prepaid">("cod");
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [refundFailed, setRefundFailed] = useState(false);
+  const [refundNote, setRefundNote] = useState("");
 
   const fetchOrders = useCallback(() => {
     const url = filterStatus === "ALL" ? "/api/orders?limit=50" : `/api/orders?status=${filterStatus}&limit=50`;
@@ -150,8 +174,36 @@ function AdminOrdersPageContent() {
     }
   };
 
-  // A sent order's status belongs to the OMS: every manual status button is disabled for it.
-  const locked = selected ? isLockedByOms(selected) : false;
+  // Refund a paid online order (spec 0004, AC-12): through PayMongo, or recorded as done by hand.
+  const refundOrder = async (id: string, manualNote?: string) => {
+    setUpdating(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/orders/${id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualNote === undefined ? {} : { manual: true, note: manualNote }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setActionError(json?.error ?? "Couldn't refund the order. Please try again.");
+        if (manualNote === undefined && res.status === 422) setRefundFailed(true);
+        return;
+      }
+      setRefundFailed(false);
+      setRefundNote("");
+      if (selected?.id === id) setSelected(json.data);
+      fetchOrders();
+    } catch {
+      setActionError("Couldn't refund the order. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // A sent order's status belongs to the OMS, and an unpaid online order's status moves on its own:
+  // every manual status button is disabled for both.
+  const locked = selected ? isLockedByOms(selected) || selected.status === "AWAITING_PAYMENT" : false;
 
   return (
     <div className="p-8">
@@ -162,7 +214,7 @@ function AdminOrdersPageContent() {
 
       {/* Filter */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {["ALL", ...STATUS_OPTIONS].map((s) => (
+        {["ALL", ...FILTER_OPTIONS].map((s) => (
           <button
             key={s}
             onClick={() => setFilterStatus(s)}
@@ -218,7 +270,7 @@ function AdminOrdersPageContent() {
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  onClick={() => setSelected(order)}
+                  onClick={() => { setSelected(order); setRefundFailed(false); setActionError(null); }}
                   className="px-5 py-4 cursor-pointer transition-colors duration-150"
                   style={{ background: selected?.id === order.id ? "var(--teal-pale)" : "transparent" }}
                 >
@@ -339,6 +391,86 @@ function AdminOrdersPageContent() {
               </div>
             )}
 
+            {selected.paymentStatus && (
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Online payment</div>
+                <div className="text-[13px] flex flex-col gap-1" style={{ color: "var(--ink-muted)" }}>
+                  <div>
+                    <span className="font-medium" style={{ color: "var(--ink)" }}>{PAYMENT_STATUS_LABELS[selected.paymentStatus]}</span>
+                    {selected.paidAmount && <> · {peso(selected.paidAmount)}</>}
+                    {selected.paymentChannel && <> · {selected.paymentChannel}</>}
+                  </div>
+                  {selected.paymongoPaymentId && <div>PayMongo payment {selected.paymongoPaymentId}</div>}
+                  {selected.paidAt && <div>Paid on {new Date(selected.paidAt).toLocaleString("en-PH")}</div>}
+                  {selected.refundedAt && (
+                    <div>
+                      Refunded on {new Date(selected.refundedAt).toLocaleString("en-PH")}
+                      {selected.refundId ? ` (PayMongo refund ${selected.refundId})` : " (by hand, see admin notes)"}
+                    </div>
+                  )}
+                </div>
+
+                {selected.omsSendError && selected.paymentStatus !== "REFUNDED" && (
+                  <p className="text-[12px] mt-2 px-3 py-2 rounded-[4px]" style={{ background: "#FFF8E1", color: "#8D5A00" }}>
+                    {selected.paymentStatus === "PAID" && !selected.omsOrderId ? "Paid, not sent to OMS. " : ""}
+                    {selected.omsSendError}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {selected.paymentStatus === "PAID" && !selected.omsOrderId && (
+                    <button
+                      onClick={() => confirmOrder(selected.id)}
+                      disabled={updating}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px]"
+                      style={{ background: "var(--teal)", color: "white", opacity: updating ? 0.6 : 1 }}
+                    >
+                      Send to OMS
+                    </button>
+                  )}
+                  {(selected.paymentStatus === "REFUND_NEEDED" || (selected.paymentStatus === "PAID" && !selected.omsOrderId)) && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Refund ${peso(selected.paidAmount)} to the customer through PayMongo? This cancels the order.`)) {
+                          refundOrder(selected.id);
+                        }
+                      }}
+                      disabled={updating}
+                      className="text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border"
+                      style={{ color: "#C62828", borderColor: "#C62828", opacity: updating ? 0.6 : 1 }}
+                    >
+                      Refund {peso(selected.paidAmount)}
+                    </button>
+                  )}
+                </div>
+
+                {refundFailed && (selected.paymentStatus === "REFUND_NEEDED" || selected.paymentStatus === "PAID") && (
+                  <div className="mt-3 p-4 rounded-[4px] flex flex-col gap-2" style={{ background: "var(--cream)" }}>
+                    <label htmlFor="manual-refund-note" className="text-[12px]" style={{ color: "var(--ink)" }}>
+                      Refunded the customer another way? Say how (for example, the bank transfer reference).
+                    </label>
+                    <textarea
+                      id="manual-refund-note"
+                      rows={2}
+                      maxLength={500}
+                      value={refundNote}
+                      onChange={(e) => setRefundNote(e.target.value)}
+                      className="px-3 py-2 text-[13px] rounded-[3px] border"
+                      style={{ borderColor: "rgba(0,0,0,0.15)" }}
+                    />
+                    <button
+                      onClick={() => refundOrder(selected.id, refundNote)}
+                      disabled={updating || !refundNote.trim()}
+                      className="self-start text-[10px] tracking-[0.06em] uppercase px-3 py-2 rounded-[3px] border"
+                      style={{ color: "var(--ink)", borderColor: "rgba(0,0,0,0.15)", opacity: updating || !refundNote.trim() ? 0.6 : 1 }}
+                    >
+                      Mark refunded manually
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {selected.notes && (
               <div>
                 <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Customer Notes</div>
@@ -353,7 +485,9 @@ function AdminOrdersPageContent() {
                 <p className="text-[12px] mb-2" style={{ color: "#C62828" }}>{actionError}</p>
               )}
               {locked && (
-                <p className="text-[12px] mb-2" style={{ color: "var(--ink-muted)" }}>{OMS_LOCK_MESSAGE}</p>
+                <p className="text-[12px] mb-2" style={{ color: "var(--ink-muted)" }}>
+                  {selected.status === "AWAITING_PAYMENT" ? AWAITING_PAYMENT_LOCK_MESSAGE : OMS_LOCK_MESSAGE}
+                </p>
               )}
               <div className="flex flex-wrap gap-2">
                 {STATUS_OPTIONS.map((s) => (

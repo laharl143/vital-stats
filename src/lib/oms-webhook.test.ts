@@ -15,6 +15,7 @@ process.env.OMS_API_KEY = "test-key";
 interface FakeOrder {
   id: string; orderNumber: string; status: string; omsLastEventAt: Date | null;
   omsOrderId: string | null; customerAddress: string | null;
+  paymentMethod?: string | null; paymentStatus?: string | null; omsSendError?: string | null;
 }
 interface EventRow { eventId: string; type: string }
 
@@ -39,8 +40,14 @@ const fakePrisma = {
       Object.assign(o, data);
       return o;
     },
-    updateMany: async ({ where, data }: { where: { id: string; OR: [unknown, { omsLastEventAt: { lte: Date } }] }; data: Partial<FakeOrder> }) => {
+    updateMany: async ({ where, data }: { where: { id: string; OR?: [unknown, { omsLastEventAt: { lte: Date } }] } & Partial<FakeOrder>; data: Partial<FakeOrder> }) => {
       const o = orders.find((x) => x.id === where.id);
+      if (!where.OR) {
+        // The refund flag write (spec 0004, AC-11b): plain equality on the other fields.
+        if (!o || Object.entries(where).some(([k, v]) => k !== "id" && o[k as keyof FakeOrder] !== v)) return { count: 0 };
+        Object.assign(o, data);
+        return { count: 1 };
+      }
       const lte = where.OR[1].omsLastEventAt.lte;
       if (!o || (o.omsLastEventAt && o.omsLastEventAt > lte)) return { count: 0 };
       Object.assign(o, data);
