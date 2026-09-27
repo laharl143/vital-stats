@@ -30,7 +30,17 @@ type InquiryNotification = {
   message: string;
 };
 
-export async function notifyAdmin(notification: ConsultNotification | InquiryNotification) {
+// A storefront checkout order (VS-254, spec 0003). No address or email in the message.
+type OrderNotification = {
+  kind: "order";
+  orderNumber: string;
+  customerName: string;
+  phone: string;
+  itemCount: number;
+  total: string; // e.g. "₱400.00"
+};
+
+export async function notifyAdmin(notification: ConsultNotification | InquiryNotification | OrderNotification) {
   if (!resend) {
     console.warn("[notifyAdmin] RESEND_API_KEY not set — skipping notification email");
     return;
@@ -76,6 +86,25 @@ export async function notifyAdmin(notification: ConsultNotification | InquiryNot
             ],
             ctaHref: `${siteUrl}/admin/medical-history`,
             ctaLabel: "View in admin portal",
+          }),
+        }
+      : notification.kind === "order"
+      ? {
+          subject: `[${today}] Online order ${notification.orderNumber}: ${notification.customerName}`,
+          html: renderNotificationEmail({
+            badge: "New order",
+            title: "New online order (cash on delivery)",
+            submittedAt,
+            rows: [
+              ["Order", notification.orderNumber],
+              ["Name", notification.customerName],
+              ["Phone", notification.phone],
+              ["Items", String(notification.itemCount)],
+              ["Total", notification.total],
+              ["Payment", "Cash on delivery"],
+            ],
+            ctaHref: `${siteUrl}/admin/orders`,
+            ctaLabel: "Confirm in admin portal",
           }),
         }
       : {

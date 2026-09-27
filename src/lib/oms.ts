@@ -15,6 +15,9 @@ export interface OmsOrderInput {
   customerContact: string;
   customerAddress: string | null;
   items: { quantity: number; product: { slug: string; requiresPrescription: boolean } }[];
+  // Delivery fee as a 2 place string, e.g. "100.00" (spec 0003). Sent only when above zero, so an
+  // order with no fee sends the same bytes as before and its OMS idempotency hash does not change.
+  shippingFee?: string;
 }
 
 export type OmsResult =
@@ -102,6 +105,7 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
     items,
     paymentMethod: opts.paymentMethod,
     shippingAddress: order.customerAddress,
+    ...(order.shippingFee && !/^0*(\.0*)?$/.test(order.shippingFee) && { shippingFee: order.shippingFee }),
   });
   if ("message" in created) return fail(created.message);
   const orderId = created.json.orderId;
@@ -123,24 +127,44 @@ export type OmsAvailability =
   | { ok: false; reason: "not_configured" | "network" | "auth" | "server" | "bad_reply" };
 
 const AVAILABILITY_PAGE = 500;
+const AVAILABILITY_TTL_MS = 30_000;
+
+// Last good answer, shared by every product and cart view for at most 30 seconds (spec 0002, AC-15).
+// Not Next's fetch cache: `revalidate` serves the old answer while it refreshes in the background
+// (and keeps it when the refresh fails), so a view could see stock of any age and an OMS outage
+// looked "checked". Failures are never kept. ponytail: per server instance, fine for a 30 s cache.
+let lastGood: { fetchFn: typeof fetch; baseUrl: string; at: number; value: OmsAvailability } | null = null;
+export const clearAvailabilityCache = () => { lastGood = null; };
 
 export async function getAvailability(opts: {
   baseUrl: string | undefined;
   apiKey: string | undefined;
   fetchFn?: typeof fetch;
+  fresh?: boolean; // skip the 30 s cache: checkout's final check at submit (spec 0003, AC-11)
+  now?: number;
 }): Promise<OmsAvailability> {
   if (!opts.baseUrl || !opts.apiKey) return { ok: false, reason: "not_configured" };
+  const fetchFn = opts.fetchFn ?? fetch;
+  const now = opts.now ?? Date.now();
+  if (
+    !opts.fresh && lastGood && lastGood.fetchFn === fetchFn && lastGood.baseUrl === opts.baseUrl &&
+    now - lastGood.at < AVAILABILITY_TTL_MS
+  ) {
+    return lastGood.value;
+  }
+  const result = await fetchAvailability(opts.baseUrl, opts.apiKey, fetchFn);
+  if (result.ok) lastGood = { fetchFn, baseUrl: opts.baseUrl, at: now, value: result };
+  return result;
+}
+
+async function fetchAvailability(baseUrl: string, apiKey: string, fetchFn: typeof fetch): Promise<OmsAvailability> {
   let res: Response;
   try {
-    res = await (opts.fetchFn ?? fetch)(
-      `${opts.baseUrl.replace(/\/+$/, "")}/products/availability?limit=${AVAILABILITY_PAGE}`,
-      {
-        headers: { Authorization: `Bearer ${opts.apiKey}` },
-        signal: AbortSignal.timeout(5_000),
-        // Shared by every product and cart view for 30 seconds (spec 0002, AC-15).
-        next: { revalidate: 30 },
-      },
-    );
+    res = await fetchFn(`${baseUrl.replace(/\/+$/, "")}/products/availability?limit=${AVAILABILITY_PAGE}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(5_000),
+      cache: "no-store",
+    });
   } catch {
     return { ok: false, reason: "network" }; // includes the timeout
   }

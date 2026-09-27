@@ -50,6 +50,10 @@ export function toCentavos(price: string | null): number | null {
 export const formatCentavos = (c: number): string =>
   `${Math.floor(c / 100)}.${String(c % 100).padStart(2, "0")}`;
 
+// 129990 → "₱1,299.90", for display only.
+export const peso = (centavos: number) =>
+  `₱${(centavos / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export function buildQuote(
   requested: CartItem[],
   products: QuoteProduct[],

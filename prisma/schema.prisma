@@ -55,6 +55,16 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum OrderSource {
+  ADMIN // created by staff in the admin orders page
+  STOREFRONT // placed by the customer at /checkout (VS-254)
+}
+
+enum PaymentMethod {
+  COD
+  PREPAID
+}
+
 // ─────────────────────────────────────────
 // PRODUCT
 // ─────────────────────────────────────────
@@ -186,6 +196,18 @@ model Order {
   // occurredAt of the last OMS status event applied (VS-242); older events are ignored.
   omsLastEventAt DateTime?
 
+  // Storefront checkout (VS-254, spec 0003). Admin orders keep the defaults and nulls.
+  source         OrderSource    @default(ADMIN)
+  paymentMethod  PaymentMethod? // null: staff pick it at confirm
+  customerEmail  String?
+  shippingFee    Decimal        @default(0) @db.Decimal(10, 2) // included in totalAmount
+  stockUnchecked Boolean        @default(false) // the OMS was unreachable at submit
+  checkoutKey    String?        @unique // the browser's retry key; one order per key
+  ipAddress      String? // for the checkout rate limit
+  privacyVersion String?
+  termsVersion   String?
+  consentedAt    DateTime?
+
   items OrderItem[]
 
   createdAt DateTime @default(now())
@@ -193,6 +215,7 @@ model Order {
 
   @@index([status])
   @@index([createdAt])
+  @@index([ipAddress, createdAt])
 }
 
 model OrderItem {

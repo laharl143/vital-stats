@@ -209,3 +209,73 @@ test("getAvailability: failures come back as reasons", async () => {
   assert.deepEqual(await getAvailability(availOpts(availabilityFetch({ status: 500, json: {} }).fetchFn)), { ok: false, reason: "server" });
   assert.deepEqual(await getAvailability(availOpts(availabilityFetch({ status: 200, json: { data: [] } }).fetchFn)), { ok: false, reason: "bad_reply" });
 });
+
+test("delivery fee: sent to /orders when above zero, left out when zero (spec 0003, AC-20)", async () => {
+  const withFee = fakeFetch([{ status: 201, json: { customerId: "cus_1" } }, { status: 201, json: { orderId: "ord_1" } }]);
+  await sendOrderToOms(order({ shippingFee: "100.00" }), opts(withFee.fetchFn));
+  assert.equal(JSON.parse(withFee.calls[1].body).shippingFee, "100.00");
+
+  // A zero fee (every admin created order) must send exactly the bytes it sent before this feature.
+  for (const shippingFee of ["0.00", "0", undefined]) {
+    const noFee = fakeFetch([{ status: 201, json: { customerId: "cus_1" } }, { status: 201, json: { orderId: "ord_1" } }]);
+    const plain = fakeFetch([{ status: 201, json: { customerId: "cus_1" } }, { status: 201, json: { orderId: "ord_1" } }]);
+    await sendOrderToOms(order({ shippingFee }), opts(noFee.fetchFn));
+    await sendOrderToOms(order(), opts(plain.fetchFn));
+    assert.equal(noFee.calls[1].body, plain.calls[1].body, String(shippingFee));
+    assert.equal("shippingFee" in JSON.parse(noFee.calls[1].body), false);
+  }
+});
+
+// Regression (checkout /check verify, 2026-09-27): Next's `revalidate` served stock of any age and
+// kept serving the last good answer while the OMS was down. The cache must be a strict 30 seconds.
+test("getAvailability: a good answer is reused for under 30 seconds, never at 30 or later", async () => {
+  let stock = 5;
+  const inits: RequestInit[] = [];
+  const fetchFn = (async (_url: string, init: RequestInit) => {
+    inits.push(init);
+    return new Response(JSON.stringify([{ sku: "lumela-soap", available: stock, price: "150.00", currency: "PHP" }]), { status: 200 });
+  }) as unknown as typeof fetch;
+  const at = async (now: number) => {
+    const r = await getAvailability({ ...availOpts(fetchFn), now });
+    return r.ok ? r.bySku.get("lumela-soap")?.available : r.reason;
+  };
+
+  assert.equal(await at(1_000_000), 5);
+  stock = 1;
+  assert.equal(await at(1_029_999), 5); // still inside 30 s: the cached answer
+  assert.equal(inits.length, 1);
+  assert.equal(await at(1_030_000), 1); // at 30 s the answer is fresh, not the old one
+  assert.equal(inits.length, 2);
+  for (const init of inits) {
+    assert.equal(init.cache, "no-store");
+    assert.equal("next" in init, false); // never Next's stale while revalidate cache
+  }
+});
+
+test("getAvailability: a failure is never cached and never hides behind an old answer", async () => {
+  let down = false;
+  const fetchFn = (async () => {
+    if (down) throw new TypeError("fetch failed");
+    return new Response(JSON.stringify([{ sku: "lumela-soap", available: 5, price: "150.00", currency: "PHP" }]), { status: 200 });
+  }) as unknown as typeof fetch;
+  assert.ok((await getAvailability({ ...availOpts(fetchFn), now: 2_000_000 })).ok);
+  down = true;
+  assert.deepEqual(await getAvailability({ ...availOpts(fetchFn), now: 2_030_000 }), { ok: false, reason: "network" });
+  down = false;
+  assert.ok((await getAvailability({ ...availOpts(fetchFn), now: 2_030_001 })).ok); // the failure was not kept
+});
+
+test("getAvailability: fresh skips the cache (checkout's final check at submit)", async () => {
+  let stock = 5;
+  let calls = 0;
+  const fetchFn = (async () => {
+    calls++;
+    return new Response(JSON.stringify([{ sku: "lumela-soap", available: stock, price: "150.00", currency: "PHP" }]), { status: 200 });
+  }) as unknown as typeof fetch;
+  await getAvailability({ ...availOpts(fetchFn), now: 3_000_000 });
+  stock = 1;
+  const r = await getAvailability({ ...availOpts(fetchFn), now: 3_000_001, fresh: true });
+  assert.ok(r.ok);
+  assert.equal(r.bySku.get("lumela-soap")?.available, 1);
+  assert.equal(calls, 2);
+});
