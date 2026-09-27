@@ -4,10 +4,46 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Construction } from "lucide-react";
+import { Construction, ShoppingBag } from "lucide-react";
 import SearchBackdrop from "@/components/SearchBackdrop";
 import { useProductSearch } from "@/lib/useProductSearch";
 import { CATEGORY_LABELS } from "@/lib/product-labels";
+import { useCart } from "@/lib/useCart";
+
+// Cart icon with the total quantity (VS-253). No badge on the server render or an empty cart.
+function CartLink({ size }: { size: number }) {
+  const { count } = useCart();
+  return (
+    <Link
+      href="/cart"
+      aria-label={`Cart, ${count} ${count === 1 ? "item" : "items"}`}
+      className="relative flex items-center justify-center p-1"
+    >
+      <ShoppingBag aria-hidden="true" strokeWidth={1.8} style={{ width: size, height: size, color: "var(--ink)" }} />
+      {count > 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute flex items-center justify-center"
+          style={{
+            top: -2,
+            right: -4,
+            minWidth: 15,
+            height: 15,
+            padding: "0 3px",
+            borderRadius: 999,
+            background: "var(--teal)",
+            color: "#fff",
+            fontSize: 9,
+            fontWeight: 700,
+            border: "1.5px solid #fff",
+          }}
+        >
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 const navLinks: { label: string; href: string; matchPrefix?: boolean; comingSoon?: boolean }[] = [
   { label: "Home", href: "/" },
@@ -267,7 +303,7 @@ export default function Navbar() {
           </ul>
         </div>
 
-        {/* Desktop right group — notifications, search, account, CTA */}
+        {/* Desktop right group — notifications, search, account, cart, CTA */}
         <div className="hidden md:flex items-center gap-4 shrink-0">
           <div className="hidden lg:flex items-center gap-3">
           <button className="relative flex items-center justify-center p-1" aria-label="Notifications">
@@ -311,6 +347,7 @@ export default function Navbar() {
             </svg>
           </button>
           </div>
+          <CartLink size={18} />
           <Link
             href="/book-consult"
             className="inline-block text-white text-[13px] font-semibold px-5 lg:px-7 py-[13px] rounded-full transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
@@ -361,8 +398,9 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile right group — notifications + account, placeholders for a future feature */}
+        {/* Mobile right group — cart, then notifications + account placeholders for a future feature */}
         <div className="row-start-1 col-start-3 justify-self-end md:hidden flex items-center gap-3">
+          <CartLink size={20} />
           <button className="relative flex items-center justify-center p-1" aria-label="Notifications">
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth={1.8} style={{ width: 20, height: 20 }}>
               <path d="M6 8a6 6 0 0112 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" strokeLinejoin="round" />

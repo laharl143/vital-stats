@@ -110,6 +110,61 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
   return { ok: true, customerId, orderId };
 }
 
+// Sellable stock and OMS price per SKU (VS-253, spec 0002). The storefront Product.slug is the
+// OMS sku. The OMS only lists active, stock tracked products; anything missing is not sellable.
+export interface OmsStock {
+  available: number;
+  price: string | null;
+  currency: string | null;
+}
+
+export type OmsAvailability =
+  | { ok: true; bySku: Map<string, OmsStock> }
+  | { ok: false; reason: "not_configured" | "network" | "auth" | "server" | "bad_reply" };
+
+const AVAILABILITY_PAGE = 500;
+
+export async function getAvailability(opts: {
+  baseUrl: string | undefined;
+  apiKey: string | undefined;
+  fetchFn?: typeof fetch;
+}): Promise<OmsAvailability> {
+  if (!opts.baseUrl || !opts.apiKey) return { ok: false, reason: "not_configured" };
+  let res: Response;
+  try {
+    res = await (opts.fetchFn ?? fetch)(
+      `${opts.baseUrl.replace(/\/+$/, "")}/products/availability?limit=${AVAILABILITY_PAGE}`,
+      {
+        headers: { Authorization: `Bearer ${opts.apiKey}` },
+        signal: AbortSignal.timeout(5_000),
+        // Shared by every product and cart view for 30 seconds (spec 0002, AC-15).
+        next: { revalidate: 30 },
+      },
+    );
+  } catch {
+    return { ok: false, reason: "network" }; // includes the timeout
+  }
+  if (res.status === 401) return { ok: false, reason: "auth" };
+  if (!res.ok) return { ok: false, reason: "server" };
+  const json = (await res.json().catch(() => null)) as unknown;
+  if (!Array.isArray(json)) return { ok: false, reason: "bad_reply" };
+
+  // ponytail: one page of 500, page through with offset when the catalog grows past it.
+  const total = Number(res.headers.get("X-Total-Count"));
+  if (total > AVAILABILITY_PAGE) console.warn(`[oms] availability has ${total} products, only the first ${AVAILABILITY_PAGE} are read`);
+
+  const bySku = new Map<string, OmsStock>();
+  for (const row of json as Record<string, unknown>[]) {
+    if (typeof row?.sku !== "string" || typeof row.available !== "number") continue;
+    bySku.set(row.sku, {
+      available: row.available,
+      price: typeof row.price === "string" ? row.price : null,
+      currency: typeof row.currency === "string" ? row.currency : null,
+    });
+  }
+  return { ok: true, bySku };
+}
+
 // Reads the order as the OMS holds it now (VS-250). Used by the webhook, which must answer the OMS
 // within its 10 second wait, hence the shorter timeout. The reason is a code, safe to log.
 export type OmsOrderRead =

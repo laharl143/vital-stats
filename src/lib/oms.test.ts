@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getOmsOrder, sendOrderToOms, type OmsOrderInput } from "./oms";
+import { getAvailability, getOmsOrder, sendOrderToOms, type OmsOrderInput } from "./oms";
 
 // Every test uses a fake fetch. Nothing here may ever reach the live OMS.
 
@@ -167,4 +167,45 @@ test("getOmsOrder: not configured means no call at all", async () => {
   const { fetchFn, calls } = fakeFetch([]);
   assert.deepEqual(await getOmsOrder("ord_1", { baseUrl: undefined, apiKey: "k", fetchFn }), { ok: false, reason: "not_configured" });
   assert.equal(calls.length, 0);
+});
+
+// getAvailability (VS-253). Fake replies only, never the live OMS.
+const availabilityFetch = (reply: { status: number; json: unknown; total?: number } | "network-error") => {
+  const urls: string[] = [];
+  const fetchFn = (async (url: string) => {
+    urls.push(url);
+    if (reply === "network-error") throw new TypeError("fetch failed");
+    return new Response(JSON.stringify(reply.json), {
+      status: reply.status,
+      headers: { "X-Total-Count": String(reply.total ?? 0) },
+    });
+  }) as unknown as typeof fetch;
+  return { fetchFn, urls };
+};
+const availOpts = (fetchFn: typeof fetch) => ({ baseUrl: "https://oms.test/api/v1/", apiKey: "test-key", fetchFn });
+
+test("getAvailability: maps rows by sku, reads one page of 500", async () => {
+  const { fetchFn, urls } = availabilityFetch({
+    status: 200,
+    total: 2,
+    json: [
+      { sku: "lumela-soap", available: 4, price: "299.00", currency: "PHP" },
+      { sku: "nad-plus", available: 0, price: null, currency: "PHP" },
+      { sku: 7, available: 1 }, // malformed row skipped
+    ],
+  });
+  const result = await getAvailability(availOpts(fetchFn));
+  assert.equal(urls[0], "https://oms.test/api/v1/products/availability?limit=500");
+  assert.ok(result.ok);
+  assert.deepEqual(result.bySku.get("lumela-soap"), { available: 4, price: "299.00", currency: "PHP" });
+  assert.deepEqual(result.bySku.get("nad-plus"), { available: 0, price: null, currency: "PHP" });
+  assert.equal(result.bySku.size, 2);
+});
+
+test("getAvailability: failures come back as reasons", async () => {
+  assert.deepEqual(await getAvailability({ baseUrl: undefined, apiKey: "k" }), { ok: false, reason: "not_configured" });
+  assert.deepEqual(await getAvailability(availOpts(availabilityFetch("network-error").fetchFn)), { ok: false, reason: "network" });
+  assert.deepEqual(await getAvailability(availOpts(availabilityFetch({ status: 401, json: {} }).fetchFn)), { ok: false, reason: "auth" });
+  assert.deepEqual(await getAvailability(availOpts(availabilityFetch({ status: 500, json: {} }).fetchFn)), { ok: false, reason: "server" });
+  assert.deepEqual(await getAvailability(availOpts(availabilityFetch({ status: 200, json: { data: [] } }).fetchFn)), { ok: false, reason: "bad_reply" });
 });
