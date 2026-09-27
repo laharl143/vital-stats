@@ -25,8 +25,10 @@ before answering.
 - `npx prisma generate` — regenerate the Prisma client after schema changes (also runs automatically via `postinstall`)
 - `npx prisma migrate dev --name <name>` — create/apply a migration during development
 - `npx prisma db seed` — run `prisma/seed.ts` (uses `ts-node`, configured under `prisma.seed` in `package.json`)
-
-There is no test suite configured in this repo.
+- `npm test` — run the unit and route test suite (Node's built in `node:test`, loaded through
+  `scripts/ts-register.cjs`; test files sit beside the source as `src/lib/*.test.ts`, and each new
+  file must be added to the `test` script in `package.json`). Tests fake the database and the OMS;
+  they never touch the real ones.
 
 ## Architecture
 
@@ -75,6 +77,16 @@ Required in `.env` (see `.env.example` for a template — values are not committ
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — product image uploads/delivery
 - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` — same cloud name, exposed to the browser for `next-cloudinary`'s
   client components (`CldImage`/`CldVideoPlayer`); not a secret
+- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` — unsigned upload preset for Doctor's Notes photos
+- `RESEND_FROM_EMAIL` — verified sender for admin notification emails
+- `ADMIN_NOTIFICATION_EMAILS` — comma separated recipients for new consult, inquiry and online
+  order emails (falls back to every ADMIN/SUPER_ADMIN user when unset)
+- `APPS_SCRIPT_FORM_URL` — optional Google Apps Script endpoint that receives a sanitized copy of
+  each Book a Consult submission (skipped when unset)
+- `OMS_BASE_URL`, `OMS_API_KEY` — the order management system's API and its bearer key: stock and
+  prices for the cart and checkout, and sending confirmed orders. Without them the cart and
+  checkout run in estimate mode and Confirm refuses to send
+- `OMS_WEBHOOK_SIGNING_SECRET` — verifies the OMS status webhook (`/api/oms/webhook`)
 
 ## Verification workflow
 
