@@ -183,6 +183,8 @@ Once committed, push right away — don't leave confirmed, committed work sittin
 Project: **VS** (Vital Stats Dev Team) on `vital-stats.atlassian.net`. Board columns: To Do →
 In Progress → In Review → Done, plus Blocked.
 
+Build log: VitalStats Build Log, https://claude.ai/artifact/EBTwt7P3TDGxcoK45gwRG2 (`/log` updates this same page).
+
 - **Every change the user asks for — minor or major — gets a Jira issue.** Create it even if the
   request came as a quick one-off ask in conversation, not just for planned/ticketed work.
 - **Before starting any work on an existing issue (planning, implementation, anything beyond
