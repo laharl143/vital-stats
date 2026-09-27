@@ -102,7 +102,7 @@ Calls made by the architect (RECOMMEND items, taken as recommended on the owner'
   - `joinAddress(parts)` (format above).
   - `makeOrderNumber(now, randomBytes)`: Manila date via `Intl.DateTimeFormat` with `timeZone: "Asia/Manila"`.
   - `checkSubmit(quote, feeCentavos, expectedTotal)`: returns `{ ok: true, totalCentavos }` or `{ ok: false, code: "cart_changed" | "prescription_required" | "price_changed" }`, in that order of precedence (`prescription_required` first).
-- `src/lib/load-quote.ts` (server only): the `findMany` plus `getAvailability` plus `buildQuote` plus warning logs, moved out of `src/app/api/cart/quote/route.ts` unchanged. It also selects `Product.id` and returns `productIdBySlug`. The quote route calls it and behaves exactly as before (the existing cart route tests must still pass).
+- `src/lib/load-quote.ts` (server only): the `findMany` plus `getAvailability` plus `buildQuote` plus warning logs, moved out of `src/app/api/cart/quote/route.ts` unchanged. It also selects `Product.id`, returns `productIdBySlug`, and takes `{ fresh }`, which `POST /api/checkout` sets to `true` so the check at submit never uses the 30 second cache (added in the /debug fix, VS-267). The quote route calls it and behaves exactly as before (the existing cart route tests must still pass).
 - `sendOrderToOms` in `src/lib/oms.ts`: `OmsOrderInput` gains `shippingFee?: string`; the `/orders` body includes `shippingFee` only when it is above zero, so admin orders send a byte identical request and their OMS idempotency hash does not change.
 - `notifyAdmin` gains an `OrderNotification` kind: `{ kind: "order", orderNumber, customerName, phone, itemCount, total }`.
 
