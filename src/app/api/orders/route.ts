@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
 import { requireAdminSession } from "@/lib/require-admin";
 import { paginate } from "@/lib/paginate";
 import { orderTotal, parseNewOrder, toPrice } from "@/lib/new-order";
+import { expirePayments } from "@/lib/paid-order";
+
+export const maxDuration = 60; // room for the expiry sweep's PayMongo checks inside after()
 
 // GET /api/orders  (admin only)
 // Query params: ?status=PENDING&page=1&limit=20
@@ -12,6 +15,12 @@ export async function GET(req: NextRequest) {
   if (unauthorized) return unauthorized;
 
   try {
+    // Lazy expiry of abandoned online payments (spec 0004, AC-13, AC-13b): up to 5 per load, each
+    // checked with PayMongo first, so it runs after the list has answered. It can never hide the list.
+    after(() =>
+      expirePayments().catch((err) => console.error("[GET /api/orders] expiry sweep", (err as { code?: string })?.code ?? "unknown")),
+    );
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as OrderStatus | null;
     const where = { ...(status && { status }) };

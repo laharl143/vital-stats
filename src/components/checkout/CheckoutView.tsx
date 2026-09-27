@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { CheckCircle2, ShoppingBag, Stethoscope, Truck } from "lucide-react";
+import { CheckCircle2, CreditCard, ShoppingBag, Stethoscope, Truck } from "lucide-react";
 import ConsentCheckbox, { LegalLink } from "@/components/ConsentCheckbox";
 import { serializeCart } from "@/lib/cart";
 import { fetchQuote, formatCentavos, peso, toCentavos, type Quote, type QuoteLine } from "@/lib/cart-quote";
@@ -15,6 +15,11 @@ import { clearCart, useCart } from "@/lib/useCart";
 // The /checkout page body (VS-254, spec 0003). Lines come from the browser cart and are priced by
 // POST /api/cart/quote (latest wins, like the cart page); POST /api/checkout checks them again and
 // saves a pending cash on delivery order. One random key per visit makes a retry return the same order.
+//
+// Online payment (VS-255, spec 0004): the same submit returns a PayMongo checkoutUrl and the browser
+// goes there. The cart and the key stay until /checkout/done sees the order paid; a return through
+// PayMongo's cancel link (?cancelled=<key>) expires that order (once PayMongo confirms it's unpaid)
+// and starts a fresh key.
 
 const KEY_STORAGE = "vs-checkout-key";
 const FIELD_ORDER: (keyof CheckoutFields)[] = ["name", "phone", "email", "street", "barangay", "city", "province", "postalCode", "notes"];
@@ -27,8 +32,17 @@ const sellable = (l: QuoteLine | undefined) => !!l && l.status !== "out_of_stock
 
 type Placed = { orderNumber: string; total: string; phone: string };
 
-export default function CheckoutView() {
+type Payment = "cod" | "online";
+
+export default function CheckoutView({ onlineEnabled }: { onlineEnabled: boolean }) {
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  // Back from PayMongo's cancel link (?cancelled=<key>). Read once; only shown after mount.
+  const [cancelledKey] = useState(() =>
+    typeof window === "undefined" ? null : new URL(window.location.href).searchParams.get("cancelled"),
+  );
+  const [payment, setPayment] = useState<Payment>(cancelledKey && onlineEnabled ? "online" : "cod");
+  const [notice, setNotice] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const { items, remove, adjust } = useCart();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quotedKey, setQuotedKey] = useState<string | null>(null);
@@ -81,6 +95,34 @@ export default function CheckoutView() {
     if (banner) bannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [banner]);
 
+  // Back from PayMongo's cancel link (AC-15). The server asks PayMongo first (AC-13b): only a
+  // confirmed "expired" keeps the cart here with a new key. Anything else (paid, rescued, not
+  // answerable yet) goes to /checkout/done with the same key, so nobody pays twice.
+  useEffect(() => {
+    if (!cancelledKey) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("cancelled");
+    window.history.replaceState(null, "", url.pathname + url.search);
+    fetch("/api/checkout/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: cancelledKey }),
+    })
+      .then(async (res) => {
+        const state = res.status === 404 ? "expired" : ((await res.json().catch(() => null)) as { data?: { state?: string } } | null)?.data?.state;
+        if (state !== "expired") throw new Error(state ?? `cancel ${res.status}`);
+        try {
+          window.sessionStorage.removeItem(KEY_STORAGE);
+        } catch {}
+        keyRef.current = null;
+        setNotice("Payment cancelled. Your cart is still here.");
+      })
+      .catch(() => {
+        setRedirecting(true);
+        window.location.assign(`/checkout/done?key=${encodeURIComponent(cancelledKey)}`);
+      });
+  }, [cancelledKey]);
+
   if (placed) return <Confirmation placed={placed} headingRef={doneRef} />;
   if (!mounted || (items.length > 0 && !quote && !failed)) return <CheckoutSkeleton />;
   if (items.length === 0) return <EmptyState />;
@@ -125,9 +167,10 @@ export default function CheckoutView() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (placing) return;
+    if (placing || redirecting) return;
     setSubmitAttempted(true);
     setBanner(null);
+    setNotice(null);
     const errs = validateCheckoutFields(fields);
     const firstBad = FIELD_ORDER.find((k) => errs[k]) ?? (consent ? null : "consent");
     if (firstBad) {
@@ -150,14 +193,24 @@ export default function CheckoutView() {
           customer: { name: fields.name, phone: fields.phone, email: fields.email },
           address: { street: fields.street, barangay: fields.barangay, city: fields.city, province: fields.province, postalCode: fields.postalCode },
           notes: fields.notes,
-          paymentMethod: "cod",
+          paymentMethod: payment,
           expectedTotal: formatCentavos(total),
           privacyConsent: consent,
         }),
       });
       const json = (await res.json().catch(() => null)) as
-        | { data?: { orderNumber: string; total: string }; error?: string; code?: string; quote?: Quote }
+        | {
+            data?: { orderNumber: string; total: string; checkoutUrl?: string; paymentState?: string };
+            error?: string; code?: string; quote?: Quote;
+          }
         | null;
+      // Online: go to PayMongo, or (a repeat of an order no longer waiting) to its status page. The
+      // cart and the key stay: only /checkout/done clears them once the order is paid (spec 0004).
+      if (res.ok && (json?.data?.checkoutUrl || json?.data?.paymentState)) {
+        setRedirecting(true);
+        window.location.assign(json.data.checkoutUrl ?? `/checkout/done?key=${checkoutKey()}`);
+        return;
+      }
       if (res.ok && json?.data) {
         try {
           window.sessionStorage.removeItem(KEY_STORAGE);
@@ -193,6 +246,11 @@ export default function CheckoutView() {
           {banner && (
             <div ref={bannerRef} role="alert" className="px-5 py-4 rounded-[6px] text-[14px]" style={{ background: "#FCE8E8", color: "#8A1C1C" }}>
               {banner}
+            </div>
+          )}
+          {notice && !banner && (
+            <div role="status" className="px-5 py-4 rounded-[6px] text-[14px]" style={{ background: "var(--teal-pale)", color: "var(--ink)" }}>
+              {notice}
             </div>
           )}
 
@@ -274,21 +332,23 @@ export default function CheckoutView() {
           <Section title="Payment">
             <fieldset className="flex flex-col gap-3">
               <legend className="sr-only">Payment method</legend>
-              <label className="flex items-center gap-3 px-4 py-4 rounded-[4px]" style={{ border: "1.5px solid var(--teal)", background: "var(--teal-pale)" }}>
-                <input type="radio" name="payment" value="cod" checked readOnly style={{ accentColor: "var(--teal)" }} />
-                <span className="flex-1">
-                  <span className="block text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Cash on delivery</span>
-                  <span className="block text-[12px]" style={{ color: "var(--ink-muted)" }}>Pay the rider in cash when your order arrives.</span>
-                </span>
-                <Truck aria-hidden="true" size={20} style={{ color: "var(--teal-dark)" }} />
-              </label>
-              <label className="flex items-center gap-3 px-4 py-4 rounded-[4px] cursor-not-allowed" style={{ border: "1px solid rgba(0,0,0,0.1)", opacity: 0.6 }}>
-                <input type="radio" name="payment" value="online" disabled aria-describedby="co-online-soon" />
-                <span className="flex-1 text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Card or e wallet</span>
-                <span id="co-online-soon" className="text-[10px] uppercase tracking-[0.08em] font-semibold px-2 py-[2px] rounded-full" style={{ background: "rgba(0,0,0,0.06)", color: "var(--ink-muted)" }}>
-                  Coming soon
-                </span>
-              </label>
+              <PaymentOption value="cod" selected={payment === "cod"} onSelect={setPayment}
+                title="Cash on delivery" note="Pay the rider in cash when your order arrives."
+                icon={<Truck aria-hidden="true" size={20} style={{ color: "var(--teal-dark)" }} />} />
+              {onlineEnabled ? (
+                <PaymentOption value="online" selected={payment === "online"} onSelect={setPayment}
+                  title="Card or e wallet"
+                  note="Card, GCash, Maya, GrabPay, QR Ph (any bank app, including MariBank and GoTyme) or online banking. You'll pay on PayMongo's secure page."
+                  icon={<CreditCard aria-hidden="true" size={20} style={{ color: "var(--teal-dark)" }} />} />
+              ) : (
+                <label className="flex items-center gap-3 px-4 py-4 rounded-[4px] cursor-not-allowed" style={{ border: "1px solid rgba(0,0,0,0.1)", opacity: 0.6 }}>
+                  <input type="radio" name="payment" value="online" disabled aria-describedby="co-online-off" />
+                  <span className="flex-1 text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Card or e wallet</span>
+                  <span id="co-online-off" className="text-[10px] uppercase tracking-[0.08em] font-semibold px-2 py-[2px] rounded-full" style={{ background: "rgba(0,0,0,0.06)", color: "var(--ink-muted)" }}>
+                    Unavailable right now
+                  </span>
+                </label>
+              )}
             </fieldset>
           </Section>
         </div>
@@ -330,11 +390,13 @@ export default function CheckoutView() {
           {canPlace ? (
             <button
               type="submit"
-              disabled={placing || pending}
+              disabled={placing || pending || redirecting}
               className="w-full text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-4 rounded-[3px] text-white hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ background: "var(--teal)" }}
             >
-              {placing ? "Placing order…" : total === null ? "Place order" : `Place order · ${peso(total)}`}
+              {payment === "online"
+                ? placing || redirecting ? "Opening payment…" : total === null ? "Continue to payment" : `Continue to payment · ${peso(total)}`
+                : placing ? "Placing order…" : total === null ? "Place order" : `Place order · ${peso(total)}`}
             </button>
           ) : (
             <p className="text-[12px] text-center" style={{ color: "var(--ink-muted)" }}>
@@ -369,6 +431,22 @@ function Field({ id, label, error, hint, className, children }: {
       {hint && !error && <p id={`co-${id}-hint`} className="text-[12px]" style={{ color: "var(--ink-muted)" }}>{hint}</p>}
       {error && <p id={`co-${id}-error`} className="text-[12px]" style={{ color: "#DC2626" }}>{error}</p>}
     </div>
+  );
+}
+
+function PaymentOption({ value, selected, onSelect, title, note, icon }: {
+  value: Payment; selected: boolean; onSelect: (v: Payment) => void; title: string; note: string; icon: ReactNode;
+}) {
+  return (
+    <label className="flex items-center gap-3 px-4 py-4 rounded-[4px] cursor-pointer"
+      style={selected ? { border: "1.5px solid var(--teal)", background: "var(--teal-pale)" } : { border: "1px solid rgba(0,0,0,0.15)" }}>
+      <input type="radio" name="payment" value={value} checked={selected} onChange={() => onSelect(value)} style={{ accentColor: "var(--teal)" }} />
+      <span className="flex-1">
+        <span className="block text-[14px] font-semibold" style={{ color: "var(--ink)" }}>{title}</span>
+        <span className="block text-[12px]" style={{ color: "var(--ink-muted)" }}>{note}</span>
+      </span>
+      {icon}
+    </label>
   );
 }
 

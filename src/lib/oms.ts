@@ -18,11 +18,16 @@ export interface OmsOrderInput {
   // Delivery fee as a 2 place string, e.g. "100.00" (spec 0003). Sent only when above zero, so an
   // order with no fee sends the same bytes as before and its OMS idempotency hash does not change.
   shippingFee?: string;
+  // A paid online order (spec 0004, OMS spec 0023). Built only from stored columns so every retry
+  // sends the same bytes. Sent only when present, so a COD body is unchanged.
+  payment?: { amount: string; currency: string; provider: string; channel: string; reference: string; paidAt: string };
 }
 
+// retryable: the failure may pass on its own (network, timeout, 401, 5xx, customer_not_found).
+// Otherwise the OMS refused the order for good, and a paid order needs a refund (spec 0004).
 export type OmsResult =
   | { ok: true; customerId: string; orderId: string }
-  | { ok: false; message: string };
+  | { ok: false; message: string; retryable: boolean };
 
 interface OmsOptions {
   baseUrl: string | undefined;
@@ -31,7 +36,7 @@ interface OmsOptions {
   fetchFn?: typeof fetch;
 }
 
-const fail = (message: string): OmsResult => ({ ok: false, message });
+const fail = (message: string, retryable = false): OmsResult => ({ ok: false, message, retryable });
 
 // Plain sentences for the admin, keyed by the OMS error code. Never the raw response text.
 const ERROR_MESSAGES: Record<string, string> = {
@@ -43,7 +48,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   no_physical_items: "This order has no physical items to ship, so the OMS can't take it.",
   mixed_currency: "This order mixes currencies, which the OMS can't take.",
   internal_error: "The OMS had an internal error. Please try again in a moment.",
+  amount_mismatch: "The OMS total for this order differs from what the customer paid (a price changed). Refund the customer.",
+  currency_mismatch: "The payment currency doesn't match the OMS product currency. Refund the customer.",
+  price_unknown: "One of the products has no price in the OMS, so it can't take a paid order for it. Refund the customer.",
+  payment_reference_used: "The OMS already has this PayMongo payment on another order. Check both orders before refunding.",
 };
+
+// Failures that may pass on their own; everything else is a refusal the same request can't fix.
+const RETRYABLE_CODES = new Set(["customer_not_found", "internal_error"]);
 
 function errorMessage(status: number, code: string | undefined): string {
   if (status === 401) return "The OMS refused our API key. Ask a developer to check OMS_API_KEY.";
@@ -56,13 +68,13 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
   if (order.items.some((i) => i.product.requiresPrescription)) {
     return fail("This order includes a prescription product. It needs the prescription path, which isn't built yet, so it stays pending.");
   }
-  if (!opts.baseUrl || !opts.apiKey) return fail("The OMS connection isn't configured. Ask a developer to set OMS_BASE_URL and OMS_API_KEY.");
+  if (!opts.baseUrl || !opts.apiKey) return fail("The OMS connection isn't configured. Ask a developer to set OMS_BASE_URL and OMS_API_KEY.", true);
 
   const { baseUrl, apiKey } = opts;
   const doFetch = opts.fetchFn ?? fetch;
 
   // One POST. Returns the parsed JSON on 201, or a failure message.
-  const post = async (path: string, body: { externalRef: string; [k: string]: unknown }): Promise<{ json: Record<string, unknown> } | { message: string }> => {
+  const post = async (path: string, body: { externalRef: string; [k: string]: unknown }): Promise<{ json: Record<string, unknown> } | { message: string; retryable: boolean }> => {
     let res: Response;
     try {
       res = await doFetch(`${baseUrl.replace(/\/+$/, "")}${path}`, {
@@ -77,12 +89,14 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
         signal: AbortSignal.timeout(10_000),
       });
     } catch {
-      return { message: "Couldn't reach the OMS. Please try again." };
+      return { message: "Couldn't reach the OMS. Please try again.", retryable: true };
     }
     const json = (await res.json().catch(() => null)) as Record<string, unknown> | null;
     // Any 2xx: a replayed idempotent call may answer 200 with the original result instead of 201.
     if (!res.ok || !json) {
-      return { message: errorMessage(res.status, typeof json?.error === "string" ? json.error : undefined) };
+      const code = typeof json?.error === "string" ? json.error : undefined;
+      const retryable = res.status === 401 || res.status >= 500 || !json || (code !== undefined && RETRYABLE_CODES.has(code));
+      return { message: errorMessage(res.status, code), retryable };
     }
     return { json };
   };
@@ -91,9 +105,9 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
     externalRef: `cust-${order.orderNumber}`,
     customer: { name: order.customerName, phone: order.customerContact, address: order.customerAddress },
   });
-  if ("message" in intake) return fail(intake.message);
+  if ("message" in intake) return fail(intake.message, intake.retryable);
   const customerId = intake.json.customerId;
-  if (typeof customerId !== "string") return fail("The OMS sent back an unexpected reply. Please try again.");
+  if (typeof customerId !== "string") return fail("The OMS sent back an unexpected reply. Please try again.", true);
 
   // Sorted so a retry sends the same item order no matter how the database returns the rows.
   const items = order.items
@@ -106,10 +120,11 @@ export async function sendOrderToOms(order: OmsOrderInput, opts: OmsOptions): Pr
     paymentMethod: opts.paymentMethod,
     shippingAddress: order.customerAddress,
     ...(order.shippingFee && !/^0*(\.0*)?$/.test(order.shippingFee) && { shippingFee: order.shippingFee }),
+    ...(order.payment && { payment: order.payment }),
   });
-  if ("message" in created) return fail(created.message);
+  if ("message" in created) return fail(created.message, created.retryable);
   const orderId = created.json.orderId;
-  if (typeof orderId !== "string") return fail("The OMS sent back an unexpected reply. Please try again.");
+  if (typeof orderId !== "string") return fail("The OMS sent back an unexpected reply. Please try again.", true);
 
   return { ok: true, customerId, orderId };
 }

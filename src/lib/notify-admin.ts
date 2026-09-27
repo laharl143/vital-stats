@@ -38,9 +38,23 @@ type OrderNotification = {
   phone: string;
   itemCount: number;
   total: string; // e.g. "₱400.00"
+  paidChannel?: string; // set for an online order that is paid (spec 0004); absent means COD
 };
 
-export async function notifyAdmin(notification: ConsultNotification | InquiryNotification | OrderNotification) {
+// A paid online order that needs a refund: the OMS refused or cancelled it, or the amount paid
+// didn't match (spec 0004, AC-11 and AC-11b). No address or email in the message.
+type RefundNeededNotification = {
+  kind: "refund_needed";
+  orderNumber: string;
+  customerName: string;
+  phone: string;
+  paid: string; // e.g. "₱400.00"
+  reason: string; // a plain sentence, never a raw provider or OMS body
+};
+
+export async function notifyAdmin(
+  notification: ConsultNotification | InquiryNotification | OrderNotification | RefundNeededNotification,
+) {
   if (!resend) {
     console.warn("[notifyAdmin] RESEND_API_KEY not set — skipping notification email");
     return;
@@ -93,7 +107,7 @@ export async function notifyAdmin(notification: ConsultNotification | InquiryNot
           subject: `[${today}] Online order ${notification.orderNumber}: ${notification.customerName}`,
           html: renderNotificationEmail({
             badge: "New order",
-            title: "New online order (cash on delivery)",
+            title: notification.paidChannel ? "New online order (paid online)" : "New online order (cash on delivery)",
             submittedAt,
             rows: [
               ["Order", notification.orderNumber],
@@ -101,10 +115,28 @@ export async function notifyAdmin(notification: ConsultNotification | InquiryNot
               ["Phone", notification.phone],
               ["Items", String(notification.itemCount)],
               ["Total", notification.total],
-              ["Payment", "Cash on delivery"],
+              ["Payment", notification.paidChannel ? `Paid online (${notification.paidChannel})` : "Cash on delivery"],
             ],
             ctaHref: `${siteUrl}/admin/orders`,
-            ctaLabel: "Confirm in admin portal",
+            ctaLabel: notification.paidChannel ? "View in admin portal" : "Confirm in admin portal",
+          }),
+        }
+      : notification.kind === "refund_needed"
+      ? {
+          subject: `[${today}] Refund needed: order ${notification.orderNumber}`,
+          html: renderNotificationEmail({
+            badge: "Refund needed",
+            title: "A paid online order needs a refund",
+            submittedAt,
+            rows: [
+              ["Order", notification.orderNumber],
+              ["Name", notification.customerName],
+              ["Phone", notification.phone],
+              ["Paid", notification.paid],
+              ["Reason", notification.reason],
+            ],
+            ctaHref: `${siteUrl}/admin/orders`,
+            ctaLabel: "Refund in admin portal",
           }),
         }
       : {

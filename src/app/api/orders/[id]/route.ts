@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
-import { OMS_ADDRESS_LOCK_MESSAGE, OMS_LOCK_MESSAGE, isAddressChange, isLockedByOms } from "@/lib/order-lock";
+import { OMS_ADDRESS_LOCK_MESSAGE, OMS_LOCK_MESSAGE, isAddressChange, isLockedByOms, paymentLockMessage } from "@/lib/order-lock";
 
 // GET /api/orders/[id]  (admin only)
 export async function GET(
@@ -51,8 +51,14 @@ export async function PATCH(
     if (status !== undefined || customerAddress !== undefined) {
       const existing = await prisma.order.findUnique({
         where: { id },
-        select: { omsOrderId: true, customerAddress: true },
+        select: { omsOrderId: true, customerAddress: true, status: true, paymentStatus: true },
       });
+      // Online payment (spec 0004): an unpaid order's status moves on its own, and a paid order is
+      // cancelled through Refund so the money is never left behind.
+      if (existing && status !== undefined) {
+        const lock = paymentLockMessage(existing, status);
+        if (lock) return NextResponse.json({ error: lock }, { status: 409 });
+      }
       sent = !!existing && isLockedByOms(existing);
       if (sent && status !== undefined) {
         return NextResponse.json({ error: OMS_LOCK_MESSAGE }, { status: 409 });
