@@ -37,7 +37,25 @@ export function parseCart(raw: string | null): CartItem[] {
   }
 }
 
-export const serializeCart = (items: CartItem[]): string => JSON.stringify({ v: 1, items });
+// Request body lines for POST /api/cart/quote and /api/checkout: at most MAX_LINES entries, each a
+// slug of 1 to 100 characters and a whole quantity from 1 to 10. Duplicate slugs merge (summed,
+// capped at 10) in first seen order. An empty list is valid here; checkout refuses it itself.
+export function parseCartLines(raw: unknown): { ok: true; items: CartItem[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw) || raw.length > MAX_LINES) {
+    return { ok: false, error: `items must be a list of at most ${MAX_LINES} lines.` };
+  }
+  const merged = new Map<string, number>();
+  for (const item of raw as { slug?: unknown; qty?: unknown }[]) {
+    const { slug, qty } = item ?? {};
+    if (!isValidSlug(slug) || !isValidQty(qty)) {
+      return { ok: false, error: `Each line needs a slug (1 to 100 characters) and a whole quantity from 1 to ${MAX_QTY_PER_LINE}.` };
+    }
+    merged.set(slug, Math.min((merged.get(slug) ?? 0) + qty, MAX_QTY_PER_LINE));
+  }
+  return { ok: true, items: [...merged].map(([slug, qty]) => ({ slug, qty })) };
+}
+
+export const serializeCart =(items: CartItem[]): string => JSON.stringify({ v: 1, items });
 
 // Adds to an existing line or appends a new one, never above maxQty (itself capped at 10).
 // Returns the same array when nothing changes (full line, full cart, or maxQty 0).

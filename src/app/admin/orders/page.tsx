@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { OMS_LOCK_MESSAGE, isLockedByOms } from "@/lib/order-lock";
+import { formatConsentLine } from "@/lib/legal";
 import NewOrderForm from "@/components/admin/NewOrderForm";
 
 interface OrderItem {
@@ -23,8 +24,27 @@ interface Order {
   adminNotes: string | null;
   totalAmount: string | null;
   omsOrderId: string | null;
+  // Storefront checkout fields (spec 0003); admin created orders have the defaults and nulls.
+  source?: "ADMIN" | "STOREFRONT";
+  paymentMethod?: "COD" | "PREPAID" | null;
+  customerEmail?: string | null;
+  shippingFee?: string | null;
+  stockUnchecked?: boolean;
+  privacyVersion?: string | null;
+  consentedAt?: string | null;
   items: OrderItem[];
   createdAt: string;
+}
+
+const PAYMENT_LABELS = { COD: "Cash on delivery", PREPAID: "Prepaid" } as const;
+const hasFee = (fee: string | null | undefined) => !!fee && parseFloat(fee) > 0;
+
+function OnlineBadge() {
+  return (
+    <span className="text-[9px] tracking-[0.08em] uppercase px-2 py-1 rounded-[2px] flex-shrink-0" style={{ background: "var(--teal-pale)", color: "var(--teal-dark)" }}>
+      Online
+    </span>
+  );
 }
 
 const STATUS_OPTIONS = ["PENDING","CONFIRMED","PROCESSING","OUT_FOR_DELIVERY","DELIVERED","CANCELLED"];
@@ -203,7 +223,10 @@ function AdminOrdersPageContent() {
                   style={{ background: selected?.id === order.id ? "var(--teal-pale)" : "transparent" }}
                 >
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <div className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>{order.customerName}</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="text-[13px] font-medium truncate" style={{ color: "var(--ink)" }}>{order.customerName}</div>
+                      {order.source === "STOREFRONT" && <OnlineBadge />}
+                    </div>
                     <span
                       className="text-[9px] tracking-[0.08em] uppercase px-2 py-1 rounded-[2px] flex-shrink-0"
                       style={STATUS_COLORS[order.status] ?? STATUS_COLORS.PENDING}
@@ -234,8 +257,14 @@ function AdminOrdersPageContent() {
             )}
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.customerName}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display font-light text-[24px]" style={{ color: "var(--ink)" }}>{selected.customerName}</h2>
+                  {selected.source === "STOREFRONT" && <OnlineBadge />}
+                </div>
                 <div className="text-[13px]" style={{ color: "var(--teal)" }}>{selected.customerContact}</div>
+                {selected.customerEmail && (
+                  <div className="text-[13px]" style={{ color: "var(--ink-muted)" }}>{selected.customerEmail}</div>
+                )}
               </div>
               <span
                 className="text-[10px] tracking-[0.08em] uppercase px-3 py-1 rounded-[2px]"
@@ -244,6 +273,12 @@ function AdminOrdersPageContent() {
                 {(selected.status ?? "").replace("_", " ")}
               </span>
             </div>
+
+            {selected.stockUnchecked && (
+              <p className="text-[12px] px-3 py-2 rounded-[4px]" style={{ background: "#FFF8E1", color: "#8D5A00" }}>
+                Stock not checked at checkout (the OMS was unreachable). Check availability before confirming.
+              </p>
+            )}
 
             {selected.customerAddress && (
               <div>
@@ -280,6 +315,12 @@ function AdminOrdersPageContent() {
                   </div>
                 ))}
               </div>
+              {hasFee(selected.shippingFee) && (
+                <div className="flex justify-between mt-3 px-4 text-[13px]" style={{ color: "var(--ink-muted)" }}>
+                  <span>Delivery fee</span>
+                  <span>₱{parseFloat(selected.shippingFee!).toLocaleString()}</span>
+                </div>
+              )}
               {selected.totalAmount && (
                 <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
                   <div className="text-[14px] font-medium" style={{ color: "var(--ink)" }}>
@@ -288,6 +329,15 @@ function AdminOrdersPageContent() {
                 </div>
               )}
             </div>
+
+            {selected.source === "STOREFRONT" && (
+              <div>
+                <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Consent</div>
+                <div className="text-[13px]" style={{ color: "var(--ink-muted)" }}>
+                  {formatConsentLine(selected.privacyVersion ?? null, selected.consentedAt ?? null)}
+                </div>
+              </div>
+            )}
 
             {selected.notes && (
               <div>
@@ -342,6 +392,11 @@ function AdminOrdersPageContent() {
                   {!selected.customerAddress?.trim() && (
                     <p className="text-[12px]" style={{ color: "#C62828" }}>Add a shipping address before confirming this order.</p>
                   )}
+                  {selected.paymentMethod ? (
+                    <p className="text-[12px]" style={{ color: "var(--ink)" }}>
+                      Payment method: {PAYMENT_LABELS[selected.paymentMethod]} (chosen by the customer at checkout)
+                    </p>
+                  ) : (
                   <label className="text-[12px] flex items-center gap-2" style={{ color: "var(--ink)" }}>
                     Payment method
                     <select
@@ -354,6 +409,7 @@ function AdminOrdersPageContent() {
                       <option value="prepaid">Prepaid</option>
                     </select>
                   </label>
+                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={() => confirmOrder(selected.id)}

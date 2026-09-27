@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --require ./scripts/ts-register.cjs --test src/lib/oms.test.ts src/lib/oms-webhook.test.ts src/lib/order-lock.test.ts src/lib/new-order.test.ts src/lib/legal.test.ts src/lib/consent-routes.test.ts src/lib/cart.test.ts src/lib/cart-quote.test.ts src/lib/cart-routes.test.ts",
+    "test": "node --require ./scripts/ts-register.cjs --test src/lib/oms.test.ts src/lib/oms-webhook.test.ts src/lib/order-lock.test.ts src/lib/new-order.test.ts src/lib/legal.test.ts src/lib/consent-routes.test.ts src/lib/cart.test.ts src/lib/cart-quote.test.ts src/lib/cart-routes.test.ts src/lib/checkout.test.ts src/lib/checkout-routes.test.ts src/lib/order-confirm-routes.test.ts src/lib/notify-admin.test.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

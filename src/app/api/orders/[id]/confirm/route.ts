@@ -4,7 +4,8 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { sendOrderToOms } from "@/lib/oms";
 
 // POST /api/orders/[id]/confirm  (admin — hand the order to the OMS, then mark it CONFIRMED)
-// Body: { paymentMethod?: "cod" | "prepaid" }  (default "cod")
+// Body: { paymentMethod?: "cod" | "prepaid" }  (default "cod"). A storefront order keeps the payment
+// method the customer chose at checkout, and the body is ignored for it (spec 0003, AC-20).
 //
 // The order stays PENDING unless BOTH OMS calls succeed; the OMS ids and CONFIRMED are saved
 // together afterwards. Retrying after any failure replays identical calls (see lib/oms.ts).
@@ -19,10 +20,6 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const paymentMethod = body?.paymentMethod ?? "cod";
-    if (paymentMethod !== "cod" && paymentMethod !== "prepaid") {
-      return NextResponse.json({ error: "Payment method must be cod or prepaid" }, { status: 400 });
-    }
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -37,7 +34,12 @@ export async function POST(
       return NextResponse.json({ error: "Only pending orders can be confirmed" }, { status: 409 });
     }
 
-    const result = await sendOrderToOms(order, {
+    const paymentMethod = order.paymentMethod ? order.paymentMethod.toLowerCase() : (body?.paymentMethod ?? "cod");
+    if (paymentMethod !== "cod" && paymentMethod !== "prepaid") {
+      return NextResponse.json({ error: "Payment method must be cod or prepaid" }, { status: 400 });
+    }
+
+    const result = await sendOrderToOms({ ...order, shippingFee: order.shippingFee.toFixed(2) }, {
       baseUrl: process.env.OMS_BASE_URL,
       apiKey: process.env.OMS_API_KEY,
       paymentMethod,

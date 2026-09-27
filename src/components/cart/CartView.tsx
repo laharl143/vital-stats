@@ -5,14 +5,11 @@ import Link from "next/link";
 import { ShoppingBag, Stethoscope } from "lucide-react";
 import QtyStepper from "@/components/QtyStepper";
 import { serializeCart } from "@/lib/cart";
-import { fetchQuote, toCentavos, type Quote, type QuoteLine } from "@/lib/cart-quote";
+import { fetchQuote, peso, toCentavos, type Quote, type QuoteLine } from "@/lib/cart-quote";
 import { useCart } from "@/lib/useCart";
 
 // The /cart page body (VS-253, spec 0002, AC-7 and AC-9 to AC-13). Lines come from the browser cart;
 // names, prices and limits from POST /api/cart/quote, asked again on every change (latest wins).
-
-const peso = (centavos: number) =>
-  `₱${(centavos / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const noopSubscribe = () => () => {};
 const card = { background: "#fff", border: "1px solid rgba(0,0,0,0.06)" };
@@ -105,6 +102,12 @@ export default function CartView() {
   const pending = quotedKey !== key;
   const bySlug = new Map(quote.lines.map((l) => [l.slug, l]));
   const hasRx = items.some((i) => bySlug.get(i.slug)?.requiresPrescription);
+  // Checkout needs every line sellable and none needing a prescription (spec 0003, AC-1).
+  const hasUnsellable = items.some((i) => {
+    const s = bySlug.get(i.slug)?.status;
+    return s === "out_of_stock" || s === "unavailable";
+  });
+  const canCheckout = !hasRx && !hasUnsellable;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_340px] items-start">
@@ -149,7 +152,11 @@ export default function CartView() {
           <div className="flex gap-3 px-5 py-4 rounded-[6px]" style={{ background: "var(--teal-pale)" }}>
             <Stethoscope aria-hidden="true" size={18} className="flex-shrink-0 mt-[2px]" style={{ color: "var(--teal-dark)" }} />
             <p className="text-[13px]" style={{ color: "var(--ink-mid)" }}>
-              Checkout will ask for your prescription or a consult booking. A pharmacist reviews it before your order ships.
+              Prescription products can&apos;t be ordered online yet. Remove them to check out, or{" "}
+              <Link href="/book-consult" className="underline font-medium" style={{ color: "var(--teal-dark)" }}>
+                book a consult
+              </Link>
+              .
             </p>
           </div>
         )}
@@ -173,19 +180,32 @@ export default function CartView() {
         <p className="text-[12px]" style={{ color: "var(--ink-muted)" }}>
           Delivery fee is calculated at checkout.
         </p>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          aria-describedby="checkout-soon"
-          className="w-full text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] cursor-not-allowed"
-          style={{ background: "rgba(13,21,18,0.08)", color: "var(--ink-muted)" }}
-        >
-          Checkout opens soon
-        </button>
-        <p id="checkout-soon" className="text-[12px] text-center" style={{ color: "var(--ink-muted)" }}>
-          Online checkout is almost ready. Your cart will be kept until then.
-        </p>
+        {canCheckout ? (
+          <Link
+            href="/checkout"
+            className="w-full text-center text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] text-white hover:opacity-90"
+            style={{ background: "var(--teal)" }}
+          >
+            Checkout
+          </Link>
+        ) : (
+          <>
+            <span
+              role="link"
+              aria-disabled="true"
+              aria-describedby="checkout-blocked"
+              className="w-full text-center text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] cursor-not-allowed"
+              style={{ background: "rgba(13,21,18,0.08)", color: "var(--ink-muted)" }}
+            >
+              Checkout
+            </span>
+            <p id="checkout-blocked" className="text-[12px] text-center" style={{ color: "var(--ink-muted)" }}>
+              {hasRx
+                ? "Prescription products can't be ordered online yet. Remove them to check out, or book a consult."
+                : "Remove unavailable items to check out."}
+            </p>
+          </>
+        )}
       </aside>
     </div>
   );

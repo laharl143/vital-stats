@@ -48,6 +48,7 @@ console.warn = (msg: string) => { warnings.push(msg); };
 console.error = (...args: unknown[]) => { errors.push(args); };
 
 const { POST } = require("../app/api/cart/quote/route") as { POST: (req: NextRequest) => Promise<Response> };
+const { clearAvailabilityCache } = require("./oms") as { clearAvailabilityCache: () => void };
 
 const quote = async (body: unknown) => {
   const res = await POST(new NextRequest("http://localhost/api/cart/quote", {
@@ -59,6 +60,7 @@ const quote = async (body: unknown) => {
 const omsRows = (rows: unknown[]): OmsReply => ({ status: 200, json: rows });
 
 beforeEach(() => {
+  clearAvailabilityCache(); // each test sets its own OMS reply
   process.env.OMS_BASE_URL = "https://oms.test/api/v1";
   process.env.OMS_API_KEY = "test-secret-key";
   products = [product("lumela-soap"), product("rx-cream", { requiresPrescription: true, price: decimal("720.5") })];

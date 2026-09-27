@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { addItem, cartCount, parseCart, removeItem, serializeCart, setQty } from "./cart";
+import { addItem, cartCount, parseCart, parseCartLines, removeItem, serializeCart, setQty } from "./cart";
 
 const cart = (items: unknown) => JSON.stringify({ v: 1, items });
 
@@ -67,4 +67,30 @@ test("cartCount sums quantities", () => {
 
 test("addItem: a zero quantity adds nothing", () => {
   assert.deepEqual(addItem([], "a", 0, 10), []);
+});
+
+// parseCartLines: the shared body check for POST /api/cart/quote and POST /api/checkout (spec 0003).
+test("parseCartLines: merges duplicate slugs in first seen order, capped at 10 (covers spec 0003 AC-16)", () => {
+  const r = parseCartLines([{ slug: "b", qty: 7 }, { slug: "a", qty: 1 }, { slug: "b", qty: 6 }]);
+  assert.deepEqual(r, { ok: true, items: [{ slug: "b", qty: 10 }, { slug: "a", qty: 1 }] });
+});
+
+test("parseCartLines: an empty list is valid (checkout refuses it itself)", () => {
+  assert.deepEqual(parseCartLines([]), { ok: true, items: [] });
+});
+
+test("parseCartLines: refuses a non list, 21 lines, and every bad line (covers spec 0003 AC-16)", () => {
+  const bad: unknown[] = [
+    undefined, null, "x", { items: [] },
+    Array.from({ length: 21 }, (_, i) => ({ slug: `p${i}`, qty: 1 })),
+    [{ slug: "", qty: 1 }], [{ slug: "x".repeat(101), qty: 1 }], [{ slug: 5, qty: 1 }],
+    [{ slug: "a", qty: 0 }], [{ slug: "a", qty: 11 }], [{ slug: "a", qty: 1.5 }], [{ slug: "a", qty: "2" }],
+    [null],
+  ];
+  for (const raw of bad) assert.equal(parseCartLines(raw).ok, false, JSON.stringify(raw));
+});
+
+test("parseCartLines: 20 lines and a 100 character slug are the limits, both allowed", () => {
+  assert.equal(parseCartLines(Array.from({ length: 20 }, (_, i) => ({ slug: `p${i}`, qty: 1 }))).ok, true);
+  assert.equal(parseCartLines([{ slug: "x".repeat(100), qty: 10 }]).ok, true);
 });
