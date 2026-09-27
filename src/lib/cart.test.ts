@@ -4,12 +4,13 @@ import { addItem, cartCount, parseCart, removeItem, serializeCart, setQty } from
 
 const cart = (items: unknown) => JSON.stringify({ v: 1, items });
 
-test("parseCart: round trips a valid cart", () => {
+test("parseCart: round trips a valid cart and stores only v, slug and qty (covers AC-5)", () => {
   const items = [{ slug: "lumela-soap", qty: 2 }, { slug: "nad-plus", qty: 1 }];
   assert.deepEqual(parseCart(serializeCart(items)), items);
+  assert.equal(serializeCart(items), '{"v":1,"items":[{"slug":"lumela-soap","qty":2},{"slug":"nad-plus","qty":1}]}');
 });
 
-test("parseCart: anything unexpected reads as empty", () => {
+test("parseCart: anything unexpected reads as empty (covers AC-16)", () => {
   for (const raw of [
     null,
     "",
@@ -23,13 +24,17 @@ test("parseCart: anything unexpected reads as empty", () => {
     cart([{ slug: "", qty: 1 }]),
     cart([{ slug: 5, qty: 1 }]),
     cart([{ slug: "a", qty: 1 }, { slug: "a", qty: 2 }]),
+    cart([null]),
+    JSON.stringify({ v: 1 }),
+    JSON.stringify({ v: 1, items: {} }),
+    cart([{ slug: "x".repeat(101), qty: 1 }]),
     cart(Array.from({ length: 21 }, (_, i) => ({ slug: `p${i}`, qty: 1 }))),
   ]) {
     assert.deepEqual(parseCart(raw), [], String(raw));
   }
 });
 
-test("addItem: merges and caps at maxQty and at 10", () => {
+test("addItem: merges and caps at maxQty and at 10 (covers AC-2)", () => {
   let items = addItem([], "a", 2, 3);
   assert.deepEqual(items, [{ slug: "a", qty: 2 }]);
   items = addItem(items, "a", 5, 3);
@@ -58,4 +63,8 @@ test("setQty and removeItem: same array when nothing changes", () => {
 test("cartCount sums quantities", () => {
   assert.equal(cartCount([{ slug: "a", qty: 2 }, { slug: "b", qty: 3 }]), 5);
   assert.equal(cartCount([]), 0);
+});
+
+test("addItem: a zero quantity adds nothing", () => {
+  assert.deepEqual(addItem([], "a", 0, 10), []);
 });

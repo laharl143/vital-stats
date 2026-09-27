@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildQuote, toCentavos, type QuoteProduct } from "./cart-quote";
+import { buildQuote, fetchQuote, toCentavos, type QuoteProduct } from "./cart-quote";
 import type { OmsAvailability, OmsStock } from "./oms";
 
 const product = (slug: string, over: Partial<QuoteProduct> = {}): QuoteProduct => ({
@@ -97,4 +97,57 @@ test("OMS down: storefront price as an estimate, maxQty 10", () => {
   assert.deepEqual([quote.lines[0].status, quote.lines[0].unitPrice, quote.lines[0].maxQty, quote.lines[0].estimate], ["unchecked", "299.50", 10, true]);
   assert.equal(quote.lines[1].status, "unavailable");
   assert.equal(quote.subtotal, "599.00");
+});
+
+// fetchQuote: the browser side call. A fake fetch stands in for the network.
+const withFetch = async (reply: (url: string, init: RequestInit) => Response | Promise<Response>, run: () => Promise<void>) => {
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (url: string, init: RequestInit) => reply(url, init)) as unknown as typeof fetch;
+  try {
+    await run();
+  } finally {
+    globalThis.fetch = real;
+  }
+};
+
+test("fetchQuote: posts the lines as JSON and returns the quote", async () => {
+  const quote = { lines: [], subtotal: "0.00", currency: "PHP", estimate: false, omsChecked: true };
+  let sent: { url: string; init: RequestInit } | null = null;
+  await withFetch(
+    (url, init) => {
+      sent = { url, init };
+      return new Response(JSON.stringify({ data: quote }), { status: 200 });
+    },
+    async () => {
+      const controller = new AbortController();
+      const result = await fetchQuote([{ slug: "a", qty: 2 }], controller.signal);
+      assert.deepEqual(result, quote);
+      assert.equal(sent!.url, "/api/cart/quote");
+      assert.equal(sent!.init.method, "POST");
+      assert.deepEqual(JSON.parse(sent!.init.body as string), { items: [{ slug: "a", qty: 2 }] });
+      assert.equal(sent!.init.signal, controller.signal, "passes the abort signal so the latest request wins");
+    },
+  );
+});
+
+test("fetchQuote: throws on an error status, a missing data field, or a non JSON reply", async () => {
+  for (const reply of [
+    () => new Response(JSON.stringify({ error: "boom" }), { status: 500 }),
+    () => new Response(JSON.stringify({ error: "bad" }), { status: 400 }),
+    () => new Response(JSON.stringify({}), { status: 200 }),
+    () => new Response("<html>", { status: 200 }),
+  ]) {
+    await withFetch(reply, async () => {
+      await assert.rejects(fetchQuote([{ slug: "a", qty: 1 }]));
+    });
+  }
+});
+
+test("fetchQuote: a network failure rejects instead of resolving", async () => {
+  await withFetch(
+    () => { throw new TypeError("fetch failed"); },
+    async () => {
+      await assert.rejects(fetchQuote([{ slug: "a", qty: 1 }]), TypeError);
+    },
+  );
 });

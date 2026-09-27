@@ -1,7 +1,7 @@
 # 0002. Guest cart in the browser, priced and stock checked by the OMS
 
 **Date**: 2026-09-27
-**Status**: In Progress
+**Status**: Accepted
 
 ## Summary
 
@@ -156,7 +156,7 @@ The build approach is Journey, and this is the second stop on Journey 1 (7.1 con
 1. [x] `src/lib/cart.ts` and `src/lib/cart.test.ts` (node:test), added to the `test` script in `package.json`. Satisfies **AC-2**, **AC-5**, **AC-16**
 2. [x] `getAvailability` in `src/lib/oms.ts`, with tests in `src/lib/oms.test.ts`. Satisfies **AC-10**, **AC-15**
 3. [x] `src/lib/cart-quote.ts` (`buildQuote`) and `src/lib/cart-quote.test.ts`, added to the `test` script. Satisfies **AC-4**, **AC-8**, **AC-9**, **AC-10**, **AC-14**
-4. [ ] `POST /api/cart/quote` route: validation, merge duplicates, one `findMany`, `getAvailability`, the mismatch and unsellable logs. Check in a production build (`npm run build && npm run start`) that the OMS call is cached for 30 seconds; the dev server may not cache. Satisfies **AC-4**, **AC-8**, **AC-14**, **AC-15**
+4. [x] `POST /api/cart/quote` route: validation, merge duplicates, one `findMany`, `getAvailability`, the mismatch and unsellable logs. Check in a production build (`npm run build && npm run start`) that the OMS call is cached for 30 seconds; the dev server may not cache. Satisfies **AC-4**, **AC-8**, **AC-14**, **AC-15**
 5. [x] `src/lib/useCart.ts` hook. Satisfies **AC-5**, **AC-16**
 6. [x] Navbar cart icon and badge (lucide `ShoppingBag`, already installed), hidden in search mode like the other icons. Satisfies **AC-6**
 7. [x] Product page: replace the "Order Now" link with the quote driven add controls (loading, add, added, maximum, out of stock, not available online, OMS down notice); leave the no price Inquire path as it is. Satisfies **AC-1**, **AC-2**, **AC-3**, **AC-4**, **AC-10**
