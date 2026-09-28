@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { CheckCircle2, CreditCard, ShoppingBag, Stethoscope, Truck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CreditCard, ShoppingBag, Stethoscope, Truck } from "lucide-react";
 import ConsentCheckbox, { LegalLink } from "@/components/ConsentCheckbox";
 import { serializeCart } from "@/lib/cart";
 import { fetchQuote, formatCentavos, peso, toCentavos, type Quote, type QuoteLine } from "@/lib/cart-quote";
@@ -30,7 +31,6 @@ const noopSubscribe = () => () => {};
 const card = { background: "#fff", border: "1px solid rgba(0,0,0,0.06)" };
 const sellable = (l: QuoteLine | undefined) => !!l && l.status !== "out_of_stock" && l.status !== "unavailable";
 
-type Placed = { orderNumber: string; total: string; phone: string };
 
 type Payment = "cod" | "online";
 
@@ -53,10 +53,10 @@ export default function CheckoutView({ onlineEnabled }: { onlineEnabled: boolean
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
-  const [placed, setPlaced] = useState<Placed | null>(null);
+  const [placed, setPlaced] = useState(false); // on the way to the order status page (spec 0005)
+  const router = useRouter();
   const keyRef = useRef<string | null>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
-  const doneRef = useRef<HTMLHeadingElement>(null);
 
   const key = serializeCart(items);
 
@@ -86,10 +86,6 @@ export default function CheckoutView({ onlineEnabled }: { onlineEnabled: boolean
     // `key` stands for `items` (a new array on every change of the stored cart)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, mounted, attempt, placed]);
-
-  useEffect(() => {
-    if (placed) doneRef.current?.focus();
-  }, [placed]);
 
   useEffect(() => {
     if (banner) bannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -123,7 +119,7 @@ export default function CheckoutView({ onlineEnabled }: { onlineEnabled: boolean
       });
   }, [cancelledKey]);
 
-  if (placed) return <Confirmation placed={placed} headingRef={doneRef} />;
+  if (placed) return <CheckoutSkeleton />;
   if (!mounted || (items.length > 0 && !quote && !failed)) return <CheckoutSkeleton />;
   if (items.length === 0) return <EmptyState />;
   if (!quote) {
@@ -200,7 +196,7 @@ export default function CheckoutView({ onlineEnabled }: { onlineEnabled: boolean
       });
       const json = (await res.json().catch(() => null)) as
         | {
-            data?: { orderNumber: string; total: string; checkoutUrl?: string; paymentState?: string };
+            data?: { orderNumber: string; total: string; checkoutUrl?: string; paymentState?: string; statusToken?: string };
             error?: string; code?: string; quote?: Quote;
           }
         | null;
@@ -216,8 +212,10 @@ export default function CheckoutView({ onlineEnabled }: { onlineEnabled: boolean
           window.sessionStorage.removeItem(KEY_STORAGE);
         } catch {}
         keyRef.current = null;
-        setPlaced({ orderNumber: json.data.orderNumber, total: json.data.total, phone: fields.phone.trim() });
+        setPlaced(true);
         clearCart();
+        // COD: the order status page is the confirmation (spec 0005, AC-2).
+        router.replace(json.data.statusToken ? `/orders/${json.data.statusToken}?new=1` : "/products");
         return;
       }
       if (json?.quote) {
@@ -492,29 +490,6 @@ function SummaryLine({ qty, line }: { qty: number; line: QuoteLine | undefined }
       </div>
       {ok && <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--ink)" }}>{peso(unit * qty)}</span>}
     </li>
-  );
-}
-
-function Confirmation({ placed, headingRef }: { placed: Placed; headingRef: React.RefObject<HTMLHeadingElement | null> }) {
-  return (
-    <div className="flex flex-col items-center text-center gap-5 px-6 py-14 rounded-[6px] mx-auto max-w-[640px]" style={card}>
-      <CheckCircle2 aria-hidden="true" size={44} strokeWidth={1.4} style={{ color: "var(--teal)" }} />
-      <h1 ref={headingRef} tabIndex={-1} className="font-display text-[32px] md:text-[38px] font-light outline-none" style={{ color: "var(--ink)" }}>
-        Thank you, your order is in
-      </h1>
-      <p className="text-[13px] uppercase tracking-[0.1em] font-semibold" style={{ color: "var(--ink-muted)" }}>
-        Order number <span className="tabular-nums" style={{ color: "var(--ink)" }}>{placed.orderNumber}</span>
-      </p>
-      <p className="text-[15px] font-light max-w-[460px]" style={{ color: "var(--ink-mid)" }}>
-        We&apos;ll call or text you at {placed.phone} to confirm your order before it ships.
-      </p>
-      <p className="text-[15px] max-w-[460px] px-5 py-3 rounded-[4px]" style={{ background: "var(--teal-pale)", color: "var(--ink)" }}>
-        Pay {peso(toCentavos(placed.total) ?? 0)} in cash when it arrives.
-      </p>
-      <Link href="/products" className="mt-2 inline-block text-[12px] font-medium tracking-[0.08em] uppercase px-6 py-3 rounded-[3px] text-white hover:opacity-90" style={{ background: "var(--teal)" }}>
-        Keep browsing
-      </Link>
-    </div>
   );
 }
 

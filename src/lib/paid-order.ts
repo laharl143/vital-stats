@@ -11,6 +11,7 @@ import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { formatCentavos, peso, toCentavos } from "@/lib/cart-quote";
 import { notifyAdmin } from "@/lib/notify-admin";
+import { emailCustomer } from "@/lib/notify-customer";
 import { sendOrderToOms } from "@/lib/oms";
 import { createRefund, expireCheckoutSession, getCheckoutSession, parsePaidSession, type PaidEvent } from "@/lib/paymongo";
 
@@ -102,6 +103,8 @@ export async function settlePaid(result: MarkPaidResult) {
       });
     }
   }
+  // The customer's "payment received" email goes before the send (spec 0005, AC-9). Never throws.
+  if (result.outcome === "paid") await emailCustomer(result.orderId, "PAID");
   if (result.outcome === "refund_needed") {
     await emailRefundNeeded(result.orderId, "The amount PayMongo reports as paid doesn't match the order total.");
   }

@@ -39,7 +39,9 @@ const fakePrisma = {
   order: {
     findUnique: async ({ where }: { where: { checkoutKey: string } }) => {
       const row = orders.find((o) => o.checkoutKey === where.checkoutKey);
-      return row ? { orderNumber: row.orderNumber, totalAmount: decimal(String(row.totalAmount)) } : null;
+      return row
+        ? { orderNumber: row.orderNumber, totalAmount: decimal(String(row.totalAmount)), paymentMethod: row.paymentMethod, statusToken: row.statusToken }
+        : null;
     },
     // Lazy expiry of abandoned online payments (spec 0004); COD tests never have one.
     findMany: async () => [],
@@ -51,7 +53,7 @@ const fakePrisma = {
       if (numberAlwaysClashes) throw p2002();
       if (orders.some((o) => o.checkoutKey === data.checkoutKey || o.orderNumber === data.orderNumber)) throw p2002();
       orders.push({ ...data, createdAt: new Date() });
-      return { id: `ord-${orders.length}`, orderNumber: data.orderNumber };
+      return { id: `ord-${orders.length}`, orderNumber: data.orderNumber, statusToken: data.statusToken };
     },
   },
 };
@@ -71,6 +73,17 @@ for (const level of ["info", "warn", "error"] as const) {
   console[level] = (...args: unknown[]) => { logs.push(args.map(String).join(" ")); };
 }
 
+// after() needs a live request in Next; here it runs the callback at once. The customer email
+// module (spec 0005) is faked to record what each route asked for.
+require("next/server").after = (fn: () => unknown) => { void fn(); };
+const customerEmails: string[] = [];
+require.cache[require.resolve("./notify-customer")] = {
+  id: "notify-customer", filename: "notify-customer", loaded: true,
+  exports: {
+    emailCustomer: async (orderId: string, kind: string) => { customerEmails.push(`${orderId}:${kind}`); return "sent"; },
+    emailForStatus: async (orderId: string, status: string) => { customerEmails.push(`${orderId}:status:${status}`); return "sent"; },
+  },
+} as unknown as NodeModule;
 const { POST } = require("../app/api/checkout/route") as { POST: (req: NextRequest) => Promise<Response> };
 const { clearAvailabilityCache, getAvailability } = require("./oms") as {
   clearAvailabilityCache: () => void;
@@ -117,6 +130,7 @@ beforeEach(() => {
   numberAlwaysClashes = false;
   dbFails = false;
   logs = [];
+  customerEmails.length = 0;
 });
 
 test("happy path: saves one pending COD storefront order with fee, consent and items (AC-9, AC-18)", async () => {
@@ -187,6 +201,9 @@ test("the same key sent twice creates one order and one email (AC-15, AC-18)", a
   assert.deepEqual(second.json.data, first.json.data);
   assert.equal(orders.length, 1);
   assert.equal(emails.length, 1);
+  // Spec 0005: the reply carries the status page token, and only the first save emails the customer.
+  assert.match(String((first.json.data as Record<string, unknown>).statusToken), /^[A-Za-z0-9_-]{43}$/);
+  assert.deepEqual(customerEmails, ["ord-1:RECEIVED"]);
 });
 
 test("two racing requests with one key: the unique index keeps one order (AC-15)", async () => {

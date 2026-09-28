@@ -77,6 +77,17 @@ const fakePrisma = {
 // Load the route with the fake in place of the real Prisma client (must happen before the require).
 const prismaPath = require.resolve("./prisma");
 require.cache[prismaPath] = { id: prismaPath, filename: prismaPath, loaded: true, exports: { prisma: fakePrisma } } as unknown as NodeModule;
+// after() needs a live request in Next; here it runs the callback at once. The customer email
+// module (spec 0005) is faked to record what each route asked for.
+require("next/server").after = (fn: () => unknown) => { void fn(); };
+const customerEmails: string[] = [];
+require.cache[require.resolve("./notify-customer")] = {
+  id: "notify-customer", filename: "notify-customer", loaded: true,
+  exports: {
+    emailCustomer: async (orderId: string, kind: string) => { customerEmails.push(`${orderId}:${kind}`); return "sent"; },
+    emailForStatus: async (orderId: string, status: string) => { customerEmails.push(`${orderId}:status:${status}`); return "sent"; },
+  },
+} as unknown as NodeModule;
 const { POST } = require("../app/api/oms/webhook/route") as { POST: (req: NextRequest) => Promise<Response> };
 
 const T1 = "2026-09-24T03:15:00.123Z";
@@ -122,6 +133,7 @@ beforeEach(() => {
   omsCalls.length = 0;
   failTransaction = failLookup = raceOnCreate = false;
   logs.length = 0;
+  customerEmails.length = 0;
   for (const level of ["info", "warn", "error"] as const) console[level] = (msg: string) => void logs.push(String(msg));
 });
 
@@ -348,4 +360,12 @@ test("address change: logs never carry the address, the body or the key", async 
   await post(addressEvent("evt-addr-log2"));
   assert.ok(logs.length >= 2);
   for (const line of logs) assert.doesNotMatch(line, /New St|Old St|Taguig|test-key|VS-1001|oms-1/);
+});
+
+test("an applied status asks for its customer email once; duplicate and stale events ask for none (spec 0005, AC-9, AC-10)", async () => {
+  await post(statusEvent("evt-ship", "SHIPPED", T2));
+  assert.deepEqual(customerEmails, ["o1:status:OUT_FOR_DELIVERY"]);
+  await post(statusEvent("evt-ship", "SHIPPED", T2)); // the same event again
+  await post(statusEvent("evt-old", "APPROVED", T1)); // older than what was applied
+  assert.deepEqual(customerEmails, ["o1:status:OUT_FOR_DELIVERY"]);
 });

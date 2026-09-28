@@ -50,12 +50,20 @@ export default function PaymentDoneView() {
           if (!stopped) setView({ kind: "missing" });
           return;
         }
-        const json = (await res.json().catch(() => null)) as { data?: { state: State; orderNumber: string; total: string } } | null;
+        const json = (await res.json().catch(() => null)) as
+          | { data?: { state: State; orderNumber: string; total: string; statusToken?: string } }
+          | null;
         const data = json?.data;
         if (data && data.state !== "awaiting_payment") {
           if (stopped) return;
           forgetKey(); // a new checkout gets a new key
           if (data.state === "paid") clearCart();
+          // The order status page takes over from here (spec 0005, AC-3). Older orders have no token
+          // and keep the panels below.
+          if (data.statusToken && data.state !== "expired") {
+            window.location.replace(`/orders/${data.statusToken}?new=1`);
+            return;
+          }
           setView({ kind: "done", state: data.state, orderNumber: data.orderNumber, total: data.total });
           return;
         }

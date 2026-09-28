@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const { data: orders, meta } = await paginate(searchParams, (skip, take) => ({
       findMany: prisma.order.findMany({
         where,
-        include: { items: true },
+        include: { items: true, customerEmails: { select: { kind: true, createdAt: true, sentAt: true, failedAt: true }, orderBy: { createdAt: "asc" } } }, // emails: spec 0005, AC-15
         orderBy: { createdAt: "desc" },
         skip,
         take,

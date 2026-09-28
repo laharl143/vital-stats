@@ -37,6 +37,17 @@ const stub = (path: string, exports: unknown) => {
 };
 stub(require.resolve("./prisma"), { prisma: fakePrisma });
 stub(require.resolve("./require-admin"), { requireAdminSession: async () => null });
+// after() needs a live request in Next; here it runs the callback at once. The customer email
+// module (spec 0005) is faked to record what each route asked for.
+require("next/server").after = (fn: () => unknown) => { void fn(); };
+const customerEmails: string[] = [];
+require.cache[require.resolve("./notify-customer")] = {
+  id: "notify-customer", filename: "notify-customer", loaded: true,
+  exports: {
+    emailCustomer: async (orderId: string, kind: string) => { customerEmails.push(`${orderId}:${kind}`); return "sent"; },
+    emailForStatus: async (orderId: string, status: string) => { customerEmails.push(`${orderId}:status:${status}`); return "sent"; },
+  },
+} as unknown as NodeModule;
 const { PATCH } = require("../app/api/orders/[id]/route") as {
   PATCH: (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => Promise<Response>;
 };
@@ -54,6 +65,7 @@ beforeEach(() => {
     { id: "unsent", status: "PENDING", omsOrderId: null, ...base },
   ];
   writes = [];
+  customerEmails.length = 0;
   console.error = () => {};
 });
 
@@ -171,4 +183,12 @@ test("an unsent order still accepts an address change (also together with a stat
 
 test("an address change on a missing order is still a 404", async () => {
   assert.equal((await patch("nope", { customerAddress: "2 New Ave" })).status, 404);
+});
+
+test("an admin status change asks for the customer email; the same status or notes only ask for none (spec 0005, AC-9)", async () => {
+  await patch("unsent", { status: "CANCELLED" });
+  assert.deepEqual(customerEmails, ["unsent:status:CANCELLED"]);
+  await patch("unsent", { status: "CANCELLED" });
+  await patch("unsent", { notes: "TEST note" });
+  assert.deepEqual(customerEmails, ["unsent:status:CANCELLED"]);
 });

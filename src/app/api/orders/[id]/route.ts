@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
+import { emailForStatus } from "@/lib/notify-customer";
 import { OMS_ADDRESS_LOCK_MESSAGE, OMS_LOCK_MESSAGE, isAddressChange, isLockedByOms, paymentLockMessage } from "@/lib/order-lock";
 
 // GET /api/orders/[id]  (admin only)
@@ -16,7 +17,11 @@ export async function GET(
 
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { items: true },
+      include: {
+        items: true,
+        // The customer emails sent for this order (spec 0005, AC-15).
+        customerEmails: { select: { kind: true, createdAt: true, sentAt: true, failedAt: true }, orderBy: { createdAt: "asc" } },
+      },
     });
 
     if (!order) {
@@ -48,6 +53,7 @@ export async function PATCH(
     // it changes either; notes-only changes (or the same address again) still go through. A missing
     // order falls through to the 404.
     let sent = false;
+    let previousStatus: string | undefined;
     if (status !== undefined || customerAddress !== undefined) {
       const existing = await prisma.order.findUnique({
         where: { id },
@@ -59,6 +65,7 @@ export async function PATCH(
         const lock = paymentLockMessage(existing, status);
         if (lock) return NextResponse.json({ error: lock }, { status: 409 });
       }
+      previousStatus = existing?.status;
       sent = !!existing && isLockedByOms(existing);
       if (sent && status !== undefined) {
         return NextResponse.json({ error: OMS_LOCK_MESSAGE }, { status: 409 });
@@ -84,6 +91,9 @@ export async function PATCH(
       },
       include: { items: true },
     });
+
+    // A status staff just changed may owe the customer an email (spec 0005, AC-9). Never throws.
+    if (status !== undefined && status !== previousStatus) after(() => emailForStatus(id, status));
 
     return NextResponse.json({ data: order });
   } catch (error: unknown) {

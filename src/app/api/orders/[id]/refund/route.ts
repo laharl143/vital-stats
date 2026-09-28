@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/require-admin";
 import { refundOrder } from "@/lib/paid-order";
+import { emailCustomer } from "@/lib/notify-customer";
 
 // POST /api/orders/[id]/refund  (admin; VS-255, spec 0004, AC-12)
 // Body: {} refunds the full paid amount through PayMongo's refund API.
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       note: typeof body.note === "string" ? body.note : undefined,
     });
     if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
+    after(() => emailCustomer(id, "REFUNDED")); // spec 0005, AC-9; never throws
 
     const updated = await prisma.order.findUnique({ where: { id }, include: { items: true } });
     return NextResponse.json({ data: updated });

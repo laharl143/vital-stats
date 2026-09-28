@@ -1,9 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { OrderStatus } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getOmsOrder } from "@/lib/oms";
 import { prisma } from "@/lib/prisma";
 import { emailRefundNeeded } from "@/lib/paid-order";
+import { emailForStatus } from "@/lib/notify-customer";
 
 // POST /api/oms/webhook  (called by the OMS, not by a browser)
 //
@@ -169,6 +170,9 @@ export async function POST(req: NextRequest) {
       return newStatus ? "applied" : "recorded";
     });
     if (refundNeeded) await emailRefundNeeded(order.id, "The OMS cancelled this paid order."); // never throws
+    // The customer's shipped, delivered or cancelled email, once per order (spec 0005, AC-9, AC-10).
+    // Only a status this event actually wrote: a stale or duplicate event sends nothing.
+    if (outcome === "applied" && newStatus) after(() => emailForStatus(order.id, newStatus));
     return respond(outcome);
   } catch (error: unknown) {
     // Same eventId committed by a concurrent delivery between our check and our insert.

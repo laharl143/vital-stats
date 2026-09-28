@@ -41,6 +41,9 @@ interface Order {
   omsSendError?: string | null;
   refundId?: string | null;
   refundedAt?: string | null;
+  // Order status page and customer emails (spec 0005).
+  statusToken?: string | null;
+  customerEmails?: { kind: string; createdAt: string; sentAt: string | null; failedAt: string | null }[];
   items: OrderItem[];
   createdAt: string;
 }
@@ -391,6 +394,8 @@ function AdminOrdersPageContent() {
               </div>
             )}
 
+            {selected.statusToken && <CustomerLink token={selected.statusToken} emails={selected.customerEmails ?? []} />}
+
             {selected.paymentStatus && (
               <div>
                 <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Online payment</div>
@@ -578,6 +583,45 @@ function AdminOrdersPageContent() {
             <p className="text-[13px]" style={{ color: "var(--ink-faint)" }}>Select an order to view details</p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// The customer's order status link, to text them if their email didn't arrive, and the order emails
+// sent so far (spec 0005, AC-15).
+const EMAIL_LABELS: Record<string, string> = {
+  RECEIVED: "Order received", PAID: "Payment received", SHIPPED: "On its way",
+  DELIVERED: "Delivered", CANCELLED: "Cancelled", REFUNDED: "Refunded",
+};
+function CustomerLink({ token, emails }: { token: string; emails: NonNullable<Order["customerEmails"]> }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/orders/${token}`;
+  const copy = () =>
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  return (
+    <div>
+      <div className="text-[10px] tracking-[0.1em] uppercase mb-1" style={{ color: "var(--ink-faint)" }}>Customer link</div>
+      <div className="flex items-center gap-2">
+        <a href={url} target="_blank" rel="noreferrer" className="text-[13px] underline truncate" style={{ color: "var(--teal)" }}>
+          Order status page
+        </a>
+        <button type="button" onClick={copy} className="text-[11px] tracking-[0.06em] uppercase px-2 py-1 rounded-[3px]" style={{ border: "1px solid rgba(0,0,0,0.12)", color: "var(--ink)" }}>
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <div className="text-[12px] mt-2 flex flex-col gap-0.5" style={{ color: "var(--ink-muted)" }}>
+        {emails.length === 0
+          ? "No customer emails sent yet."
+          : emails.map((e) => (
+              <div key={e.kind}>
+                {EMAIL_LABELS[e.kind] ?? e.kind} email · {new Date(e.createdAt).toLocaleString()} ·{" "}
+                {e.sentAt ? "sent" : e.failedAt ? <span style={{ color: "#B3261E" }}>failed</span> : "sending"}
+              </div>
+            ))}
       </div>
     </div>
   );

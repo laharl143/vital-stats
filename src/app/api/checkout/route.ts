@@ -1,11 +1,13 @@
 import { randomBytes } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { formatCentavos, toCentavos } from "@/lib/cart-quote";
 import { checkSubmit, deliveryFeeCentavos, joinAddress, makeOrderNumber, parseCheckout } from "@/lib/checkout";
 import { CONSENT_REQUIRED_MESSAGE, TERMS_VERSION, readConsent } from "@/lib/legal";
 import { loadQuote } from "@/lib/load-quote";
 import { notifyAdmin } from "@/lib/notify-admin";
+import { emailCustomer } from "@/lib/notify-customer";
+import { makeStatusToken } from "@/lib/order-status";
 import { PAYMENT_WINDOW_MS, expireOrder, expirePayments, paymentState } from "@/lib/paid-order";
 import { createCheckoutSession } from "@/lib/paymongo";
 
@@ -33,7 +35,10 @@ const ONLINE_UNAVAILABLE = "Online payment is unavailable right now. Please choo
 const existingOrder = (checkoutKey: string) =>
   prisma.order.findUnique({
     where: { checkoutKey },
-    select: { orderNumber: true, totalAmount: true, status: true, paymentStatus: true, paymongoCheckoutUrl: true, paymentExpiresAt: true, createdAt: true },
+    select: {
+      orderNumber: true, totalAmount: true, status: true, paymentMethod: true, paymentStatus: true, paymongoCheckoutUrl: true,
+      paymentExpiresAt: true, createdAt: true, statusToken: true,
+    },
   });
 
 // A repeat of the same checkout (AC-5). An online order still awaiting payment inside its window gets
@@ -50,7 +55,14 @@ const replay = (order: NonNullable<Awaited<ReturnType<typeof existingOrder>>>) =
     return NextResponse.json({ data: { orderNumber: order.orderNumber, total, checkoutUrl: order.paymongoCheckoutUrl } });
   }
   const state = paymentState(order.paymentStatus);
-  return NextResponse.json({ data: { orderNumber: order.orderNumber, total, ...(state && { paymentState: state }) } });
+  // The status page link (spec 0005, AC-2, AC-3): for COD, and for an online order in a final state.
+  const showToken = order.paymentMethod === "COD" || state === "paid" || state === "refund_needed" || state === "refunded";
+  return NextResponse.json({
+    data: {
+      orderNumber: order.orderNumber, total, ...(state && { paymentState: state }),
+      ...(showToken && order.statusToken && { statusToken: order.statusToken }),
+    },
+  });
 };
 
 const onlineUnavailable = () => {
@@ -150,12 +162,12 @@ export async function POST(req: NextRequest) {
       items: { create: items },
     };
 
-    let order: { id: string; orderNumber: string } | null = null;
+    let order: { id: string; orderNumber: string; statusToken: string | null } | null = null;
     for (let attempt = 0; attempt < ORDER_NUMBER_TRIES && !order; attempt++) {
       try {
         order = await prisma.order.create({
-          data: { ...data, orderNumber: makeOrderNumber(new Date(), randomBytes(5)) },
-          select: { id: true, orderNumber: true },
+          data: { ...data, orderNumber: makeOrderNumber(new Date(), randomBytes(5)), statusToken: makeStatusToken() },
+          select: { id: true, orderNumber: true, statusToken: true },
         });
       } catch (error) {
         if (!isUniqueViolation(error)) throw error;
@@ -186,7 +198,10 @@ export async function POST(req: NextRequest) {
       console.error("[POST /api/checkout] admin email failed", errorCode(err));
     }
 
-    return NextResponse.json({ data: { orderNumber: order.orderNumber, total } }, { status: 201 });
+    const orderId = order.id;
+    after(() => emailCustomer(orderId, "RECEIVED")); // never throws (spec 0005, AC-9, AC-13)
+
+    return NextResponse.json({ data: { orderNumber: order.orderNumber, total, statusToken: order.statusToken } }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/checkout]", errorCode(error));
     return NextResponse.json({ error: "We couldn't place your order. Please try again." }, { status: 500 });

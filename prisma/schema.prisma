@@ -231,7 +231,11 @@ model Order {
   refundId            String? // ref_…, null after a manual refund
   refundedAt          DateTime?
 
-  items OrderItem[]
+  // Order status page and customer emails (VS-256, spec 0005). Storefront orders only.
+  statusToken String? @unique // the secret in /orders/<token>, 32 random bytes base64url
+
+  items          OrderItem[]
+  customerEmails CustomerEmail[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -254,6 +258,31 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
+}
+
+// One row per customer email, claimed before sending (VS-256, spec 0005). The unique
+// (orderId, kind) is what makes each email go out at most once, whatever retries the webhooks do.
+enum CustomerEmailKind {
+  RECEIVED
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model CustomerEmail {
+  id        String            @id @default(cuid())
+  orderId   String
+  kind      CustomerEmailKind
+  createdAt DateTime          @default(now()) // the claim
+  sentAt    DateTime?
+  failedAt  DateTime?
+  error     String? // a short code, never a provider body
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, kind])
 }
 
 // One row per OMS webhook event already handled (VS-242). The unique eventId

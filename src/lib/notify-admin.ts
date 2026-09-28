@@ -170,15 +170,17 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderNotificationEmail(params: {
+// Shared with the customer emails (spec 0005), which add an optional note under the title.
+export function renderNotificationEmail(params: {
   badge: string;
   title: string;
   submittedAt: string;
   rows: [string, string][];
   ctaHref: string;
   ctaLabel: string;
+  note?: string;
 }) {
-  const { badge, title, submittedAt, rows, ctaHref, ctaLabel } = params;
+  const { badge, title, submittedAt, rows, ctaHref, ctaLabel, note } = params;
 
   const rowsHtml = rows
     .map(
@@ -199,7 +201,8 @@ function renderNotificationEmail(params: {
         </td></tr>
         <tr><td style="padding:28px;">
           <h1 style="margin:0 0 4px;font-size:19px;color:#1b2421;">${escapeHtml(title)}</h1>
-          <p style="margin:0 0 20px;font-size:13px;color:#5b6b64;">${escapeHtml(submittedAt)}</p>
+          <p style="margin:0 0 20px;font-size:13px;color:#5b6b64;">${escapeHtml(submittedAt)}</p>${note ? `
+          <p style="margin:0 0 20px;font-size:14px;color:#1b2421;">${escapeHtml(note)}</p>` : ""}
           <table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse;">${rowsHtml}
           </table>
           <table role="presentation" style="margin-top:24px;"><tr><td style="background:#1f6f5c;border-radius:6px;">
